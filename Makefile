@@ -13,6 +13,7 @@ FLASK = $(VENV)/bin/flask
 export FLASK_APP = app
 export FLASK_ENV = development
 export PYTHONPATH = $(shell pwd)
+PORT ?= 5001  # Default port, can be overridden with make run PORT=xxxx
 
 help:
 	@echo "Available commands:"
@@ -54,8 +55,8 @@ init: env
 run: env
 	@echo "Installing dependencies..."
 	$(PIP) install -r requirements.txt
-	@echo "Starting Flask development server..."
-	. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(FLASK) run --debug
+	@echo "Starting Flask development server on port $(PORT)..."
+	. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(FLASK) run --debug -p $(PORT)
 
 test: init
 	@echo "Running tests..."
