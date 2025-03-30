@@ -1,19 +1,19 @@
 {
     "aircraft": [
         {
-            "registration": "N12345",
+            "tail_number": "N12345",
             "make_model": "Cessna 172",
             "year": 2020,
             "status": "available"
         },
         {
-            "registration": "N67890",
+            "tail_number": "N67890",
             "make_model": "Piper PA-28",
             "year": 2019,
             "status": "available"
         },
         {
-            "registration": "N24680",
+            "tail_number": "N24680",
             "make_model": "Diamond DA40",
             "year": 2021,
             "status": "maintenance"
@@ -53,7 +53,7 @@
         {
             "student_email": "student1@example.com",
             "instructor_email": "john.smith@flightschool.com",
-            "registration": "N12345",
+            "tail_number": "N12345",
             "start_time": "2024-03-20T09:00:00",
             "end_time": "2024-03-20T11:00:00",
             "status": "confirmed"
@@ -61,7 +61,7 @@
         {
             "student_email": "student2@example.com",
             "instructor_email": "sarah.jones@flightschool.com",
-            "registration": "N67890",
+            "tail_number": "N67890",
             "start_time": "2024-03-21T14:00:00",
             "end_time": "2024-03-21T16:00:00",
             "status": "pending"

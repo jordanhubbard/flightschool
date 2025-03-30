@@ -23,7 +23,7 @@
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Registration</th>
+                                <th>Tail Number</th>
                                 <th>Make/Model</th>
                                 <th>Year</th>
                                 <th>Status</th>
@@ -33,7 +33,7 @@
                         <tbody>
                             {% for aircraft in aircraft %}
                             <tr>
-                                <td>{{ aircraft.registration }}</td>
+                                <td>{{ aircraft.tail_number }}</td>
                                 <td>{{ aircraft.make_model }}</td>
                                 <td>{{ aircraft.year }}</td>
                                 <td>
@@ -153,11 +153,11 @@
                             {% for booking in bookings %}
                             <tr>
                                 <td>{{ booking.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
-                                <td>{{ booking.user.first_name }} {{ booking.user.last_name }}</td>
-                                <td>{{ booking.aircraft.registration }}</td>
-                                <td>{{ booking.instructor.first_name }} {{ booking.instructor.last_name }} if booking.instructor else 'Solo' }}</td>
+                                <td>{{ booking.student.first_name }} {{ booking.student.last_name }}</td>
+                                <td>{{ booking.aircraft.tail_number }}</td>
+                                <td>{% if booking.instructor %}{{ booking.instructor.first_name }} {{ booking.instructor.last_name }}{% else %}Solo{% endif %}</td>
                                 <td>
-                                    <span class="badge bg-{{ 'success' if booking.status == 'scheduled' else 'secondary' }}">
+                                    <span class="badge bg-{{ 'success' if booking.status == 'confirmed' else 'secondary' }}">
                                         {{ booking.status|title }}
                                     </span>
                                 </td>
@@ -187,8 +187,8 @@
             <form method="POST" action="{{ url_for('admin.add_aircraft') }}">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="registration" class="form-label">Registration</label>
-                        <input type="text" class="form-control" id="registration" name="registration" required>
+                        <label for="tail_number" class="form-label">Tail Number</label>
+                        <input type="text" class="form-control" id="tail_number" name="tail_number" required>
                     </div>
                     <div class="mb-3">
                         <label for="make_model" class="form-label">Make/Model</label>
@@ -253,11 +253,11 @@
                 <h5 class="modal-title">Edit Aircraft</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="{{ url_for('admin.edit_aircraft', id=aircraft.id) }}">
+            <form method="POST" action="{{ url_for('admin.edit_aircraft', aircraft_id=aircraft.id) }}">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="registration{{ aircraft.id }}" class="form-label">Registration</label>
-                        <input type="text" class="form-control" id="registration{{ aircraft.id }}" name="registration" value="{{ aircraft.registration }}" required>
+                        <label for="tail_number{{ aircraft.id }}" class="form-label">Tail Number</label>
+                        <input type="text" class="form-control" id="tail_number{{ aircraft.id }}" name="tail_number" value="{{ aircraft.tail_number }}" required>
                     </div>
                     <div class="mb-3">
                         <label for="make_model{{ aircraft.id }}" class="form-label">Make/Model</label>
@@ -341,7 +341,7 @@
                 <h5 class="modal-title">Edit Booking</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="{{ url_for('admin.edit_booking', id=booking.id) }}">
+            <form method="POST" action="{{ url_for('admin.edit_booking', booking_id=booking.id) }}">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="start_time{{ booking.id }}" class="form-label">Start Time</label>

@@ -24,12 +24,12 @@ def load_test_data():
             data = json.load(f)
         
         # Create aircraft
-        aircraft_map = {}  # To store registration -> id mapping
+        aircraft_map = {}  # To store tail_number -> id mapping
         for aircraft_data in data['aircraft']:
             aircraft = Aircraft(**aircraft_data)
             db.session.add(aircraft)
             db.session.flush()  # This will assign the id
-            aircraft_map[aircraft.registration] = aircraft.id
+            aircraft_map[aircraft.tail_number] = aircraft.id
         
         # Create instructors
         instructor_map = {}  # To store email -> id mapping
@@ -51,7 +51,7 @@ def load_test_data():
             instructor_map[instructor.email] = instructor.id
         
         # Create students
-        student_map = {}  # To store email -> id mapping
+        student_map = {}
         for student_data in data['students']:
             # Split name into first_name and last_name
             name_parts = student_data['name'].split(' ', 1)
@@ -74,7 +74,7 @@ def load_test_data():
             booking = Booking(
                 student_id=student_map[booking_data['student_email']],
                 instructor_id=instructor_map[booking_data['instructor_email']],
-                aircraft_id=aircraft_map[booking_data['registration']],
+                aircraft_id=aircraft_map[booking_data['tail_number']],
                 start_time=datetime.fromisoformat(booking_data['start_time']),
                 end_time=datetime.fromisoformat(booking_data['end_time']),
                 status=booking_data['status']

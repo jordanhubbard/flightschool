@@ -179,4 +179,30 @@ def edit_aircraft(aircraft_id):
         flash('Aircraft updated successfully.', 'success')
         return redirect(url_for('admin.manage_aircraft'))
     
-    return render_template('admin/edit_aircraft.html', aircraft=aircraft) 
+    return render_template('admin/edit_aircraft.html', aircraft=aircraft)
+
+@bp.route('/booking/<int:booking_id>/edit', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_booking(booking_id):
+    booking = Booking.query.get_or_404(booking_id)
+    
+    if request.method == 'POST':
+        try:
+            start_time = datetime.strptime(request.form.get('start_time'), '%Y-%m-%dT%H:%M')
+            end_time = datetime.strptime(request.form.get('end_time'), '%Y-%m-%dT%H:%M')
+            status = request.form.get('status')
+            
+            booking.start_time = start_time
+            booking.end_time = end_time
+            booking.status = status
+            
+            db.session.commit()
+            flash('Booking updated successfully.', 'success')
+            return redirect(url_for('admin.admin_dashboard'))
+            
+        except Exception as e:
+            flash('Error updating booking. Please check the form data.', 'error')
+            return redirect(url_for('admin.admin_dashboard'))
+    
+    return render_template('admin/edit_booking.html', booking=booking) 

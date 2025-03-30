@@ -58,7 +58,9 @@ run: env
 test: init
 	@echo "Running tests..."
 	. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(PYTHON) -m pytest -v
-	@echo "Tests complete."
+	@echo "Backend tests complete."
+	. $(VENV)/bin/activate && PYTHONPATH=$PYTHONPATH:. pytest tests/test_frontend.py -v
+	@echo "Front end tests complete"
 
 clean:
 	@echo "Cleaning project..."
