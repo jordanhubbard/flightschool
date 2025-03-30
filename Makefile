@@ -71,6 +71,7 @@ clean:
 	rm -rf .pytest_cache
 	rm -rf .coverage
 	rm -rf htmlcov
+	rm -f instance/app.db
 	rm -rf instance
 	find . -type d -name __pycache__ -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
