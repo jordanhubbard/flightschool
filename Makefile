@@ -55,8 +55,8 @@ init: env
 run: env
 	@echo "Installing dependencies..."
 	$(PIP) install -r requirements.txt
-	@echo "Starting Flask development server on port $(PORT)..."
-	. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(FLASK) run --debug -p $(PORT)
+	@echo "Starting Flask development server on 0.0.0.0:$(PORT)..."
+	. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(FLASK) run --debug -h 0.0.0.0 -p $(PORT)
 
 test: init
 	@echo "Running tests..."
