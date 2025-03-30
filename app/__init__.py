@@ -5,6 +5,7 @@ from flask_mail import Mail
 from flask_migrate import Migrate
 from config import Config
 from datetime import datetime
+import os
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -14,6 +15,10 @@ migrate = Migrate()
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+
+    # Ensure instance directory exists
+    if not os.path.exists('instance'):
+        os.makedirs('instance')
 
     # Initialize extensions
     db.init_app(app)
