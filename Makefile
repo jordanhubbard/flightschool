@@ -61,6 +61,8 @@ test: init
 	@echo "Backend tests complete."
 	. $(VENV)/bin/activate && PYTHONPATH=$PYTHONPATH:. pytest tests/test_frontend.py -v
 	@echo "Front end tests complete"
+	. $(VENV)/bin/activate && PYTHONPATH=$PYTHONPATH:. pytest tests/test_admin.py -v
+	@echo "Admin operation tests complete"
 
 clean:
 	@echo "Cleaning project..."

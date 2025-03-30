@@ -90,7 +90,7 @@ def add_aircraft():
         status = request.form.get('status', 'available')
         
         if not tail_number or not make_model or not year:
-            flash('Please fill in all required fields.', 'error')
+            flash('Please fill in all required fields')
             return redirect(url_for('admin.add_aircraft'))
         
         aircraft = Aircraft(
@@ -101,7 +101,7 @@ def add_aircraft():
         )
         db.session.add(aircraft)
         db.session.commit()
-        flash('Aircraft added successfully.', 'success')
+        flash('Aircraft added successfully')
         return redirect(url_for('admin.manage_aircraft'))
     
     return render_template('admin/add_aircraft.html')
@@ -112,30 +112,23 @@ def add_aircraft():
 def add_instructor():
     if request.method == 'POST':
         email = request.form.get('email')
-        password = request.form.get('password')
-        first_name = request.form.get('first_name')
-        last_name = request.form.get('last_name')
-        phone = request.form.get('phone')
-        certificates = request.form.get('certificates')
-        is_instructor = request.form.get('is_instructor', type=bool)
-        
-        if not all([email, password, first_name, last_name]):
-            flash('Please fill in all required fields.', 'error')
+        if User.query.filter_by(email=email).first():
+            flash('Email already registered')
             return redirect(url_for('admin.add_instructor'))
         
         instructor = User(
             email=email,
-            first_name=first_name,
-            last_name=last_name,
-            phone=phone,
-            certificates=certificates,
-            is_instructor=is_instructor,
-            status='active'
+            first_name=request.form.get('first_name'),
+            last_name=request.form.get('last_name'),
+            phone=request.form.get('phone'),
+            certificates=request.form.get('certificates'),
+            is_instructor=True,
+            status='available'
         )
-        instructor.set_password(password)
+        instructor.set_password(request.form.get('password'))
         db.session.add(instructor)
         db.session.commit()
-        flash('Instructor added successfully.', 'success')
+        flash('Instructor added successfully')
         return redirect(url_for('admin.manage_users'))
     
     return render_template('admin/add_instructor.html')
@@ -146,19 +139,19 @@ def add_instructor():
 def edit_instructor(instructor_id):
     instructor = User.query.get_or_404(instructor_id)
     if not instructor.is_instructor:
-        flash('Selected user is not an instructor.', 'error')
+        flash('User is not an instructor')
         return redirect(url_for('admin.manage_users'))
     
     if request.method == 'POST':
-        instructor.first_name = request.form.get('first_name', instructor.first_name)
-        instructor.last_name = request.form.get('last_name', instructor.last_name)
-        instructor.email = request.form.get('email', instructor.email)
-        instructor.phone = request.form.get('phone', instructor.phone)
-        instructor.certificates = request.form.get('certificates', instructor.certificates)
-        instructor.status = request.form.get('status', instructor.status)
+        instructor.first_name = request.form.get('first_name')
+        instructor.last_name = request.form.get('last_name')
+        instructor.email = request.form.get('email')
+        instructor.phone = request.form.get('phone')
+        instructor.certificates = request.form.get('certificates')
+        instructor.status = request.form.get('status', 'available')
         
         db.session.commit()
-        flash('Instructor updated successfully.', 'success')
+        flash('Instructor updated successfully')
         return redirect(url_for('admin.manage_users'))
     
     return render_template('admin/edit_instructor.html', instructor=instructor)
@@ -205,4 +198,38 @@ def edit_booking(booking_id):
             flash('Error updating booking. Please check the form data.', 'error')
             return redirect(url_for('admin.admin_dashboard'))
     
-    return render_template('admin/edit_booking.html', booking=booking) 
+    return render_template('admin/edit_booking.html', booking=booking)
+
+@bp.route('/instructor/<int:instructor_id>/status', methods=['POST'])
+@login_required
+@admin_required
+def update_instructor_status(instructor_id):
+    instructor = User.query.get_or_404(instructor_id)
+    if not instructor.is_instructor:
+        flash('User is not an instructor')
+        return redirect(url_for('admin.manage_users'))
+    
+    status = request.form.get('status')
+    if status not in ['available', 'unavailable', 'active']:
+        flash('Invalid status')
+        return redirect(url_for('admin.manage_users'))
+    
+    instructor.status = status
+    db.session.commit()
+    flash('Instructor status updated successfully')
+    return redirect(url_for('admin.manage_users'))
+
+@bp.route('/aircraft/<int:aircraft_id>/status', methods=['POST'])
+@login_required
+@admin_required
+def update_aircraft_status(aircraft_id):
+    aircraft = Aircraft.query.get_or_404(aircraft_id)
+    status = request.form.get('status')
+    if status not in ['available', 'maintenance', 'reserved']:
+        flash('Invalid status', 'error')
+        return redirect(url_for('admin.manage_aircraft'))
+    
+    aircraft.status = status
+    db.session.commit()
+    flash('Aircraft status updated successfully')
+    return redirect(url_for('admin.manage_aircraft')) 

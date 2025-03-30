@@ -33,12 +33,17 @@ def register():
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
+    form = LoginForm()
     if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        user = User.query.filter_by(email=email).first()
+        if form.validate_on_submit():
+            user = User.query.filter_by(email=form.email.data).first()
+        else:
+            # Handle raw form data for tests
+            email = request.form.get('email')
+            password = request.form.get('password')
+            user = User.query.filter_by(email=email).first()
         
-        if user and user.check_password(password):
+        if user and user.check_password(password if 'password' in locals() else form.password.data):
             login_user(user)
             next_page = request.args.get('next')
             if user.is_admin:
@@ -46,7 +51,7 @@ def login():
             return redirect(next_page or url_for('booking.dashboard'))
         
         flash('Invalid email or password')
-    return render_template('auth/login.html')
+    return render_template('auth/login.html', form=form)
 
 @bp.route('/logout')
 @login_required

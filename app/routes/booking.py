@@ -22,7 +22,11 @@ def dashboard():
 @login_required
 def create_booking():
     try:
-        start_time = datetime.strptime(request.form.get('start_time'), '%Y-%m-%dT%H:%M')
+        if request.form.get('start_time'):
+            start_time = datetime.strptime(request.form.get('start_time'), '%Y-%m-%dT%H:%M')
+        else:
+            start_time = datetime.strptime(request.form.get('start_time'), '%Y-%m-%d %H:%M')
+        
         duration = int(request.form.get('duration', 1))
         aircraft_id = request.form.get('aircraft_id')
         instructor_id = request.form.get('instructor_id')
@@ -38,7 +42,7 @@ def create_booking():
         ).first()
         
         if existing_booking:
-            flash('Aircraft is already booked', 'error')
+            flash('Aircraft is already booked')
             return redirect(url_for('booking.dashboard'))
         
         if instructor_id:
@@ -50,7 +54,7 @@ def create_booking():
             ).first()
             
             if instructor_booking:
-                flash('Instructor is already booked', 'error')
+                flash('Instructor is already booked')
                 return redirect(url_for('booking.dashboard'))
         
         booking = Booking(
@@ -65,7 +69,7 @@ def create_booking():
         db.session.add(booking)
         db.session.commit()
         
-        flash('Booking created successfully!')
+        flash('Booking created successfully')
         return redirect(url_for('booking.dashboard'))
         
     except Exception as e:
@@ -77,10 +81,10 @@ def create_booking():
 def cancel_booking(id):
     booking = Booking.query.get_or_404(id)
     if booking.student_id != current_user.id:
-        flash('You are not authorized to cancel this booking.')
+        flash('You are not authorized to cancel this booking')
         return redirect(url_for('booking.dashboard'))
     
     booking.status = 'cancelled'
     db.session.commit()
-    flash('Booking cancelled successfully.')
+    flash('Booking cancelled successfully')
     return redirect(url_for('booking.dashboard')) 

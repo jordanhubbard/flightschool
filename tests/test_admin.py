@@ -94,4 +94,59 @@ def test_edit_instructor(client, test_admin, test_instructor):
     instructor = User.query.get(test_instructor.id)
     assert instructor.first_name == 'Johnny'
     assert instructor.certificates == 'CFI,CFII,MEI'
-    assert instructor.status == 'unavailable' 
+    assert instructor.status == 'unavailable'
+
+def test_delete_aircraft(client, test_admin, test_aircraft):
+    client.post('/auth/login', data={
+        'email': 'admin@example.com',
+        'password': 'admin123'
+    })
+    
+    response = client.post(f'/admin/aircraft/{test_aircraft.id}/delete', follow_redirects=True)
+    assert b'Aircraft deleted successfully' in response.data
+    aircraft = Aircraft.query.get(test_aircraft.id)
+    assert aircraft is None
+
+def test_instructor_status_management(client, test_admin, test_instructor):
+    client.post('/auth/login', data={
+        'email': 'admin@example.com',
+        'password': 'admin123'
+    })
+    
+    # Test setting instructor as unavailable
+    response = client.post(f'/admin/instructor/{test_instructor.id}/status', data={
+        'status': 'unavailable'
+    }, follow_redirects=True)
+    assert b'Instructor status updated successfully' in response.data
+    instructor = User.query.get(test_instructor.id)
+    assert instructor.status == 'unavailable'
+    
+    # Test setting instructor as active
+    response = client.post(f'/admin/instructor/{test_instructor.id}/status', data={
+        'status': 'active'
+    }, follow_redirects=True)
+    assert b'Instructor status updated successfully' in response.data
+    instructor = User.query.get(test_instructor.id)
+    assert instructor.status == 'active'
+
+def test_aircraft_status_management(client, test_admin, test_aircraft):
+    client.post('/auth/login', data={
+        'email': 'admin@example.com',
+        'password': 'admin123'
+    })
+    
+    # Test setting aircraft as maintenance
+    response = client.post(f'/admin/aircraft/{test_aircraft.id}/status', data={
+        'status': 'maintenance'
+    }, follow_redirects=True)
+    assert b'Aircraft status updated successfully' in response.data
+    aircraft = Aircraft.query.get(test_aircraft.id)
+    assert aircraft.status == 'maintenance'
+    
+    # Test setting aircraft as available
+    response = client.post(f'/admin/aircraft/{test_aircraft.id}/status', data={
+        'status': 'available'
+    }, follow_redirects=True)
+    assert b'Aircraft status updated successfully' in response.data
+    aircraft = Aircraft.query.get(test_aircraft.id)
+    assert aircraft.status == 'available' 
