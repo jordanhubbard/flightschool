@@ -4,8 +4,12 @@ from app.models import User, Aircraft, Booking
 from app import db
 from datetime import datetime
 from functools import wraps
+from flask_wtf import FlaskForm
 
 bp = Blueprint('admin', __name__)
+
+class InstructorForm(FlaskForm):
+    pass
 
 def admin_required(f):
     @wraps(f)
@@ -110,6 +114,7 @@ def add_aircraft():
 @login_required
 @admin_required
 def add_instructor():
+    form = InstructorForm()
     if request.method == 'POST':
         email = request.form.get('email')
         if User.query.filter_by(email=email).first():
@@ -131,7 +136,7 @@ def add_instructor():
         flash('Instructor added successfully')
         return redirect(url_for('admin.manage_users'))
     
-    return render_template('admin/add_instructor.html')
+    return render_template('admin/add_instructor.html', form=form)
 
 @bp.route('/instructor/<int:instructor_id>/edit', methods=['GET', 'POST'])
 @login_required

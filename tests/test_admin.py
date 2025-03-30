@@ -66,7 +66,8 @@ def test_add_instructor(client, test_admin):
         'last_name': 'Smith',
         'phone': '987-654-3210',
         'certificates': 'CFI,CFII',
-        'is_instructor': True
+        'is_instructor': True,
+        'csrf_token': 'test_token'  # We'll need to get the actual CSRF token in a real test
     }, follow_redirects=True)
     
     assert b'Instructor added successfully' in response.data
@@ -74,6 +75,29 @@ def test_add_instructor(client, test_admin):
     assert instructor is not None
     assert instructor.certificates == 'CFI,CFII'
     assert instructor.is_instructor is True
+    assert instructor.status == 'available'
+
+def test_add_instructor_duplicate_email(client, test_admin, test_instructor):
+    client.post('/auth/login', data={
+        'email': 'admin@example.com',
+        'password': 'admin123'
+    })
+    
+    response = client.post('/admin/instructor/add', data={
+        'email': 'instructor@example.com',  # Using existing instructor's email
+        'password': 'newpassword123',
+        'first_name': 'John',
+        'last_name': 'Doe',
+        'phone': '123-456-7890',
+        'certificates': 'CFI',
+        'is_instructor': True,
+        'csrf_token': 'test_token'
+    }, follow_redirects=True)
+    
+    assert b'Email already registered' in response.data
+    # Verify no new instructor was created
+    instructors = User.query.filter_by(email='instructor@example.com').all()
+    assert len(instructors) == 1
 
 def test_edit_instructor(client, test_admin, test_instructor):
     client.post('/auth/login', data={
@@ -149,4 +173,33 @@ def test_aircraft_status_management(client, test_admin, test_aircraft):
     }, follow_redirects=True)
     assert b'Aircraft status updated successfully' in response.data
     aircraft = Aircraft.query.get(test_aircraft.id)
-    assert aircraft.status == 'available' 
+    assert aircraft.status == 'available'
+
+def test_delete_instructor(client, test_admin, test_instructor):
+    client.post('/auth/login', data={
+        'email': 'admin@example.com',
+        'password': 'admin123'
+    })
+    
+    # First verify the instructor exists
+    instructor = User.query.get(test_instructor.id)
+    assert instructor is not None
+    assert instructor.is_instructor is True
+    
+    # Try to delete the instructor
+    response = client.post(f'/admin/user/{test_instructor.id}/delete', follow_redirects=True)
+    assert b'User deleted successfully' in response.data
+    
+    # Verify the instructor was deleted
+    instructor = User.query.get(test_instructor.id)
+    assert instructor is None
+
+def test_delete_instructor_unauthorized(client, test_user):
+    client.post('/auth/login', data={
+        'email': 'test@example.com',
+        'password': 'password123'
+    })
+    
+    # Try to delete a user without admin privileges
+    response = client.post('/admin/user/1/delete', follow_redirects=True)
+    assert b'You need to be an admin to access this page' in response.data 
