@@ -7,6 +7,7 @@ def app():
     app = create_app()
     app.config['TESTING'] = True
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+    app.config['WTF_CSRF_ENABLED'] = False
     
     with app.app_context():
         db.create_all()
@@ -67,7 +68,7 @@ def test_instructor(app):
         first_name='John',
         last_name='Doe',
         phone='123-456-7890',
-        certificates='CFI,CFII',
+        certificates='CFI, CFII',
         is_admin=False,
         is_instructor=True,
         status='active'
@@ -75,4 +76,10 @@ def test_instructor(app):
     instructor.set_password('instructor123')
     db.session.add(instructor)
     db.session.commit()
-    return instructor 
+    return instructor
+
+@pytest.fixture
+def with_csrf_token(client):
+    with client.session_transaction() as session:
+        session['csrf_token'] = 'test_token'
+    return client 

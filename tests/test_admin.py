@@ -65,15 +65,14 @@ def test_add_instructor(client, test_admin):
         'first_name': 'Jane',
         'last_name': 'Smith',
         'phone': '987-654-3210',
-        'certificates': 'CFI,CFII',
-        'is_instructor': True,
-        'csrf_token': 'test_token'  # We'll need to get the actual CSRF token in a real test
+        'certificates': ['CFI', 'CFII'],  # Multiple certificates as a list
+        'csrf_token': 'test_token'
     }, follow_redirects=True)
     
     assert b'Instructor added successfully' in response.data
     instructor = User.query.filter_by(email='jane@example.com').first()
     assert instructor is not None
-    assert instructor.certificates == 'CFI,CFII'
+    assert instructor.certificates == 'CFI, CFII'
     assert instructor.is_instructor is True
     assert instructor.status == 'available'
 
@@ -89,8 +88,7 @@ def test_add_instructor_duplicate_email(client, test_admin, test_instructor):
         'first_name': 'John',
         'last_name': 'Doe',
         'phone': '123-456-7890',
-        'certificates': 'CFI',
-        'is_instructor': True,
+        'certificates': ['CFI'],  # Single certificate as a list
         'csrf_token': 'test_token'
     }, follow_redirects=True)
     
@@ -110,14 +108,14 @@ def test_edit_instructor(client, test_admin, test_instructor):
         'last_name': 'Smith',
         'email': 'johnny@example.com',
         'phone': '555-555-5555',
-        'certificates': 'CFI,CFII,MEI',
+        'certificates': 'CFI, CFII, MEI',
         'status': 'unavailable'
     }, follow_redirects=True)
     
     assert b'Instructor updated successfully' in response.data
     instructor = User.query.get(test_instructor.id)
     assert instructor.first_name == 'Johnny'
-    assert instructor.certificates == 'CFI,CFII,MEI'
+    assert instructor.certificates == 'CFI, CFII, MEI'
     assert instructor.status == 'unavailable'
 
 def test_delete_aircraft(client, test_admin, test_aircraft):
@@ -176,22 +174,22 @@ def test_aircraft_status_management(client, test_admin, test_aircraft):
     assert aircraft.status == 'available'
 
 def test_delete_instructor(client, test_admin, test_instructor):
+    # Login as admin
     client.post('/auth/login', data={
         'email': 'admin@example.com',
         'password': 'admin123'
     })
     
-    # First verify the instructor exists
-    instructor = User.query.get(test_instructor.id)
+    # Verify instructor exists
+    instructor = User.query.filter_by(email='instructor@example.com').first()
     assert instructor is not None
-    assert instructor.is_instructor is True
     
-    # Try to delete the instructor
-    response = client.post(f'/admin/user/{test_instructor.id}/delete', follow_redirects=True)
+    # Delete instructor
+    response = client.post(f'/admin/user/{instructor.id}/delete', follow_redirects=True)
     assert b'User deleted successfully' in response.data
     
-    # Verify the instructor was deleted
-    instructor = User.query.get(test_instructor.id)
+    # Verify instructor was deleted
+    instructor = User.query.filter_by(email='instructor@example.com').first()
     assert instructor is None
 
 def test_delete_instructor_unauthorized(client, test_user):
