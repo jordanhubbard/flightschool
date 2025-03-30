@@ -2,52 +2,38 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h1>Add New Instructor</h1>
-    
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-info">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-    
-    <form method="POST">
+    <h2>Add New Instructor</h2>
+    <form method="POST" class="mt-4">
         {{ form.csrf_token }}
         <div class="mb-3">
             <label for="email" class="form-label">Email</label>
-            <input type="email" class="form-control" id="email" name="email" required>
+            {{ form.email(class="form-control") }}
         </div>
-        
         <div class="mb-3">
             <label for="password" class="form-label">Password</label>
-            <input type="password" class="form-control" id="password" name="password" required>
+            {{ form.password(class="form-control") }}
         </div>
-        
         <div class="mb-3">
             <label for="first_name" class="form-label">First Name</label>
-            <input type="text" class="form-control" id="first_name" name="first_name" required>
+            {{ form.first_name(class="form-control") }}
         </div>
-        
         <div class="mb-3">
             <label for="last_name" class="form-label">Last Name</label>
-            <input type="text" class="form-control" id="last_name" name="last_name" required>
+            {{ form.last_name(class="form-control") }}
         </div>
-        
         <div class="mb-3">
             <label for="phone" class="form-label">Phone</label>
-            <input type="tel" class="form-control" id="phone" name="phone">
+            {{ form.phone(class="form-control") }}
         </div>
-        
         <div class="mb-3">
-            <label for="certificates" class="form-label">Certificates (comma-separated)</label>
-            <input type="text" class="form-control" id="certificates" name="certificates" placeholder="CFI,CFII,MEI">
+            <label for="certificates" class="form-label">Certificates and Ratings</label>
+            {{ form.certificates(class="form-select", multiple=true) }}
+            <small class="text-muted">Hold Ctrl/Cmd to select multiple certificates</small>
         </div>
-        
-        <input type="hidden" name="is_instructor" value="true">
-        
-        <button type="submit" class="btn btn-primary">Add Instructor</button>
-        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary">Cancel</a>
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Add Instructor</button>
+            <a href="{{ url_for('admin.instructor_list') }}" class="btn btn-secondary">Cancel</a>
+        </div>
     </form>
 </div>
 {% endblock %} 

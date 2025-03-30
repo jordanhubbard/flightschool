@@ -47,7 +47,7 @@ def login():
             login_user(user)
             next_page = request.args.get('next')
             if user.is_admin:
-                return redirect(next_page or url_for('admin.admin_dashboard'))
+                return redirect(next_page or url_for('admin.dashboard'))
             return redirect(next_page or url_for('booking.dashboard'))
         
         flash('Invalid email or password')

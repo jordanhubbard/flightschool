@@ -179,41 +179,40 @@ def add_aircraft():
     
     return render_template('admin/add_aircraft.html')
 
-@bp.route('/instructor/add', methods=['POST'])
+@bp.route('/instructor/add', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def add_instructor():
-    first_name = request.form.get('first_name')
-    last_name = request.form.get('last_name')
-    email = request.form.get('email')
-    phone = request.form.get('phone')
+    form = InstructorForm()
     
-    if not all([first_name, last_name, email, phone]):
-        flash('All fields are required.', 'error')
-        return redirect(url_for('admin.dashboard'))
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            new_instructor = User(
+                first_name=form.first_name.data,
+                last_name=form.last_name.data,
+                email=form.email.data,
+                phone=form.phone.data,
+                is_instructor=True,
+                status='available',
+                certificates=', '.join(form.certificates.data)
+            )
+            new_instructor.set_password(form.password.data)
+            
+            try:
+                db.session.add(new_instructor)
+                db.session.commit()
+                flash('Instructor added successfully', 'success')
+                return redirect(url_for('admin.instructor_list'))
+            except Exception as e:
+                db.session.rollback()
+                flash('Error adding instructor. Email may already be in use.', 'error')
+                return redirect(url_for('admin.add_instructor'))
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    flash(f'{field}: {error}', 'error')
     
-    # Generate a temporary password
-    temp_password = 'ChangeMe123!'
-    
-    new_instructor = User(
-        first_name=first_name,
-        last_name=last_name,
-        email=email,
-        phone=phone,
-        is_instructor=True,
-        status='available'
-    )
-    new_instructor.set_password(temp_password)
-    
-    try:
-        db.session.add(new_instructor)
-        db.session.commit()
-        flash(f'Instructor {first_name} {last_name} added successfully. Temporary password: {temp_password}', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash('Error adding instructor. Email may already be in use.', 'error')
-    
-    return redirect(url_for('admin.dashboard'))
+    return render_template('admin/add_instructor.html', form=form)
 
 @bp.route('/instructor/<int:instructor_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -224,23 +223,30 @@ def edit_instructor(instructor_id):
         flash('User is not an instructor')
         return redirect(url_for('admin.dashboard'))
     
+    form = InstructorForm(obj=instructor)
     if request.method == 'POST':
-        instructor.email = request.form.get('email')
-        instructor.first_name = request.form.get('first_name')
-        instructor.last_name = request.form.get('last_name')
-        instructor.phone = request.form.get('phone')
-        instructor.status = request.form.get('status', 'available')
-        
-        try:
-            db.session.commit()
-            flash('Instructor updated successfully', 'success')
-        except Exception as e:
-            db.session.rollback()
-            flash('Error updating instructor. Email may already be in use.', 'error')
-        
-        return redirect(url_for('admin.dashboard'))
+        if form.validate_on_submit():
+            instructor.email = form.email.data
+            instructor.first_name = form.first_name.data
+            instructor.last_name = form.last_name.data
+            instructor.phone = form.phone.data
+            instructor.certificates = ', '.join(form.certificates.data)
+            instructor.status = request.form.get('status', 'available')
+            
+            try:
+                db.session.commit()
+                flash('Instructor updated successfully', 'success')
+                return redirect(url_for('admin.instructor_list'))
+            except Exception as e:
+                db.session.rollback()
+                flash('Error updating instructor. Email may already be in use.', 'error')
+                return redirect(url_for('admin.edit_instructor', instructor_id=instructor_id))
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    flash(f'{field}: {error}', 'error')
     
-    return render_template('admin/dashboard.html', instructor=instructor)
+    return render_template('admin/edit_instructor.html', form=form, instructor=instructor)
 
 @bp.route('/instructor/<int:instructor_id>/status', methods=['GET', 'POST'])
 @login_required
