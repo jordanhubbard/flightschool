@@ -12,7 +12,7 @@ bp = Blueprint('admin', __name__)
 
 class InstructorForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
-    password = PasswordField('Password', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[Optional()])
     first_name = StringField('First Name', validators=[DataRequired()])
     last_name = StringField('Last Name', validators=[DataRequired()])
     phone = StringField('Phone', validators=[DataRequired()])
@@ -205,7 +205,7 @@ def add_instructor():
                 return redirect(url_for('admin.instructor_list'))
             except Exception as e:
                 db.session.rollback()
-                flash('Error adding instructor. Email may already be in use.', 'error')
+                flash('Email already registered', 'error')
                 return redirect(url_for('admin.add_instructor'))
         else:
             for field, errors in form.errors.items():
@@ -224,13 +224,30 @@ def edit_instructor(instructor_id):
         return redirect(url_for('admin.dashboard'))
     
     form = InstructorForm(obj=instructor)
+    # Remove password validation for edit form
+    form.password.validators = []
+    
+    # Set the certificates field to a list of certificates
+    if instructor.certificates:
+        form.certificates.data = [cert.strip() for cert in instructor.certificates.split(',')]
+    
     if request.method == 'POST':
+        # Handle certificates from form or direct string input
+        certificates = request.form.getlist('certificates')
+        if not certificates:
+            # If certificates is a string, split it
+            cert_str = request.form.get('certificates')
+            if cert_str:
+                certificates = [cert.strip() for cert in cert_str.split(',')]
+        
+        if certificates:
+            instructor.certificates = ', '.join(certificates)
+        
         if form.validate_on_submit():
             instructor.email = form.email.data
             instructor.first_name = form.first_name.data
             instructor.last_name = form.last_name.data
             instructor.phone = form.phone.data
-            instructor.certificates = ', '.join(form.certificates.data)
             instructor.status = request.form.get('status', 'available')
             
             try:

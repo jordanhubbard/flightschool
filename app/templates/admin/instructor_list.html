@@ -27,7 +27,13 @@
                     <td>{{ instructor.first_name }} {{ instructor.last_name }}</td>
                     <td>{{ instructor.email }}</td>
                     <td>{{ instructor.phone }}</td>
-                    <td>{{ instructor.certificates }}</td>
+                    <td>
+                        {% if instructor.certificates %}
+                            {{ instructor.certificates }}
+                        {% else %}
+                            <span class="text-muted">None</span>
+                        {% endif %}
+                    </td>
                     <td>
                         <span class="badge {% if instructor.status == 'active' %}bg-success{% else %}bg-danger{% endif %}">
                             {{ instructor.status.title() }}
