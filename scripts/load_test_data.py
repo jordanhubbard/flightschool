@@ -43,6 +43,7 @@ def load_test_data():
                 name=instructor_data['name'],
                 phone=instructor_data['phone'],
                 is_admin=instructor_data['is_admin'],
+                is_instructor=True,  # Set is_instructor to True for all instructors
                 certificates=','.join(instructor_data['certificates'])
             )
             instructor.set_password('password123')  # Set a default password
@@ -62,7 +63,8 @@ def load_test_data():
                 name=student_data['name'],
                 phone=student_data['phone'],
                 student_id=student_data['student_id'],
-                is_admin=False
+                is_admin=False,
+                is_instructor=False  # Explicitly set is_instructor to False for students
             )
             student.set_password('password123')  # Set a default password
             db.session.add(student)

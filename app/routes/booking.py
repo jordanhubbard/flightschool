@@ -87,4 +87,36 @@ def cancel_booking(id):
     booking.status = 'cancelled'
     db.session.commit()
     flash('Booking cancelled successfully')
-    return redirect(url_for('booking.dashboard')) 
+    return redirect(url_for('booking.dashboard'))
+
+@bp.route('/calendar')
+@login_required
+def calendar_view():
+    # Get bookings based on user role
+    if current_user.is_admin:
+        bookings = Booking.query.all()
+    elif current_user.is_instructor:
+        bookings = Booking.query.filter(
+            (Booking.instructor_id == current_user.id) |
+            (Booking.instructor_id.is_(None))
+        ).all()
+    else:
+        bookings = Booking.query.filter_by(student_id=current_user.id).all()
+    
+    # Format bookings for FullCalendar
+    events = []
+    for booking in bookings:
+        events.append({
+            'id': booking.id,
+            'title': f"{booking.aircraft.tail_number} - {booking.student.first_name} {booking.student.last_name}",
+            'start': booking.start_time.isoformat(),
+            'end': booking.end_time.isoformat(),
+            'backgroundColor': '#28a745' if booking.status == 'scheduled' else '#6c757d',
+            'borderColor': '#28a745' if booking.status == 'scheduled' else '#6c757d',
+            'extendedProps': {
+                'instructor': f"{booking.instructor.first_name} {booking.instructor.last_name}" if booking.instructor else 'Solo',
+                'status': booking.status
+            }
+        })
+    
+    return render_template('booking/calendar.html', events=events) 

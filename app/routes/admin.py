@@ -6,7 +6,7 @@ from datetime import datetime
 from functools import wraps
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SelectField, SelectMultipleField
-from wtforms.validators import DataRequired, Email
+from wtforms.validators import DataRequired, Email, Optional
 
 bp = Blueprint('admin', __name__)
 
@@ -35,6 +35,22 @@ class InstructorForm(FlaskForm):
             ('WSC', 'Weight-Shift Control Instructor'),
             ('PPC', 'Powered Parachute Instructor'),
             ('TGI', 'Temporary Ground Instructor')
+        ],
+        validators=[DataRequired()]
+    )
+
+class StudentForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    first_name = StringField('First Name', validators=[DataRequired()])
+    last_name = StringField('Last Name', validators=[DataRequired()])
+    phone = StringField('Phone', validators=[Optional()])
+    address = StringField('Address', validators=[Optional()])
+    student_id = StringField('Student ID', validators=[Optional()])
+    status = SelectField('Status', 
+        choices=[
+            ('active', 'Active'),
+            ('inactive', 'Inactive'),
+            ('on_leave', 'On Leave')
         ],
         validators=[DataRequired()]
     )
@@ -296,4 +312,49 @@ def update_aircraft_status(aircraft_id):
     aircraft.status = status
     db.session.commit()
     flash('Aircraft status updated successfully')
-    return redirect(url_for('admin.manage_aircraft')) 
+    return redirect(url_for('admin.manage_aircraft'))
+
+@bp.route('/student/<int:student_id>/edit', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_student(student_id):
+    student = User.query.get_or_404(student_id)
+    if student.is_admin or student.is_instructor:
+        flash('Invalid student ID', 'error')
+        return redirect(url_for('admin.manage_users'))
+    
+    form = StudentForm(obj=student)
+    
+    if form.validate_on_submit():
+        student.email = form.email.data
+        student.first_name = form.first_name.data
+        student.last_name = form.last_name.data
+        student.phone = form.phone.data
+        student.address = form.address.data
+        student.student_id = form.student_id.data
+        student.status = form.status.data
+        
+        db.session.commit()
+        flash('Student information updated successfully', 'success')
+        return redirect(url_for('admin.manage_users'))
+    
+    return render_template('admin/edit_student.html', student=student, form=form)
+
+@bp.route('/student/<int:student_id>/reset-password', methods=['POST'])
+@login_required
+@admin_required
+def reset_student_password(student_id):
+    student = User.query.get_or_404(student_id)
+    if student.is_admin or student.is_instructor:
+        flash('Invalid student ID', 'error')
+        return redirect(url_for('admin.manage_users'))
+    
+    new_password = request.form.get('new_password')
+    if not new_password:
+        flash('Please provide a new password', 'error')
+        return redirect(url_for('admin.edit_student', student_id=student_id))
+    
+    student.set_password(new_password)
+    db.session.commit()
+    flash('Student password reset successfully', 'success')
+    return redirect(url_for('admin.edit_student', student_id=student_id)) 
