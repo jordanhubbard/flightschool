@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Update Instructor Status</h2>
+    <form method="POST" class="mt-4">
+        {{ form.csrf_token }}
+        <div class="mb-3">
+            <label for="status" class="form-label">Status</label>
+            <select class="form-select" id="status" name="status" required>
+                <option value="active" {% if instructor.status == 'active' %}selected{% endif %}>Active</option>
+                <option value="unavailable" {% if instructor.status == 'unavailable' %}selected{% endif %}>Unavailable</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Update Status</button>
+        <a href="{{ url_for('admin.instructor_list') }}" class="btn btn-secondary">Back to Instructor List</a>
+    </form>
+</div>
+{% endblock %} 

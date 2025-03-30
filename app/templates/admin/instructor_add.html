@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Add New Instructor</h2>
+    <form method="POST" class="mt-4">
+        {{ form.csrf_token }}
+        <div class="mb-3">
+            {{ form.email.label(class="form-label") }}
+            {{ form.email(class="form-control") }}
+            {% if form.email.errors %}
+            <div class="alert alert-danger">
+                {% for error in form.email.errors %}
+                <span>{{ error }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            {{ form.password.label(class="form-label") }}
+            {{ form.password(class="form-control") }}
+            {% if form.password.errors %}
+            <div class="alert alert-danger">
+                {% for error in form.password.errors %}
+                <span>{{ error }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            {{ form.first_name.label(class="form-label") }}
+            {{ form.first_name(class="form-control") }}
+            {% if form.first_name.errors %}
+            <div class="alert alert-danger">
+                {% for error in form.first_name.errors %}
+                <span>{{ error }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            {{ form.last_name.label(class="form-label") }}
+            {{ form.last_name(class="form-control") }}
+            {% if form.last_name.errors %}
+            <div class="alert alert-danger">
+                {% for error in form.last_name.errors %}
+                <span>{{ error }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            {{ form.phone.label(class="form-label") }}
+            {{ form.phone(class="form-control") }}
+            {% if form.phone.errors %}
+            <div class="alert alert-danger">
+                {% for error in form.phone.errors %}
+                <span>{{ error }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Certificates and Ratings</label>
+            <div class="row">
+                {% for value, label in form.certificates.choices %}
+                <div class="col-md-4 mb-2">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" name="certificates" value="{{ value }}" id="cert_{{ value }}">
+                        <label class="form-check-label" for="cert_{{ value }}">{{ label }}</label>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% if form.certificates.errors %}
+            <div class="alert alert-danger">
+                {% for error in form.certificates.errors %}
+                <span>{{ error }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        <button type="submit" class="btn btn-primary">Add Instructor</button>
+        <a href="{{ url_for('admin.instructor_list') }}" class="btn btn-secondary">Back to Instructor List</a>
+    </form>
+</div>
+{% endblock %} 

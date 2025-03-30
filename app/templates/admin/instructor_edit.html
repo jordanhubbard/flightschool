@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Edit Instructor</h2>
+    <form method="POST" class="mt-4">
+        {{ form.csrf_token }}
+        <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" name="email" value="{{ instructor.email }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="first_name" class="form-label">First Name</label>
+            <input type="text" class="form-control" id="first_name" name="first_name" value="{{ instructor.first_name }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="last_name" class="form-label">Last Name</label>
+            <input type="text" class="form-control" id="last_name" name="last_name" value="{{ instructor.last_name }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="phone" class="form-label">Phone</label>
+            <input type="tel" class="form-control" id="phone" name="phone" value="{{ instructor.phone }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="certificates" class="form-label">Certificates</label>
+            <input type="text" class="form-control" id="certificates" name="certificates" value="{{ instructor.certificates }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="status" class="form-label">Status</label>
+            <select class="form-select" id="status" name="status" required>
+                <option value="active" {% if instructor.status == 'active' %}selected{% endif %}>Active</option>
+                <option value="unavailable" {% if instructor.status == 'unavailable' %}selected{% endif %}>Unavailable</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Update Instructor</button>
+        <a href="{{ url_for('admin.instructor_list') }}" class="btn btn-secondary">Back to Instructor List</a>
+    </form>
+</div>
+{% endblock %} 
