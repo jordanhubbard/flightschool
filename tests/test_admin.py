@@ -2,7 +2,7 @@ import pytest
 from app.models import Aircraft, User, Booking
 
 def test_admin_dashboard_access(client, test_admin):
-    client.post('/login', data={
+    client.post('/auth/login', data={
         'email': 'admin@example.com',
         'password': 'admin123'
     })
@@ -10,15 +10,15 @@ def test_admin_dashboard_access(client, test_admin):
     assert b'Admin Dashboard' in response.data
 
 def test_admin_dashboard_unauthorized(client, test_user):
-    client.post('/login', data={
+    client.post('/auth/login', data={
         'email': 'test@example.com',
         'password': 'password123'
     })
-    response = client.get('/admin', follow_redirects=True)
+    response = client.get('/admin/', follow_redirects=True)
     assert b'You need to be an admin to access this page' in response.data
 
 def test_add_aircraft(client, test_admin):
-    client.post('/login', data={
+    client.post('/auth/login', data={
         'email': 'admin@example.com',
         'password': 'admin123'
     })
@@ -36,7 +36,7 @@ def test_add_aircraft(client, test_admin):
     assert aircraft.status == 'available'
 
 def test_edit_aircraft(client, test_admin, test_aircraft):
-    client.post('/login', data={
+    client.post('/auth/login', data={
         'email': 'admin@example.com',
         'password': 'admin123'
     })
@@ -54,7 +54,7 @@ def test_edit_aircraft(client, test_admin, test_aircraft):
     assert aircraft.status == 'maintenance'
 
 def test_add_instructor(client, test_admin):
-    client.post('/login', data={
+    client.post('/auth/login', data={
         'email': 'admin@example.com',
         'password': 'admin123'
     })
@@ -76,7 +76,7 @@ def test_add_instructor(client, test_admin):
     assert instructor.is_instructor is True
 
 def test_edit_instructor(client, test_admin, test_instructor):
-    client.post('/login', data={
+    client.post('/auth/login', data={
         'email': 'admin@example.com',
         'password': 'admin123'
     })

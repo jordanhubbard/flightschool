@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from app.models import Booking, db
 
 def test_booking_dashboard_access(client, test_user):
-    client.post('/login', data={
+    client.post('/auth/login', data={
         'email': 'test@example.com',
         'password': 'password123'
     })
@@ -11,7 +11,7 @@ def test_booking_dashboard_access(client, test_user):
     assert b'Book a Flight' in response.data
 
 def test_create_booking(client, test_user, test_aircraft, test_instructor):
-    client.post('/login', data={
+    client.post('/auth/login', data={
         'email': 'test@example.com',
         'password': 'password123'
     })
@@ -30,7 +30,7 @@ def test_create_booking(client, test_user, test_aircraft, test_instructor):
     assert booking.instructor_id == test_instructor.id
 
 def test_create_booking_without_instructor(client, test_user, test_aircraft):
-    client.post('/login', data={
+    client.post('/auth/login', data={
         'email': 'test@example.com',
         'password': 'password123'
     })
@@ -48,7 +48,7 @@ def test_create_booking_without_instructor(client, test_user, test_aircraft):
     assert booking.instructor_id is None
 
 def test_create_booking_conflict(client, test_user, test_aircraft):
-    client.post('/login', data={
+    client.post('/auth/login', data={
         'email': 'test@example.com',
         'password': 'password123'
     })
@@ -73,7 +73,7 @@ def test_create_booking_conflict(client, test_user, test_aircraft):
     assert b'Aircraft is already booked' in response.data
 
 def test_cancel_booking(client, test_user, test_aircraft):
-    client.post('/login', data={
+    client.post('/auth/login', data={
         'email': 'test@example.com',
         'password': 'password123'
     })

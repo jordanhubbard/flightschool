@@ -12,7 +12,7 @@ def test_home_page(client):
 def test_admin_dashboard_ui(client, test_admin, test_aircraft, test_instructor, test_user):
     """Test the admin dashboard UI elements and functionality"""
     # Login as admin
-    client.post('/login', data={
+    client.post('/auth/login', data={
         'email': 'admin@example.com',
         'password': 'admin123'
     })
@@ -32,7 +32,7 @@ def test_admin_dashboard_ui(client, test_admin, test_aircraft, test_instructor, 
 
 def test_aircraft_management_ui(client, test_admin, test_aircraft):
     """Test the aircraft management UI and functionality"""
-    client.post('/login', data={
+    client.post('/auth/login', data={
         'email': 'admin@example.com',
         'password': 'admin123'
     })
@@ -49,7 +49,7 @@ def test_aircraft_management_ui(client, test_admin, test_aircraft):
 
 def test_instructor_management_ui(client, test_admin, test_instructor):
     """Test the instructor management UI and functionality"""
-    client.post('/login', data={
+    client.post('/auth/login', data={
         'email': 'admin@example.com',
         'password': 'admin123'
     })
@@ -63,7 +63,7 @@ def test_instructor_management_ui(client, test_admin, test_instructor):
 
 def test_booking_dashboard_ui(client, test_user, test_aircraft, test_instructor):
     """Test the booking dashboard UI and functionality"""
-    client.post('/login', data={
+    client.post('/auth/login', data={
         'email': 'test@example.com',
         'password': 'password123'
     })
@@ -88,7 +88,7 @@ def test_booking_dashboard_ui(client, test_user, test_aircraft, test_instructor)
 
 def test_booking_list_ui(client, test_user, test_aircraft, test_instructor):
     """Test the booking list UI and functionality"""
-    client.post('/login', data={
+    client.post('/auth/login', data={
         'email': 'test@example.com',
         'password': 'password123'
     })
@@ -113,7 +113,7 @@ def test_booking_list_ui(client, test_user, test_aircraft, test_instructor):
 def test_edit_booking_ui(client, test_admin, test_user, test_aircraft, test_instructor):
     """Test the booking edit UI and functionality"""
     # Login as admin
-    client.post('/login', data={
+    client.post('/auth/login', data={
         'email': 'admin@example.com',
         'password': 'admin123'
     })
@@ -148,7 +148,7 @@ def test_navigation_ui(client, test_user, test_admin):
     assert b'Login' in response.data
     
     # Test navigation for regular user
-    client.post('/login', data={
+    client.post('/auth/login', data={
         'email': 'test@example.com',
         'password': 'password123'
     })
@@ -158,7 +158,7 @@ def test_navigation_ui(client, test_user, test_admin):
     assert b'Admin Dashboard' not in response.data
     
     # Test navigation for admin
-    client.post('/login', data={
+    client.post('/auth/login', data={
         'email': 'admin@example.com',
         'password': 'admin123'
     })

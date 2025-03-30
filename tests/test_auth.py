@@ -3,7 +3,7 @@ from flask_login import current_user
 from app.models import User
 
 def test_register(client):
-    response = client.post('/register', data={
+    response = client.post('/auth/register', data={
         'email': 'new@example.com',
         'password': 'password123',
         'first_name': 'New',
@@ -14,7 +14,7 @@ def test_register(client):
     assert b'Registration successful' in response.data
 
 def test_register_existing_email(client, test_user):
-    response = client.post('/register', data={
+    response = client.post('/auth/register', data={
         'email': 'test@example.com',
         'password': 'password123',
         'first_name': 'Test',
@@ -25,23 +25,24 @@ def test_register_existing_email(client, test_user):
     assert b'Email already registered' in response.data
 
 def test_login(client, test_user):
-    response = client.post('/login', data={
+    response = client.post('/auth/login', data={
         'email': 'test@example.com',
         'password': 'password123'
     }, follow_redirects=True)
     assert b'Book a Flight' in response.data
 
 def test_login_invalid_credentials(client, test_user):
-    response = client.post('/login', data={
+    response = client.post('/auth/login', data={
         'email': 'test@example.com',
         'password': 'wrongpassword'
     }, follow_redirects=True)
     assert b'Invalid email or password' in response.data
 
 def test_logout(client, test_user):
-    client.post('/login', data={
+    client.post('/auth/login', data={
         'email': 'test@example.com',
         'password': 'password123'
     })
-    response = client.get('/logout', follow_redirects=True)
-    assert b'Home' in response.data 
+    response = client.get('/auth/logout', follow_redirects=True)
+    assert b'You have been logged out' in response.data
+    assert not current_user.is_authenticated 

@@ -67,6 +67,7 @@ class Booking(db.Model):
     end_time = db.Column(db.DateTime, nullable=False)
     status = db.Column(db.String(20), default='pending')  # pending, confirmed, completed, cancelled
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     def __repr__(self):
         return f'<Booking {self.id}>' 
