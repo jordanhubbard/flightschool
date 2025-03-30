@@ -92,31 +92,71 @@ def cancel_booking(id):
 @bp.route('/calendar')
 @login_required
 def calendar_view():
+    print("\n=== Calendar View Debug ===")
+    print(f"User: {current_user.email} (Admin: {current_user.is_admin}, Instructor: {current_user.is_instructor})")
+    
     # Get bookings based on user role
     if current_user.is_admin:
         bookings = Booking.query.all()
+        print("Fetching all bookings (admin view)")
     elif current_user.is_instructor:
         bookings = Booking.query.filter(
             (Booking.instructor_id == current_user.id) |
             (Booking.instructor_id.is_(None))
         ).all()
+        print(f"Fetching instructor bookings for ID: {current_user.id}")
     else:
         bookings = Booking.query.filter_by(student_id=current_user.id).all()
+        print(f"Fetching student bookings for ID: {current_user.id}")
+    
+    print(f"Found {len(bookings)} bookings")
     
     # Format bookings for FullCalendar
     events = []
     for booking in bookings:
-        events.append({
-            'id': booking.id,
-            'title': f"{booking.aircraft.tail_number} - {booking.student.first_name} {booking.student.last_name}",
-            'start': booking.start_time.isoformat(),
-            'end': booking.end_time.isoformat(),
-            'backgroundColor': '#28a745' if booking.status == 'scheduled' else '#6c757d',
-            'borderColor': '#28a745' if booking.status == 'scheduled' else '#6c757d',
-            'extendedProps': {
-                'instructor': f"{booking.instructor.first_name} {booking.instructor.last_name}" if booking.instructor else 'Solo',
-                'status': booking.status
+        try:
+            # Get student name safely
+            student_name = f"{booking.student.first_name} {booking.student.last_name}" if booking.student else "Unknown Student"
+            
+            # Get aircraft tail number safely
+            aircraft_tail = booking.aircraft.tail_number if booking.aircraft else "No Aircraft"
+            
+            # Get instructor name safely
+            if booking.instructor:
+                instructor_name = f"{booking.instructor.first_name} {booking.instructor.last_name}"
+            else:
+                instructor_name = 'Solo'
+            
+            # Set colors based on status
+            status_colors = {
+                'scheduled': '#28a745',  # green
+                'pending': '#ffc107',    # yellow
+                'completed': '#6c757d',  # gray
+                'cancelled': '#dc3545'   # red
             }
-        })
+            color = status_colors.get(booking.status, '#6c757d')
+            
+            event = {
+                'id': booking.id,
+                'title': f"{aircraft_tail} - {student_name}",
+                'start': booking.start_time.isoformat(),
+                'end': booking.end_time.isoformat(),
+                'backgroundColor': color,
+                'borderColor': color,
+                'extendedProps': {
+                    'instructor': instructor_name,
+                    'status': booking.status
+                }
+            }
+            events.append(event)
+            print(f"Added event: {event}")
+        except Exception as e:
+            print(f"Error processing booking {booking.id}: {str(e)}")
+            import traceback
+            print(traceback.format_exc())
+            continue
+    
+    print(f"Total events: {len(events)}")
+    print("=== End Calendar View Debug ===\n")
     
     return render_template('booking/calendar.html', events=events) 

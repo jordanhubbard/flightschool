@@ -25,14 +25,16 @@
             "name": "John Smith",
             "phone": "555-0101",
             "certificates": ["CFI", "CFII", "MEI"],
-            "is_admin": true
+            "is_admin": true,
+            "status": "available"
         },
         {
             "email": "sarah.jones@flightschool.com",
             "name": "Sarah Jones",
             "phone": "555-0102",
             "certificates": ["CFI", "CFII"],
-            "is_admin": false
+            "is_admin": false,
+            "status": "available"
         }
     ],
     "students": [

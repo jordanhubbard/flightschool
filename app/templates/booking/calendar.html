@@ -3,7 +3,7 @@
 {% block title %}Flight Calendar{% endblock %}
 
 {% block extra_css %}
-<link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.css' rel='stylesheet' />
 <style>
     .calendar-container {
         background: #fff;
@@ -50,14 +50,32 @@
     }
     
     .fc-event {
-        border-radius: 4px;
-        padding: 2px 4px;
-        font-size: 0.9rem;
-        cursor: pointer;
+        border: none !important;
+        padding: 2px !important;
+        margin: 1px 2px !important;
     }
     
-    .fc-event:hover {
-        opacity: 0.9;
+    .fc-event-main {
+        padding: 2px 4px !important;
+    }
+    
+    .fc-event-time {
+        font-weight: bold !important;
+        font-size: 0.9em !important;
+        margin-right: 4px !important;
+    }
+    
+    .fc-event-title {
+        font-size: 0.9em !important;
+    }
+    
+    .fc-daygrid-event {
+        white-space: normal !important;
+        align-items: flex-start !important;
+    }
+    
+    .fc-daygrid-day-events {
+        margin-bottom: 0 !important;
     }
     
     .booking-info {
@@ -91,6 +109,17 @@
         font-size: 0.9rem;
         color: #6c757d;
     }
+    
+    /* Status colors */
+    .status-scheduled { background-color: #28a745 !important; border-color: #28a745 !important; }
+    .status-pending { background-color: #ffc107 !important; border-color: #ffc107 !important; }
+    .status-completed { background-color: #6c757d !important; border-color: #6c757d !important; }
+    .status-cancelled { background-color: #dc3545 !important; border-color: #dc3545 !important; }
+    
+    /* Days with events */
+    .fc-day-has-events {
+        background-color: #f8f9fa !important;
+    }
 </style>
 {% endblock %}
 
@@ -114,11 +143,19 @@
         <div class="legend">
             <div class="legend-item">
                 <div class="legend-color" style="background-color: #28a745;"></div>
-                <span class="legend-text">Scheduled Flights</span>
+                <span class="legend-text">Scheduled</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #ffc107;"></div>
+                <span class="legend-text">Pending</span>
             </div>
             <div class="legend-item">
                 <div class="legend-color" style="background-color: #6c757d;"></div>
-                <span class="legend-text">Completed/Cancelled Flights</span>
+                <span class="legend-text">Completed</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #dc3545;"></div>
+                <span class="legend-text">Cancelled</span>
             </div>
         </div>
     </div>
@@ -144,10 +181,12 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
+    var events = {{ events|tojson|safe }};
+    
     var calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         headerToolbar: {
@@ -155,33 +194,72 @@ document.addEventListener('DOMContentLoaded', function() {
             center: 'title',
             right: 'dayGridMonth,timeGridWeek,timeGridDay'
         },
-        events: {{ events|tojson|safe }},
-        eventClick: function(info) {
-            var event = info.event;
-            var props = event.extendedProps;
+        initialDate: '2024-03-20',
+        events: events,
+        slotMinTime: '06:00:00',
+        slotMaxTime: '20:00:00',
+        allDaySlot: false,
+        displayEventTime: true,
+        eventTimeFormat: {
+            hour: 'numeric',
+            minute: '2-digit',
+            meridiem: 'short'
+        },
+        eventContent: function(arg) {
+            let timeText = arg.timeText;
+            let event = arg.event;
+            let props = event.extendedProps;
             
-            var details = `
-                <div class="booking-info">
-                    <p><strong>Flight:</strong> ${event.title}</p>
-                    <p><strong>Instructor:</strong> ${props.instructor}</p>
-                    <p><strong>Status:</strong> ${props.status.charAt(0).toUpperCase() + props.status.slice(1)}</p>
-                    <p><strong>Start:</strong> ${event.start.toLocaleString()}</p>
-                    <p><strong>End:</strong> ${event.end.toLocaleString()}</p>
-                </div>
-            `;
+            // Split the title into aircraft and student
+            let [aircraft, student] = event.title.split(' - ');
             
-            document.getElementById('bookingDetails').innerHTML = details;
-            var modal = new bootstrap.Modal(document.getElementById('bookingModal'));
-            modal.show();
+            return {
+                html: `
+                    <div style="margin: 2px 0;">
+                        <div style="font-weight: bold; margin-bottom: 2px;">
+                            ${timeText} - ${aircraft}
+                        </div>
+                        <div style="font-size: 0.9em;">
+                            ${student}
+                        </div>
+                        <div style="font-size: 0.85em; font-style: italic;">
+                            ${props.instructor}
+                        </div>
+                    </div>
+                `
+            };
+        },
+        eventClassNames: function(arg) {
+            return ['status-' + arg.event.extendedProps.status];
         },
         eventDidMount: function(info) {
-            // Add tooltip with booking details
-            var event = info.event;
-            var props = event.extendedProps;
-            var tooltip = `${event.title}\nInstructor: ${props.instructor}\nStatus: ${props.status}`;
+            // Add tooltip
+            let event = info.event;
+            let props = event.extendedProps;
+            let tooltip = `
+                Aircraft: ${event.title.split(' - ')[0]}
+                Student: ${event.title.split(' - ')[1]}
+                Instructor: ${props.instructor}
+                Status: ${props.status.charAt(0).toUpperCase() + props.status.slice(1)}
+                Time: ${event.start.toLocaleTimeString()} - ${event.end.toLocaleTimeString()}
+            `;
             info.el.title = tooltip;
+        },
+        dayCellDidMount: function(arg) {
+            // Check if the day has events
+            let dayEvents = calendar.getEvents().filter(event => {
+                let eventDate = event.start;
+                return eventDate.getDate() === arg.date.getDate() &&
+                       eventDate.getMonth() === arg.date.getMonth() &&
+                       eventDate.getFullYear() === arg.date.getFullYear();
+            });
+            
+            if (dayEvents.length > 0) {
+                arg.el.classList.add('fc-day-has-events');
+            }
         }
     });
+    
     calendar.render();
 });
 </script>

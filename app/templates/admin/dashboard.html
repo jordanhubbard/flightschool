@@ -106,6 +106,9 @@
         <div class="card">
             <div class="card-body">
                 <h3 class="card-title">Student Management</h3>
+                <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+                    Add New Student
+                </button>
                 <div class="table-responsive">
                     <table class="table">
                         <thead>
@@ -114,15 +117,21 @@
                                 <th>Email</th>
                                 <th>Phone</th>
                                 <th>Registration Date</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for user in users if not user.is_admin %}
+                            {% for user in users if not user.is_admin and not user.is_instructor %}
                             <tr>
                                 <td>{{ user.first_name }} {{ user.last_name }}</td>
                                 <td>{{ user.email }}</td>
                                 <td>{{ user.phone }}</td>
                                 <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editStudentModal{{ user.id }}">
+                                        Edit
+                                    </button>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -137,6 +146,9 @@
         <div class="card">
             <div class="card-body">
                 <h3 class="card-title">Master Schedule</h3>
+                <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addBookingModal">
+                    Add New Schedule
+                </button>
                 <div class="table-responsive">
                     <table class="table">
                         <thead>
@@ -295,30 +307,29 @@
                 <h5 class="modal-title">Edit Instructor</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="{{ url_for('admin.edit_instructor', id=instructor.id) }}">
+            <form method="POST" action="{{ url_for('admin.edit_instructor', instructor_id=instructor.id) }}">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="first_name{{ instructor.id }}" class="form-label">First Name</label>
-                        <input type="text" class="form-control" id="first_name{{ instructor.id }}" name="first_name" value="{{ instructor.first_name }}" required>
+                        <label for="first_name" class="form-label">First Name</label>
+                        <input type="text" class="form-control" id="first_name" name="first_name" value="{{ instructor.first_name }}" required>
                     </div>
                     <div class="mb-3">
-                        <label for="last_name{{ instructor.id }}" class="form-label">Last Name</label>
-                        <input type="text" class="form-control" id="last_name{{ instructor.id }}" name="last_name" value="{{ instructor.last_name }}" required>
+                        <label for="last_name" class="form-label">Last Name</label>
+                        <input type="text" class="form-control" id="last_name" name="last_name" value="{{ instructor.last_name }}" required>
                     </div>
                     <div class="mb-3">
-                        <label for="email{{ instructor.id }}" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="email{{ instructor.id }}" name="email" value="{{ instructor.email }}" required>
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ instructor.email }}" required>
                     </div>
                     <div class="mb-3">
-                        <label for="phone{{ instructor.id }}" class="form-label">Phone</label>
-                        <input type="tel" class="form-control" id="phone{{ instructor.id }}" name="phone" value="{{ instructor.phone }}" required>
+                        <label for="phone" class="form-label">Phone</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" value="{{ instructor.phone }}" required>
                     </div>
                     <div class="mb-3">
-                        <label for="status{{ instructor.id }}" class="form-label">Status</label>
-                        <select class="form-select" id="status{{ instructor.id }}" name="status">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status">
                             <option value="available" {% if instructor.status == 'available' %}selected{% endif %}>Available</option>
                             <option value="unavailable" {% if instructor.status == 'unavailable' %}selected{% endif %}>Unavailable</option>
-                            <option value="retired" {% if instructor.status == 'retired' %}selected{% endif %}>Retired</option>
                         </select>
                     </div>
                 </div>
@@ -357,6 +368,149 @@
                             <option value="scheduled" {% if booking.status == 'scheduled' %}selected{% endif %}>Scheduled</option>
                             <option value="completed" {% if booking.status == 'completed' %}selected{% endif %}>Completed</option>
                             <option value="cancelled" {% if booking.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Add Student Modal -->
+<div class="modal fade" id="addStudentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Student</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin.add_student') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="first_name" class="form-label">First Name</label>
+                        <input type="text" class="form-control" id="first_name" name="first_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="last_name" class="form-label">Last Name</label>
+                        <input type="text" class="form-control" id="last_name" name="last_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">Phone</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="student_id" class="form-label">Student ID</label>
+                        <input type="text" class="form-control" id="student_id" name="student_id" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Booking Modal -->
+<div class="modal fade" id="addBookingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Schedule</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin.add_booking') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="student" class="form-label">Student</label>
+                        <select class="form-select" id="student" name="student_id" required>
+                            {% for user in users if not user.is_admin and not user.is_instructor %}
+                            <option value="{{ user.id }}">{{ user.first_name }} {{ user.last_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="instructor" class="form-label">Instructor</label>
+                        <select class="form-select" id="instructor" name="instructor_id">
+                            <option value="">Solo Flight</option>
+                            {% for instructor in instructors %}
+                            <option value="{{ instructor.id }}">{{ instructor.first_name }} {{ instructor.last_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="aircraft" class="form-label">Aircraft</label>
+                        <select class="form-select" id="aircraft" name="aircraft_id" required>
+                            {% for aircraft in aircraft if aircraft.status == 'available' %}
+                            <option value="{{ aircraft.id }}">{{ aircraft.tail_number }} - {{ aircraft.make_model }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="start_time" class="form-label">Start Time</label>
+                        <input type="datetime-local" class="form-control" id="start_time" name="start_time" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="end_time" class="form-label">End Time</label>
+                        <input type="datetime-local" class="form-control" id="end_time" name="end_time" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Schedule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Student Modals -->
+{% for user in users if not user.is_admin and not user.is_instructor %}
+<div class="modal fade" id="editStudentModal{{ user.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Student</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin.edit_student', student_id=user.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="first_name{{ user.id }}" class="form-label">First Name</label>
+                        <input type="text" class="form-control" id="first_name{{ user.id }}" name="first_name" value="{{ user.first_name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="last_name{{ user.id }}" class="form-label">Last Name</label>
+                        <input type="text" class="form-control" id="last_name{{ user.id }}" name="last_name" value="{{ user.last_name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email{{ user.id }}" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email{{ user.id }}" name="email" value="{{ user.email }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="phone{{ user.id }}" class="form-label">Phone</label>
+                        <input type="tel" class="form-control" id="phone{{ user.id }}" name="phone" value="{{ user.phone }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="student_id{{ user.id }}" class="form-label">Student ID</label>
+                        <input type="text" class="form-control" id="student_id{{ user.id }}" name="student_id" value="{{ user.student_id }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status{{ user.id }}" class="form-label">Status</label>
+                        <select class="form-select" id="status{{ user.id }}" name="status">
+                            <option value="active" {% if user.status == 'active' %}selected{% endif %}>Active</option>
+                            <option value="inactive" {% if user.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                            <option value="on_leave" {% if user.status == 'on_leave' %}selected{% endif %}>On Leave</option>
                         </select>
                     </div>
                 </div>

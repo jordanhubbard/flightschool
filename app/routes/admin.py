@@ -67,11 +67,16 @@ def admin_required(f):
 @bp.route('/')
 @login_required
 @admin_required
-def admin_dashboard():
+def dashboard():
     users = User.query.all()
     aircraft = Aircraft.query.all()
     bookings = Booking.query.all()
-    return render_template('admin/dashboard.html', users=users, aircraft=aircraft, bookings=bookings)
+    instructors = User.query.filter_by(is_instructor=True).all()
+    return render_template('admin/dashboard.html', 
+                         users=users, 
+                         aircraft=aircraft, 
+                         bookings=bookings,
+                         instructors=instructors)
 
 @bp.route('/users')
 @login_required
@@ -174,35 +179,41 @@ def add_aircraft():
     
     return render_template('admin/add_aircraft.html')
 
-@bp.route('/instructor/add', methods=['GET', 'POST'])
+@bp.route('/instructor/add', methods=['POST'])
 @login_required
 @admin_required
 def add_instructor():
-    form = InstructorForm()
-    if form.validate_on_submit():
-        if User.query.filter_by(email=form.email.data).first():
-            flash('Email already registered')
-            return redirect(url_for('admin.add_instructor'))
-        
-        # Join multiple certificates with commas
-        certificates = ', '.join(form.certificates.data)
-        
-        instructor = User(
-            email=form.email.data,
-            first_name=form.first_name.data,
-            last_name=form.last_name.data,
-            phone=form.phone.data,
-            certificates=certificates,
-            is_instructor=True,
-            status='available'
-        )
-        instructor.set_password(form.password.data)
-        db.session.add(instructor)
-        db.session.commit()
-        flash('Instructor added successfully')
-        return redirect(url_for('admin.instructor_list'))
+    first_name = request.form.get('first_name')
+    last_name = request.form.get('last_name')
+    email = request.form.get('email')
+    phone = request.form.get('phone')
     
-    return render_template('admin/instructor_add.html', form=form)
+    if not all([first_name, last_name, email, phone]):
+        flash('All fields are required.', 'error')
+        return redirect(url_for('admin.dashboard'))
+    
+    # Generate a temporary password
+    temp_password = 'ChangeMe123!'
+    
+    new_instructor = User(
+        first_name=first_name,
+        last_name=last_name,
+        email=email,
+        phone=phone,
+        is_instructor=True,
+        status='available'
+    )
+    new_instructor.set_password(temp_password)
+    
+    try:
+        db.session.add(new_instructor)
+        db.session.commit()
+        flash(f'Instructor {first_name} {last_name} added successfully. Temporary password: {temp_password}', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error adding instructor. Email may already be in use.', 'error')
+    
+    return redirect(url_for('admin.dashboard'))
 
 @bp.route('/instructor/<int:instructor_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -211,25 +222,25 @@ def edit_instructor(instructor_id):
     instructor = User.query.get_or_404(instructor_id)
     if not instructor.is_instructor:
         flash('User is not an instructor')
-        return redirect(url_for('admin.instructor_list'))
-    
-    form = InstructorForm(obj=instructor)
+        return redirect(url_for('admin.dashboard'))
     
     if request.method == 'POST':
         instructor.email = request.form.get('email')
         instructor.first_name = request.form.get('first_name')
         instructor.last_name = request.form.get('last_name')
         instructor.phone = request.form.get('phone')
-        # Handle certificates as a list and join with commas and spaces
-        certificates = request.form.getlist('certificates')
-        instructor.certificates = ', '.join(certificates) if certificates else ''
-        instructor.status = request.form.get('status', 'active')
+        instructor.status = request.form.get('status', 'available')
         
-        db.session.commit()
-        flash('Instructor updated successfully')
-        return redirect(url_for('admin.instructor_list'))
+        try:
+            db.session.commit()
+            flash('Instructor updated successfully', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash('Error updating instructor. Email may already be in use.', 'error')
+        
+        return redirect(url_for('admin.dashboard'))
     
-    return render_template('admin/instructor_edit.html', instructor=instructor, form=form)
+    return render_template('admin/dashboard.html', instructor=instructor)
 
 @bp.route('/instructor/<int:instructor_id>/status', methods=['GET', 'POST'])
 @login_required
@@ -291,11 +302,11 @@ def edit_booking(booking_id):
             
             db.session.commit()
             flash('Booking updated successfully.', 'success')
-            return redirect(url_for('admin.admin_dashboard'))
+            return redirect(url_for('admin.dashboard'))
             
         except Exception as e:
             flash('Error updating booking. Please check the form data.', 'error')
-            return redirect(url_for('admin.admin_dashboard'))
+            return redirect(url_for('admin.dashboard'))
     
     return render_template('admin/edit_booking.html', booking=booking)
 
@@ -357,4 +368,98 @@ def reset_student_password(student_id):
     student.set_password(new_password)
     db.session.commit()
     flash('Student password reset successfully', 'success')
-    return redirect(url_for('admin.edit_student', student_id=student_id)) 
+    return redirect(url_for('admin.edit_student', student_id=student_id))
+
+@bp.route('/student/add', methods=['POST'])
+@login_required
+@admin_required
+def add_student():
+    first_name = request.form.get('first_name')
+    last_name = request.form.get('last_name')
+    email = request.form.get('email')
+    phone = request.form.get('phone')
+    student_id = request.form.get('student_id')
+    
+    if not all([first_name, last_name, email, phone, student_id]):
+        flash('All fields are required.', 'error')
+        return redirect(url_for('admin.dashboard'))
+    
+    # Generate a temporary password
+    temp_password = 'ChangeMe123!'
+    
+    new_student = User(
+        first_name=first_name,
+        last_name=last_name,
+        email=email,
+        phone=phone,
+        student_id=student_id,
+        is_admin=False,
+        is_instructor=False,
+        status='active'
+    )
+    new_student.set_password(temp_password)
+    
+    try:
+        db.session.add(new_student)
+        db.session.commit()
+        flash(f'Student {first_name} {last_name} added successfully. Temporary password: {temp_password}', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error adding student. Email or Student ID may already be in use.', 'error')
+    
+    return redirect(url_for('admin.dashboard'))
+
+@bp.route('/booking/add', methods=['POST'])
+@login_required
+@admin_required
+def add_booking():
+    student_id = request.form.get('student_id')
+    instructor_id = request.form.get('instructor_id') or None  # Handle solo flights
+    aircraft_id = request.form.get('aircraft_id')
+    start_time = request.form.get('start_time')
+    end_time = request.form.get('end_time')
+    
+    if not all([student_id, aircraft_id, start_time, end_time]):
+        flash('Required fields are missing.', 'error')
+        return redirect(url_for('admin.dashboard'))
+    
+    try:
+        start_time = datetime.strptime(start_time, '%Y-%m-%dT%H:%M')
+        end_time = datetime.strptime(end_time, '%Y-%m-%dT%H:%M')
+        
+        if start_time >= end_time:
+            flash('End time must be after start time.', 'error')
+            return redirect(url_for('admin.dashboard'))
+        
+        # Check if aircraft is available
+        aircraft = Aircraft.query.get(aircraft_id)
+        if aircraft.status != 'available':
+            flash('Selected aircraft is not available.', 'error')
+            return redirect(url_for('admin.dashboard'))
+        
+        # Check if instructor is available (if not a solo flight)
+        if instructor_id:
+            instructor = User.query.get(instructor_id)
+            if instructor.status != 'available':
+                flash('Selected instructor is not available.', 'error')
+                return redirect(url_for('admin.dashboard'))
+        
+        new_booking = Booking(
+            student_id=student_id,
+            instructor_id=instructor_id,
+            aircraft_id=aircraft_id,
+            start_time=start_time,
+            end_time=end_time,
+            status='scheduled'
+        )
+        
+        db.session.add(new_booking)
+        db.session.commit()
+        flash('Flight schedule added successfully.', 'success')
+    except ValueError:
+        flash('Invalid date/time format.', 'error')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error adding flight schedule.', 'error')
+    
+    return redirect(url_for('admin.dashboard')) 
