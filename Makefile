@@ -43,10 +43,12 @@ init: env
 	@if [ ! -d "migrations" ]; then \
 		. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(FLASK) db init; \
 	fi
-	@if [ -d "migrations" ] && [ ! -f "instance/flightschool.db" ]; then \
+	@if [ -d "migrations" ]; then \
 		. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(FLASK) db migrate -m "Initial migration"; \
 		. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(FLASK) db upgrade; \
 	fi
+	@echo "Creating database tables..."
+	. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(PYTHON) scripts/init_db.py
 	@echo "Initialization complete."
 
 run: env
@@ -71,7 +73,7 @@ clean:
 	rm -rf .pytest_cache
 	rm -rf .coverage
 	rm -rf htmlcov
-	rm -f instance/app.db
+	rm -f app/flightschool.db
 	rm -rf instance
 	find . -type d -name __pycache__ -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete

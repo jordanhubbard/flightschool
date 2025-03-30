@@ -17,8 +17,9 @@ def create_app(config_class=Config):
     app.config.from_object(config_class)
 
     # Ensure instance directory exists
-    if not os.path.exists('instance'):
-        os.makedirs('instance')
+    instance_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'instance'))
+    if not os.path.exists(instance_path):
+        os.makedirs(instance_path)
 
     # Initialize extensions
     db.init_app(app)
