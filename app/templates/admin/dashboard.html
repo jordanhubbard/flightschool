@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <h2>Admin Dashboard</h2>
+        <p class="text-muted">Manage aircraft, instructors, and bookings</p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Aircraft Management -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title">Aircraft Management</h3>
+                <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addAircraftModal">
+                    Add New Aircraft
+                </button>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Registration</th>
+                                <th>Make/Model</th>
+                                <th>Year</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for aircraft in aircraft %}
+                            <tr>
+                                <td>{{ aircraft.registration }}</td>
+                                <td>{{ aircraft.make_model }}</td>
+                                <td>{{ aircraft.year }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if aircraft.status == 'available' else 'warning' }}">
+                                        {{ aircraft.status|title }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editAircraftModal{{ aircraft.id }}">
+                                        Edit
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructor Management -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title">Instructor Management</h3>
+                <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addInstructorModal">
+                    Add New Instructor
+                </button>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for instructor in instructors %}
+                            <tr>
+                                <td>{{ instructor.first_name }} {{ instructor.last_name }}</td>
+                                <td>{{ instructor.email }}</td>
+                                <td>{{ instructor.phone }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if instructor.status == 'available' else 'warning' }}">
+                                        {{ instructor.status|title }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editInstructorModal{{ instructor.id }}">
+                                        Edit
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Student Management -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title">Student Management</h3>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Registration Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users if not user.is_admin %}
+                            <tr>
+                                <td>{{ user.first_name }} {{ user.last_name }}</td>
+                                <td>{{ user.email }}</td>
+                                <td>{{ user.phone }}</td>
+                                <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Master Schedule -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title">Master Schedule</h3>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Date/Time</th>
+                                <th>Student</th>
+                                <th>Aircraft</th>
+                                <th>Instructor</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for booking in bookings %}
+                            <tr>
+                                <td>{{ booking.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>{{ booking.user.first_name }} {{ booking.user.last_name }}</td>
+                                <td>{{ booking.aircraft.registration }}</td>
+                                <td>{{ booking.instructor.first_name }} {{ booking.instructor.last_name }} if booking.instructor else 'Solo' }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if booking.status == 'scheduled' else 'secondary' }}">
+                                        {{ booking.status|title }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editBookingModal{{ booking.id }}">
+                                        Edit
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Aircraft Modal -->
+<div class="modal fade" id="addAircraftModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Aircraft</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin.add_aircraft') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="registration" class="form-label">Registration</label>
+                        <input type="text" class="form-control" id="registration" name="registration" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="make_model" class="form-label">Make/Model</label>
+                        <input type="text" class="form-control" id="make_model" name="make_model" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="year" class="form-label">Year</label>
+                        <input type="number" class="form-control" id="year" name="year" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Aircraft</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Instructor Modal -->
+<div class="modal fade" id="addInstructorModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Instructor</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin.add_instructor') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="first_name" class="form-label">First Name</label>
+                        <input type="text" class="form-control" id="first_name" name="first_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="last_name" class="form-label">Last Name</label>
+                        <input type="text" class="form-control" id="last_name" name="last_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">Phone</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Instructor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modals for Aircraft -->
+{% for aircraft in aircraft %}
+<div class="modal fade" id="editAircraftModal{{ aircraft.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Aircraft</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin.edit_aircraft', id=aircraft.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="registration{{ aircraft.id }}" class="form-label">Registration</label>
+                        <input type="text" class="form-control" id="registration{{ aircraft.id }}" name="registration" value="{{ aircraft.registration }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="make_model{{ aircraft.id }}" class="form-label">Make/Model</label>
+                        <input type="text" class="form-control" id="make_model{{ aircraft.id }}" name="make_model" value="{{ aircraft.make_model }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="year{{ aircraft.id }}" class="form-label">Year</label>
+                        <input type="number" class="form-control" id="year{{ aircraft.id }}" name="year" value="{{ aircraft.year }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status{{ aircraft.id }}" class="form-label">Status</label>
+                        <select class="form-select" id="status{{ aircraft.id }}" name="status">
+                            <option value="available" {% if aircraft.status == 'available' %}selected{% endif %}>Available</option>
+                            <option value="maintenance" {% if aircraft.status == 'maintenance' %}selected{% endif %}>Maintenance</option>
+                            <option value="retired" {% if aircraft.status == 'retired' %}selected{% endif %}>Retired</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Edit Modals for Instructors -->
+{% for instructor in instructors %}
+<div class="modal fade" id="editInstructorModal{{ instructor.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Instructor</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin.edit_instructor', id=instructor.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="first_name{{ instructor.id }}" class="form-label">First Name</label>
+                        <input type="text" class="form-control" id="first_name{{ instructor.id }}" name="first_name" value="{{ instructor.first_name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="last_name{{ instructor.id }}" class="form-label">Last Name</label>
+                        <input type="text" class="form-control" id="last_name{{ instructor.id }}" name="last_name" value="{{ instructor.last_name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email{{ instructor.id }}" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email{{ instructor.id }}" name="email" value="{{ instructor.email }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="phone{{ instructor.id }}" class="form-label">Phone</label>
+                        <input type="tel" class="form-control" id="phone{{ instructor.id }}" name="phone" value="{{ instructor.phone }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status{{ instructor.id }}" class="form-label">Status</label>
+                        <select class="form-select" id="status{{ instructor.id }}" name="status">
+                            <option value="available" {% if instructor.status == 'available' %}selected{% endif %}>Available</option>
+                            <option value="unavailable" {% if instructor.status == 'unavailable' %}selected{% endif %}>Unavailable</option>
+                            <option value="retired" {% if instructor.status == 'retired' %}selected{% endif %}>Retired</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Edit Modals for Bookings -->
+{% for booking in bookings %}
+<div class="modal fade" id="editBookingModal{{ booking.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Booking</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin.edit_booking', id=booking.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="start_time{{ booking.id }}" class="form-label">Start Time</label>
+                        <input type="datetime-local" class="form-control" id="start_time{{ booking.id }}" name="start_time" value="{{ booking.start_time.strftime('%Y-%m-%dT%H:%M') }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="end_time{{ booking.id }}" class="form-label">End Time</label>
+                        <input type="datetime-local" class="form-control" id="end_time{{ booking.id }}" name="end_time" value="{{ booking.end_time.strftime('%Y-%m-%dT%H:%M') }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status{{ booking.id }}" class="form-label">Status</label>
+                        <select class="form-select" id="status{{ booking.id }}" name="status">
+                            <option value="scheduled" {% if booking.status == 'scheduled' %}selected{% endif %}>Scheduled</option>
+                            <option value="completed" {% if booking.status == 'completed' %}selected{% endif %}>Completed</option>
+                            <option value="cancelled" {% if booking.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %} 

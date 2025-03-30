@@ -1,0 +1,70 @@
+{
+    "aircraft": [
+        {
+            "registration": "N12345",
+            "make_model": "Cessna 172",
+            "year": 2020,
+            "status": "available"
+        },
+        {
+            "registration": "N67890",
+            "make_model": "Piper PA-28",
+            "year": 2019,
+            "status": "available"
+        },
+        {
+            "registration": "N24680",
+            "make_model": "Diamond DA40",
+            "year": 2021,
+            "status": "maintenance"
+        }
+    ],
+    "instructors": [
+        {
+            "email": "john.smith@flightschool.com",
+            "name": "John Smith",
+            "phone": "555-0101",
+            "certificates": ["CFI", "CFII", "MEI"],
+            "is_admin": true
+        },
+        {
+            "email": "sarah.jones@flightschool.com",
+            "name": "Sarah Jones",
+            "phone": "555-0102",
+            "certificates": ["CFI", "CFII"],
+            "is_admin": false
+        }
+    ],
+    "students": [
+        {
+            "email": "student1@example.com",
+            "name": "Alice Johnson",
+            "phone": "555-0201",
+            "student_id": "STU001"
+        },
+        {
+            "email": "student2@example.com",
+            "name": "Bob Wilson",
+            "phone": "555-0202",
+            "student_id": "STU002"
+        }
+    ],
+    "bookings": [
+        {
+            "student_email": "student1@example.com",
+            "instructor_email": "john.smith@flightschool.com",
+            "registration": "N12345",
+            "start_time": "2024-03-20T09:00:00",
+            "end_time": "2024-03-20T11:00:00",
+            "status": "confirmed"
+        },
+        {
+            "student_email": "student2@example.com",
+            "instructor_email": "sarah.jones@flightschool.com",
+            "registration": "N67890",
+            "start_time": "2024-03-21T14:00:00",
+            "end_time": "2024-03-21T16:00:00",
+            "status": "pending"
+        }
+    ]
+} 

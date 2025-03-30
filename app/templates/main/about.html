@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}About Us{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-5">
+        <div class="col-md-12 text-center">
+            <h1 class="display-4">About Eyes Outside Aviation</h1>
+            <p class="lead">Your Premier Flight Training School</p>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="card-title">Our Mission</h2>
+                    <p class="card-text">
+                        At Eyes Outside Aviation, our mission is to provide exceptional flight training that empowers aspiring pilots 
+                        to achieve their aviation dreams. We are committed to maintaining the highest standards of safety, professionalism, 
+                        and educational excellence.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="card-title">Our Values</h2>
+                    <ul class="list-unstyled">
+                        <li class="mb-3">
+                            <i class="fas fa-shield-alt text-primary me-2"></i>
+                            <strong>Safety First:</strong> Safety is our top priority in all operations
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-graduation-cap text-primary me-2"></i>
+                            <strong>Excellence:</strong> We strive for excellence in training and service
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-users text-primary me-2"></i>
+                            <strong>Community:</strong> We foster a supportive aviation community
+                        </li>
+                        <li>
+                            <i class="fas fa-chart-line text-primary me-2"></i>
+                            <strong>Growth:</strong> We support continuous learning and improvement
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title">Our Training Programs</h2>
+                    <div class="row">
+                        <div class="col-md-4 mb-4">
+                            <div class="text-center">
+                                <i class="fas fa-paper-plane fa-3x mb-3 text-primary"></i>
+                                <h4>Private Pilot License</h4>
+                                <p>Start your aviation journey with our comprehensive PPL program.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <div class="text-center">
+                                <i class="fas fa-cloud-sun fa-3x mb-3 text-primary"></i>
+                                <h4>Instrument Rating</h4>
+                                <p>Master flying in all weather conditions with our IR training.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <div class="text-center">
+                                <i class="fas fa-plane fa-3x mb-3 text-primary"></i>
+                                <h4>Commercial License</h4>
+                                <p>Take your career to new heights with commercial pilot training.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title">Our Facilities</h2>
+                    <p class="card-text">
+                        Our state-of-the-art facilities include modern classrooms, flight planning areas, and a fleet of 
+                        well-maintained aircraft. We provide students with access to the latest aviation technology and 
+                        training materials to ensure the best possible learning experience.
+                    </p>
+                    <div class="text-center mt-4">
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">Start Your Journey Today</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

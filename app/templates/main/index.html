@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 text-center mb-5">
+        <h1 class="display-4">Welcome to Eyes Outside Aviation</h1>
+        <p class="lead">Your journey to becoming a pilot starts here</p>
+    </div>
+</div>
+
+<div class="row mb-5">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="card-title">For New Students</h2>
+                <p class="card-text">Ready to start your aviation journey? Register with us to begin your flight training experience.</p>
+                <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Register Now</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="card-title">Returning Students</h2>
+                <p class="card-text">Already registered? Log in to book your next flight or check your schedule.</p>
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Login</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-5">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title">Why Choose Eyes Outside Aviation?</h2>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-plane fa-3x mb-3 text-primary"></i>
+                            <h4>Modern Fleet</h4>
+                            <p>Our well-maintained aircraft fleet ensures safe and reliable training.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-user-tie fa-3x mb-3 text-primary"></i>
+                            <h4>Experienced Instructors</h4>
+                            <p>Learn from certified flight instructors with years of experience.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-calendar-check fa-3x mb-3 text-primary"></i>
+                            <h4>Flexible Scheduling</h4>
+                            <p>Book your training sessions at times that work for you.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title">Ready to Start Your Journey?</h2>
+                <p class="card-text">Join our flight school and take the first step towards your aviation dreams. Whether you're pursuing a private pilot's license or advanced certifications, we're here to help you succeed.</p>
+                <div class="text-center">
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">Get Started Today</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
