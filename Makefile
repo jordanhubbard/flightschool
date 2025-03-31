@@ -1,4 +1,4 @@
-.PHONY: help env init run test clean lint format db-migrate db-upgrade db-downgrade test-data
+.PHONY: help env init run test clean lint format db-migrate db-upgrade db-downgrade test-data install
 
 # Default target when just running 'make'
 .DEFAULT_GOAL := help
@@ -29,6 +29,7 @@ help:
 	@echo "  make db-upgrade  - Apply all database migrations"
 	@echo "  make db-downgrade- Revert last database migration"
 	@echo "  make test-data   - Load sample data into the database"
+	@echo "  make install     - Install dependencies and create virtual environment"
 
 env:
 	@echo "Creating virtual environment..."
@@ -111,6 +112,10 @@ test-data: init
 	@echo "Loading test data..."
 	. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(PYTHON) scripts/load_test_data.py
 	@echo "Test data loaded successfully."
+
+install:
+	python -m venv venv
+	. venv/bin/activate && pip install -r requirements.txt
 
 # Error if running on Windows
 ifeq ($(OS),Windows_NT)

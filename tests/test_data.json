@@ -4,19 +4,22 @@
             "tail_number": "N12345",
             "make_model": "Cessna 172",
             "year": 2020,
-            "status": "available"
+            "status": "available",
+            "rate_per_hour": 150.00
         },
         {
             "tail_number": "N67890",
             "make_model": "Piper PA-28",
             "year": 2019,
-            "status": "available"
+            "status": "available",
+            "rate_per_hour": 165.00
         },
         {
             "tail_number": "N24680",
             "make_model": "Diamond DA40",
             "year": 2021,
-            "status": "maintenance"
+            "status": "maintenance",
+            "rate_per_hour": 185.00
         }
     ],
     "instructors": [
@@ -26,7 +29,8 @@
             "phone": "555-0101",
             "certificates": ["CFI", "CFII", "MEI"],
             "is_admin": true,
-            "status": "available"
+            "status": "available",
+            "instructor_rate_per_hour": 75.00
         },
         {
             "email": "sarah.jones@flightschool.com",
@@ -34,7 +38,8 @@
             "phone": "555-0102",
             "certificates": ["CFI", "CFII"],
             "is_admin": false,
-            "status": "available"
+            "status": "available",
+            "instructor_rate_per_hour": 65.00
         }
     ],
     "students": [
@@ -67,6 +72,41 @@
             "start_time": "2024-03-21T14:00:00",
             "end_time": "2024-03-21T16:00:00",
             "status": "pending"
+        }
+    ],
+    "check_ins": [
+        {
+            "booking_id": 1,
+            "hobbs_start": 1234.5,
+            "tach_start": 2345.6,
+            "instructor_start_time": "2024-03-20T09:00:00",
+            "notes": "Pre-flight inspection completed"
+        }
+    ],
+    "check_outs": [
+        {
+            "booking_id": 1,
+            "hobbs_end": 1236.2,
+            "tach_end": 2347.1,
+            "instructor_end_time": "2024-03-20T11:00:00",
+            "total_aircraft_time": 1.7,
+            "total_instructor_time": 2.0,
+            "notes": "Touch and go practice completed"
+        }
+    ],
+    "invoices": [
+        {
+            "booking_id": 1,
+            "invoice_number": "INV-2024-001",
+            "aircraft_rate": 150.00,
+            "instructor_rate": 75.00,
+            "aircraft_time": 1.7,
+            "instructor_time": 2.0,
+            "aircraft_total": 255.00,
+            "instructor_total": 150.00,
+            "total_amount": 405.00,
+            "status": "pending",
+            "notes": "Initial training flight"
         }
     ]
 } 

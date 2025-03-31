@@ -161,8 +161,9 @@ def add_aircraft():
         make_model = request.form.get('make_model')
         year = request.form.get('year')
         status = request.form.get('status', 'available')
+        rate_per_hour = request.form.get('rate_per_hour')
         
-        if not tail_number or not make_model or not year:
+        if not tail_number or not make_model or not year or not rate_per_hour:
             flash('Please fill in all required fields')
             return redirect(url_for('admin.add_aircraft'))
         
@@ -170,7 +171,8 @@ def add_aircraft():
             tail_number=tail_number,
             make_model=make_model,
             year=int(year),
-            status=status
+            status=status,
+            rate_per_hour=float(rate_per_hour)
         )
         db.session.add(aircraft)
         db.session.commit()

@@ -24,16 +24,22 @@ def test_add_aircraft(client, test_admin):
     })
     
     response = client.post('/admin/aircraft/add', data={
-        'tail_number': 'N67890',
-        'make_model': 'Piper Arrow',
-        'year': '2021',
-        'status': 'available'
+        'tail_number': 'N54321',
+        'make_model': 'Cessna 172',
+        'year': '2020',
+        'status': 'available',
+        'rate_per_hour': '150.00'
     }, follow_redirects=True)
     
+    assert response.status_code == 200
     assert b'Aircraft added successfully' in response.data
-    aircraft = Aircraft.query.filter_by(tail_number='N67890').first()
+
+    aircraft = Aircraft.query.filter_by(tail_number='N54321').first()
     assert aircraft is not None
+    assert aircraft.make_model == 'Cessna 172'
+    assert aircraft.year == 2020
     assert aircraft.status == 'available'
+    assert aircraft.rate_per_hour == 150.00
 
 def test_edit_aircraft(client, test_admin, test_aircraft):
     client.post('/auth/login', data={

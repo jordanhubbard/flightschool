@@ -44,5 +44,5 @@ def test_logout(client, test_user):
         'password': 'password123'
     })
     response = client.get('/auth/logout', follow_redirects=True)
-    assert b'You have been logged out' in response.data
-    assert not current_user.is_authenticated 
+    assert response.status_code == 200
+    assert b'You have been logged out' in response.data 

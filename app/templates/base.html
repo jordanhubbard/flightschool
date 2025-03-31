@@ -105,6 +105,11 @@
                 <ul class="navbar-nav">
                     {% if current_user.is_authenticated %}
                         <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auth.account_settings') }}">
+                                <i class="fas fa-user-cog me-1"></i>Account Settings
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
                         </li>
                     {% else %}

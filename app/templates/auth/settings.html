@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Account Settings{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h1 class="mb-4">Account Settings</h1>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2 class="card-title h4">Profile Information</h2>
+                    <form method="POST" action="{{ url_for('auth.update_profile') }}">
+                        <div class="mb-3">
+                            <label for="first_name" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" 
+                                   value="{{ current_user.first_name or '' }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="last_name" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" 
+                                   value="{{ current_user.last_name or '' }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" value="{{ current_user.email }}" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">Phone</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" 
+                                   value="{{ current_user.phone or '' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="address" class="form-label">Address</label>
+                            <textarea class="form-control" id="address" name="address" rows="2">{{ current_user.address or '' }}</textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Profile</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2 class="card-title h4">Google Calendar Integration</h2>
+                    <p class="text-muted">Connect your Google Calendar to automatically sync your flight bookings.</p>
+                    
+                    {% if current_user.google_calendar_enabled %}
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle-fill"></i> Connected to Google Calendar
+                        </div>
+                        <p class="mb-3">Your flight bookings will be automatically synced to your Google Calendar based on your role:</p>
+                        <ul class="list-unstyled">
+                            {% if current_user.is_admin %}
+                                <li><i class="bi bi-shield-check"></i> Admin: All bookings for all aircraft and instructors</li>
+                            {% elif current_user.is_instructor %}
+                                <li><i class="bi bi-person-badge"></i> Instructor: All bookings where you are the instructor</li>
+                            {% else %}
+                                <li><i class="bi bi-person"></i> Student: Your own bookings</li>
+                            {% endif %}
+                        </ul>
+                        <form method="POST" action="{{ url_for('auth.google_disconnect') }}" class="d-inline">
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to disconnect from Google Calendar?')">
+                                <i class="bi bi-x-circle"></i> Disconnect Google Calendar
+                            </button>
+                        </form>
+                    {% else %}
+                        <p class="mb-3">Connect your Google Calendar to automatically add your flight bookings to your calendar.</p>
+                        <a href="{{ url_for('auth.google_auth') }}" class="btn btn-primary">
+                            <i class="bi bi-google"></i> Connect Google Calendar
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title h4">Change Password</h2>
+                    <form method="POST" action="{{ url_for('auth.change_password') }}">
+                        <div class="mb-3">
+                            <label for="current_password" class="form-label">Current Password</label>
+                            <input type="password" class="form-control" id="current_password" name="current_password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="new_password" class="form-label">New Password</label>
+                            <input type="password" class="form-control" id="new_password" name="new_password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirm_password" class="form-label">Confirm New Password</label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Change Password</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

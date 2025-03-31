@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Check Out - {{ booking.aircraft.tail_number }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Check Out - {{ booking.aircraft.tail_number }}</h2>
+    <div class="card">
+        <div class="card-body">
+            <div class="alert alert-info">
+                <h5>Check-in Details:</h5>
+                <p class="mb-1">Hobbs Start: {{ check_in.hobbs_start }}</p>
+                <p class="mb-1">Tach Start: {{ check_in.tach_start }}</p>
+                <p class="mb-0">Instructor Start Time: {{ check_in.instructor_start_time.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+            </div>
+
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="hobbs_end" class="form-label">Hobbs End Reading</label>
+                    <input type="number" step="0.1" class="form-control" id="hobbs_end" name="hobbs_end" required>
+                </div>
+                <div class="mb-3">
+                    <label for="tach_end" class="form-label">Tach End Reading</label>
+                    <input type="number" step="0.1" class="form-control" id="tach_end" name="tach_end" required>
+                </div>
+                <div class="mb-3">
+                    <label for="instructor_end_time" class="form-label">Instructor End Time</label>
+                    <input type="datetime-local" class="form-control" id="instructor_end_time" name="instructor_end_time" required>
+                </div>
+                <div class="mb-3">
+                    <label for="notes" class="form-label">Notes</label>
+                    <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Check Out</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Set default instructor end time to current time
+    document.getElementById('instructor_end_time').value = new Date().toISOString().slice(0, 16);
+</script>
+{% endblock %} 

@@ -3,7 +3,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from app.models import User
 from app import db
 from werkzeug.security import generate_password_hash
-from app.forms import LoginForm, RegistrationForm
+from app.forms import LoginForm, RegistrationForm, AccountSettingsForm
 
 bp = Blueprint('auth', __name__)
 
@@ -58,4 +58,23 @@ def login():
 def logout():
     logout_user()
     flash('You have been logged out')
-    return redirect(url_for('main.index')) 
+    return redirect(url_for('main.index'))
+
+@bp.route('/account-settings', methods=['GET', 'POST'])
+@login_required
+def account_settings():
+    form = AccountSettingsForm()
+    if form.validate_on_submit():
+        current_user.first_name = form.first_name.data
+        current_user.last_name = form.last_name.data
+        current_user.phone = form.phone.data
+        if form.password.data:
+            current_user.set_password(form.password.data)
+        db.session.commit()
+        flash('Account settings updated successfully', 'success')
+        return redirect(url_for('auth.account_settings'))
+    elif request.method == 'GET':
+        form.first_name.data = current_user.first_name
+        form.last_name.data = current_user.last_name
+        form.phone.data = current_user.phone
+    return render_template('auth/account_settings.html', form=form) 
