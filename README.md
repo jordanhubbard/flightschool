@@ -1,4 +1,4 @@
-# Eyes Outside Aviation Flight School Management System
+# Next Level Tailwheel Flight School Management System
 
 A Flask-based web application for managing a flight school's operations, including student registration, aircraft and instructor management, booking system, and administrative functions.
 

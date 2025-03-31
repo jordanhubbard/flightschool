@@ -7,7 +7,7 @@ def test_home_page(client):
     """Test the home page is accessible and contains expected content"""
     response = client.get('/')
     assert response.status_code == 200
-    assert b'Eyes Outside Aviation' in response.data
+    assert b'Next Level Tailwheel' in response.data
 
 def test_admin_dashboard_ui(client, test_admin, test_aircraft, test_instructor, test_user):
     """Test the admin dashboard UI elements and functionality"""
