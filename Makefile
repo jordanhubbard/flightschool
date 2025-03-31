@@ -40,6 +40,8 @@ env:
 init: env
 	@echo "Installing dependencies..."
 	$(PIP) install -r requirements.txt
+	@echo "Creating instance directory..."
+	mkdir -p instance
 	@echo "Initializing database..."
 	@if [ ! -d "migrations" ]; then \
 		. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(FLASK) db init; \
@@ -74,7 +76,7 @@ clean:
 	rm -rf .pytest_cache
 	rm -rf .coverage
 	rm -rf htmlcov
-	rm -f app/flightschool.db
+	rm -f instance/flightschool.db
 	rm -rf instance
 	find . -type d -name __pycache__ -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
