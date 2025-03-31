@@ -38,4 +38,4 @@ ENV/
 *.sqlite3
 
 # Logs
-*.log 
+*.log instance/flightschool.db
