@@ -1,13 +1,13 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from app.models import User, Aircraft, Booking
+from app.models import User, Aircraft, Booking, MaintenanceType, MaintenanceRecord, Squawk
 from app import db
 from datetime import datetime
 from functools import wraps
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SelectField, SelectMultipleField, SubmitField
 from wtforms.validators import DataRequired, Email, Optional, Length
-from app.forms import UserForm, AircraftForm
+from app.forms import UserForm, AircraftForm, MaintenanceTypeForm, MaintenanceRecordForm, SquawkForm
 from werkzeug.security import generate_password_hash
 
 bp = Blueprint('admin', __name__)
@@ -30,10 +30,14 @@ def dashboard():
     instructors = User.query.filter_by(role='instructor').all()
     students = User.query.filter_by(role='student').all()
     aircraft_list = Aircraft.query.all()
+    maintenance_records = MaintenanceRecord.query.order_by(MaintenanceRecord.performed_at.desc()).limit(5).all()
+    open_squawks = Squawk.query.filter_by(status='open').all()
     return render_template('admin/dashboard.html', 
                          instructors=instructors, 
                          students=students, 
-                         aircraft_list=aircraft_list)
+                         aircraft_list=aircraft_list,
+                         maintenance_records=maintenance_records,
+                         open_squawks=open_squawks)
 
 @bp.route('/calendar/settings')
 @login_required
@@ -249,43 +253,75 @@ def update_user_status(id):
         db.session.rollback()
         return jsonify({'error': 'Failed to update user status'}), 500
 
-@bp.route('/aircraft/<int:id>/status', methods=['PUT'])
+@bp.route('/maintenance/types', methods=['GET', 'POST'])
 @login_required
 @admin_required
-def update_aircraft_status(id):
-    aircraft = Aircraft.query.get_or_404(id)
-    data = request.get_json()
-    
-    if not data or 'status' not in data:
-        return jsonify({'error': 'Status is required'}), 400
-        
-    if data['status'] not in ['available', 'maintenance', 'inactive']:
-        return jsonify({'error': 'Invalid status'}), 400
-    
-    aircraft.status = data['status']
-    try:
+def maintenance_types():
+    form = MaintenanceTypeForm()
+    if form.validate_on_submit():
+        maintenance_type = MaintenanceType(
+            name=form.name.data,
+            description=form.description.data,
+            interval_days=form.interval_days.data,
+            interval_hours=form.interval_hours.data
+        )
+        db.session.add(maintenance_type)
         db.session.commit()
-        return jsonify({'message': 'Status updated successfully'}), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': 'Failed to update aircraft status'}), 500
+        flash('Maintenance type added successfully', 'success')
+        return redirect(url_for('admin.maintenance_types'))
+    
+    maintenance_types = MaintenanceType.query.all()
+    return render_template('admin/maintenance_types.html', 
+                         form=form, 
+                         maintenance_types=maintenance_types)
 
-@bp.route('/bookings')
+@bp.route('/maintenance/records', methods=['GET', 'POST'])
 @login_required
 @admin_required
-def manage_bookings():
-    bookings = Booking.query.all()
-    return render_template('admin/bookings.html', bookings=bookings)
+def maintenance_records():
+    form = MaintenanceRecordForm()
+    form.maintenance_type.choices = [(mt.id, mt.name) for mt in MaintenanceType.query.all()]
+    form.performed_by.choices = [(u.id, f"{u.first_name} {u.last_name}") for u in User.query.filter_by(role='mechanic').all()]
+    
+    if form.validate_on_submit():
+        record = MaintenanceRecord(
+            maintenance_type_id=form.maintenance_type.data,
+            performed_at=form.performed_at.data,
+            performed_by_id=form.performed_by.data,
+            hobbs_hours=form.hobbs_hours.data,
+            tach_hours=form.tach_hours.data,
+            notes=form.notes.data
+        )
+        db.session.add(record)
+        db.session.commit()
+        flash('Maintenance record added successfully', 'success')
+        return redirect(url_for('admin.maintenance_records'))
+    
+    records = MaintenanceRecord.query.order_by(MaintenanceRecord.performed_at.desc()).all()
+    return render_template('admin/maintenance_records.html', 
+                         form=form, 
+                         records=records)
 
-@bp.route('/booking/<int:booking_id>/delete', methods=['POST'])
+@bp.route('/squawks', methods=['GET', 'POST'])
 @login_required
 @admin_required
-def delete_booking(booking_id):
-    booking = Booking.query.get_or_404(booking_id)
-    db.session.delete(booking)
-    db.session.commit()
-    flash('Booking deleted successfully.', 'success')
-    return redirect(url_for('admin.manage_bookings'))
+def squawks():
+    form = SquawkForm()
+    if form.validate_on_submit():
+        squawk = Squawk(
+            description=form.description.data,
+            status=form.status.data,
+            resolution_notes=form.resolution_notes.data
+        )
+        db.session.add(squawk)
+        db.session.commit()
+        flash('Squawk added successfully', 'success')
+        return redirect(url_for('admin.squawks'))
+    
+    squawks = Squawk.query.order_by(Squawk.created_at.desc()).all()
+    return render_template('admin/squawks.html', 
+                         form=form, 
+                         squawks=squawks)
 
 @bp.route('/booking/<int:booking_id>/edit', methods=['GET', 'POST'])
 @login_required

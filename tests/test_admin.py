@@ -33,19 +33,23 @@ def test_add_aircraft(client, test_admin, app):
             sess['user_id'] = test_admin.id
             sess['_fresh'] = True
     
-    # First get the form to get the CSRF token
-    response = client.get('/admin/aircraft/create')
-    assert response.status_code == 200
-    
-    # Now submit the form with the CSRF token
-    response = client.post('/admin/aircraft/create', data={
+    response = client.post('/admin/aircraft/add', data={
         'registration': 'N54321',
-        'make_model': 'Piper Cherokee',
-        'year': '2019',
-        'status': 'active'
+        'make_model': 'Cessna 172',
+        'year': '2020',
+        'status': 'available',
+        'rate_per_hour': '150.00'
     }, follow_redirects=True)
+    
     assert response.status_code == 200
-    assert b'Aircraft created successfully' in response.data
+    assert b'Aircraft added successfully' in response.data
+
+    aircraft = Aircraft.query.filter_by(registration='N54321').first()
+    assert aircraft is not None
+    assert aircraft.make_model == 'Cessna 172'
+    assert aircraft.year == 2020
+    assert aircraft.status == 'available'
+    assert aircraft.rate_per_hour == 150.00
 
 def test_edit_aircraft(client, test_admin, test_aircraft, app):
     """Test editing an existing aircraft."""
@@ -54,19 +58,23 @@ def test_edit_aircraft(client, test_admin, test_aircraft, app):
             sess['user_id'] = test_admin.id
             sess['_fresh'] = True
     
-    # First get the form to get the CSRF token
-    response = client.get(f'/admin/aircraft/{test_aircraft.id}/edit')
-    assert response.status_code == 200
-    
-    # Now submit the form with the CSRF token
     response = client.post(f'/admin/aircraft/{test_aircraft.id}/edit', data={
         'registration': 'N54321',
         'make_model': 'Piper Cherokee',
         'year': '2019',
-        'status': 'active'
+        'status': 'active',
+        'rate_per_hour': '175.00'
     }, follow_redirects=True)
     assert response.status_code == 200
     assert b'Aircraft updated successfully' in response.data
+
+    # Verify the changes in the database
+    aircraft = Aircraft.query.get(test_aircraft.id)
+    assert aircraft.registration == 'N54321'
+    assert aircraft.make_model == 'Piper Cherokee'
+    assert aircraft.year == 2019
+    assert aircraft.status == 'active'
+    assert aircraft.rate_per_hour == 175.00
 
 def test_add_instructor(client, test_admin, app):
     """Test adding a new instructor."""
@@ -75,11 +83,6 @@ def test_add_instructor(client, test_admin, app):
             sess['user_id'] = test_admin.id
             sess['_fresh'] = True
     
-    # First get the form to get the CSRF token
-    response = client.get('/admin/user/create?type=instructor')
-    assert response.status_code == 200
-    
-    # Now submit the form with the CSRF token
     response = client.post('/admin/user/create', data={
         'email': 'new.instructor@example.com',
         'first_name': 'New',
@@ -87,10 +90,17 @@ def test_add_instructor(client, test_admin, app):
         'phone': '123-456-7890',
         'certificates': 'CFI',
         'status': 'active',
-        'role': 'instructor'
+        'role': 'instructor',
+        'instructor_rate_per_hour': '75.00'
     }, follow_redirects=True)
     assert response.status_code == 200
     assert b'User created successfully' in response.data
+
+    # Verify the instructor was created
+    instructor = User.query.filter_by(email='new.instructor@example.com').first()
+    assert instructor is not None
+    assert instructor.role == 'instructor'
+    assert instructor.instructor_rate_per_hour == 75.00
 
 def test_add_student(client, test_admin, app):
     """Test adding a new student."""
@@ -99,11 +109,6 @@ def test_add_student(client, test_admin, app):
             sess['user_id'] = test_admin.id
             sess['_fresh'] = True
     
-    # First get the form to get the CSRF token
-    response = client.get('/admin/user/create?type=student')
-    assert response.status_code == 200
-    
-    # Now submit the form with the CSRF token
     response = client.post('/admin/user/create', data={
         'email': 'new.student@example.com',
         'first_name': 'New',
@@ -116,6 +121,12 @@ def test_add_student(client, test_admin, app):
     assert response.status_code == 200
     assert b'User created successfully' in response.data
 
+    # Verify the student was created
+    student = User.query.filter_by(email='new.student@example.com').first()
+    assert student is not None
+    assert student.role == 'student'
+    assert student.student_id == 'STU001'
+
 def test_add_instructor_duplicate_email(client, test_admin, test_instructor, app):
     """Test adding an instructor with a duplicate email."""
     with app.app_context():
@@ -123,11 +134,6 @@ def test_add_instructor_duplicate_email(client, test_admin, test_instructor, app
             sess['user_id'] = test_admin.id
             sess['_fresh'] = True
     
-    # First get the form to get the CSRF token
-    response = client.get('/admin/user/create?type=instructor')
-    assert response.status_code == 200
-    
-    # Now submit the form with the CSRF token
     response = client.post('/admin/user/create', data={
         'email': test_instructor.email,  # Using existing instructor's email
         'first_name': 'John',
@@ -135,7 +141,8 @@ def test_add_instructor_duplicate_email(client, test_admin, test_instructor, app
         'phone': '123-456-7890',
         'certificates': 'CFI',
         'status': 'active',
-        'role': 'instructor'
+        'role': 'instructor',
+        'instructor_rate_per_hour': '75.00'
     }, follow_redirects=True)
     assert response.status_code == 200
     assert b'Email already registered' in response.data
@@ -147,11 +154,6 @@ def test_edit_instructor(client, test_admin, test_instructor, app):
             sess['user_id'] = test_admin.id
             sess['_fresh'] = True
     
-    # First get the form to get the CSRF token
-    response = client.get(f'/admin/user/{test_instructor.id}/edit')
-    assert response.status_code == 200
-    
-    # Now submit the form with the CSRF token
     response = client.post(f'/admin/user/{test_instructor.id}/edit', data={
         'email': 'john.updated@example.com',
         'first_name': 'Johnny',
@@ -159,10 +161,18 @@ def test_edit_instructor(client, test_admin, test_instructor, app):
         'phone': '555-555-5555',
         'certificates': 'CFI, CFII, MEI',
         'status': 'active',
-        'role': 'instructor'
+        'role': 'instructor',
+        'instructor_rate_per_hour': '85.00'
     }, follow_redirects=True)
     assert response.status_code == 200
     assert b'User updated successfully' in response.data
+
+    # Verify the changes in the database
+    instructor = User.query.get(test_instructor.id)
+    assert instructor.email == 'john.updated@example.com'
+    assert instructor.first_name == 'Johnny'
+    assert instructor.certificates == 'CFI, CFII, MEI'
+    assert instructor.instructor_rate_per_hour == 85.00
 
 def test_edit_instructor_invalid_data(client, test_admin, test_instructor, app):
     """Test editing an instructor with invalid data."""
@@ -171,11 +181,6 @@ def test_edit_instructor_invalid_data(client, test_admin, test_instructor, app):
             sess['user_id'] = test_admin.id
             sess['_fresh'] = True
     
-    # First get the form to get the CSRF token
-    response = client.get(f'/admin/user/{test_instructor.id}/edit')
-    assert response.status_code == 200
-    
-    # Now submit the form with the CSRF token
     response = client.post(f'/admin/user/{test_instructor.id}/edit', data={
         'first_name': 'Johnny',
         'last_name': 'Smith',
@@ -183,7 +188,8 @@ def test_edit_instructor_invalid_data(client, test_admin, test_instructor, app):
         'phone': '555-555-5555',
         'certificates': 'CFI, CFII, MEI',
         'status': 'active',
-        'role': 'instructor'
+        'role': 'instructor',
+        'instructor_rate_per_hour': '85.00'
     }, follow_redirects=True)
     assert response.status_code == 200
     assert b'Invalid email address' in response.data
@@ -222,18 +228,38 @@ def test_delete_aircraft(client, test_admin, test_aircraft, app):
     response = client.delete(f'/admin/aircraft/{test_aircraft.id}')
     assert response.status_code == 204
 
+    # Verify the aircraft was deleted
+    aircraft = Aircraft.query.get(test_aircraft.id)
+    assert aircraft is None
+
 def test_instructor_status_management(client, test_admin, test_instructor, app):
     """Test managing instructor status."""
     with app.app_context():
         with client.session_transaction() as sess:
             sess['user_id'] = test_admin.id
             sess['_fresh'] = True
-    
+            
+    # Test setting instructor to inactive
     response = client.put(f'/admin/user/{test_instructor.id}/status',
         json={'status': 'inactive'},
         headers={'Content-Type': 'application/json'}
     )
     assert response.status_code == 200
+    
+    # Verify the status change
+    instructor = User.query.get(test_instructor.id)
+    assert instructor.status == 'inactive'
+    
+    # Test setting instructor back to active
+    response = client.put(f'/admin/user/{test_instructor.id}/status',
+        json={'status': 'active'},
+        headers={'Content-Type': 'application/json'}
+    )
+    assert response.status_code == 200
+    
+    # Verify the status change
+    instructor = User.query.get(test_instructor.id)
+    assert instructor.status == 'active'
 
 def test_aircraft_status_management(client, test_admin, test_aircraft, app):
     """Test managing aircraft status."""

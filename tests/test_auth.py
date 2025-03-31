@@ -17,7 +17,7 @@ def test_login(client, test_user, app):
             '/auth/login',
             data={
                 'email': 'test@example.com',
-                'password': 'test123',
+                'password': 'password123',
                 'csrf_token': csrf_token
             },
             follow_redirects=True
@@ -67,7 +67,7 @@ def test_login_inactive_user(client, test_user, app):
             '/auth/login',
             data={
                 'email': 'test@example.com',
-                'password': 'test123',
+                'password': 'password123',
                 'csrf_token': csrf_token
             },
             follow_redirects=True
@@ -111,7 +111,7 @@ def test_remember_me(client, test_user, app):
             '/auth/login',
             data={
                 'email': 'test@example.com',
-                'password': 'test123',
+                'password': 'password123',
                 'remember': True,
                 'csrf_token': csrf_token
             },
@@ -119,4 +119,4 @@ def test_remember_me(client, test_user, app):
         )
         assert response.status_code == 200
         assert current_user.is_authenticated
-        assert session.permanent 
+        assert session.permanent

@@ -60,7 +60,7 @@ def create_app(config_class=Config):
 
     return app
 
-from app.models import User
+from app.models import User, Aircraft, Booking, CheckIn, CheckOut, Invoice
 
 @login_manager.user_loader
 def load_user(id):

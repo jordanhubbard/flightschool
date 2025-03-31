@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Book a Flight{% endblock %}
+{% block title %}Booking Dashboard{% endblock %}
 
 {% block extra_css %}
 <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
@@ -13,147 +13,166 @@
     .calendar-container {
         margin-top: 20px;
     }
+    .google-calendar-section {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    .google-calendar-section .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .google-calendar-section .btn i {
+        font-size: 1.2em;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="card-title mb-0">Your Upcoming Flights</h2>
+                </div>
+                <div class="card-body">
+                    {% if bookings %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Time</th>
+                                        <th>Aircraft</th>
+                                        <th>Instructor</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for booking in bookings %}
+                                        <tr>
+                                            <td>{{ booking.start_time.strftime('%Y-%m-%d') }}</td>
+                                            <td>{{ booking.start_time.strftime('%H:%M') }} - {{ booking.end_time.strftime('%H:%M') }}</td>
+                                            <td>{{ booking.aircraft.tail_number }}</td>
+                                            <td>{{ booking.instructor.full_name if booking.instructor else 'Solo' }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ {
+                                                    'pending': 'warning',
+                                                    'confirmed': 'info',
+                                                    'checked_in': 'primary',
+                                                    'completed': 'success',
+                                                    'cancelled': 'danger'
+                                                }[booking.status] }}">
+                                                    {{ booking.status|title }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if booking.status == 'confirmed' and booking.start_time > now %}
+                                                    <a href="{{ url_for('booking.check_in', id=booking.id) }}" 
+                                                       class="btn btn-sm btn-primary">
+                                                        <i class="fas fa-sign-in-alt"></i> Check In
+                                                    </a>
+                                                {% elif booking.status == 'checked_in' %}
+                                                    <a href="{{ url_for('booking.check_out', id=booking.id) }}" 
+                                                       class="btn btn-sm btn-success">
+                                                        <i class="fas fa-sign-out-alt"></i> Check Out
+                                                    </a>
+                                                {% elif booking.status == 'completed' and current_user.is_admin and not booking.invoice %}
+                                                    <a href="{{ url_for('booking.generate_invoice', id=booking.id) }}" 
+                                                       class="btn btn-sm btn-info">
+                                                        <i class="fas fa-file-invoice-dollar"></i> Generate Invoice
+                                                    </a>
+                                                {% endif %}
+                                                {% if booking.status in ['pending', 'confirmed'] %}
+                                                    <form method="POST" action="{{ url_for('booking.cancel_booking', id=booking.id) }}" 
+                                                          class="d-inline">
+                                                        <button type="submit" class="btn btn-sm btn-danger" 
+                                                                onclick="return confirm('Are you sure you want to cancel this booking?')">
+                                                            <i class="fas fa-times"></i> Cancel
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No bookings found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
         
-        <div class="card mb-4">
-            <div class="card-body">
-                <h2 class="card-title">Book a Flight</h2>
-                <form method="POST" action="{{ url_for('booking.create_booking') }}" class="booking-form">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="aircraft_id" class="form-label">Select Aircraft</label>
-                            <select class="form-select" id="aircraft_id" name="aircraft_id" required>
-                                <option value="">Choose an aircraft...</option>
-                                {% for aircraft in aircraft %}
-                                <option value="{{ aircraft.id }}">{{ aircraft.tail_number }} - {{ aircraft.make_model }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="instructor_id" class="form-label">Select Instructor (Optional)</label>
-                            <select class="form-select" id="instructor_id" name="instructor_id">
-                                <option value="">No instructor needed</option>
-                                {% for instructor in instructors %}
-                                <option value="{{ instructor.id }}">{{ instructor.first_name }} {{ instructor.last_name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="card-title mb-0">Book a Flight</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('booking.create_booking') }}">
+                        <div class="mb-3">
                             <label for="start_time" class="form-label">Start Time</label>
                             <input type="datetime-local" class="form-control" id="start_time" name="start_time" required>
                         </div>
-                        <div class="col-md-6 mb-3">
+                        
+                        <div class="mb-3">
                             <label for="duration" class="form-label">Duration (hours)</label>
-                            <select class="form-select" id="duration" name="duration" required>
-                                <option value="1">1 hour</option>
-                                <option value="2">2 hours</option>
-                                <option value="3">3 hours</option>
-                                <option value="4">4 hours</option>
+                            <input type="number" class="form-control" id="duration" name="duration" min="0.5" step="0.5" value="1" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="aircraft_id" class="form-label">Select Aircraft</label>
+                            <select class="form-select" id="aircraft_id" name="aircraft_id" required>
+                                <option value="">Select an aircraft</option>
+                                {% for aircraft in aircraft %}
+                                    <option value="{{ aircraft.id }}">{{ aircraft.tail_number }} - {{ aircraft.make_model }}</option>
+                                {% endfor %}
                             </select>
                         </div>
-                    </div>
-
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">Book Flight</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-body">
-                <h2 class="card-title">Your Upcoming Flights</h2>
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Time</th>
-                                <th>Aircraft</th>
-                                <th>Instructor</th>
-                                <th>Duration</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for booking in bookings %}
-                            <tr>
-                                <td>{{ booking.start_time.strftime('%Y-%m-%d') }}</td>
-                                <td>{{ booking.start_time.strftime('%H:%M') }}</td>
-                                <td>{{ booking.aircraft.tail_number }}</td>
-                                <td>{{ booking.instructor.first_name ~ ' ' ~ booking.instructor.last_name if booking.instructor else 'Solo' }}</td>
-                                <td>{{ ((booking.end_time - booking.start_time).total_seconds() / 3600)|round(1) }} hours</td>
-                                <td>
-                                    <span class="badge bg-{{ 'success' if booking.status == 'scheduled' else 'secondary' }}">
-                                        {{ booking.status|title }}
-                                    </span>
-                                </td>
-                                <td>
-                                    {% if booking.status == 'scheduled' %}
-                                    <form method="POST" action="{{ url_for('booking.cancel_booking', id=booking.id) }}" class="d-inline">
-                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to cancel this booking?')">
-                                            Cancel
-                                        </button>
-                                    </form>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                        
+                        <div class="mb-3">
+                            <label for="instructor_id" class="form-label">Select Instructor</label>
+                            <select class="form-select" id="instructor_id" name="instructor_id">
+                                <option value="">Solo Flight</option>
+                                {% for instructor in instructors %}
+                                    <option value="{{ instructor.id }}">{{ instructor.full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">Book Flight</button>
+                    </form>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="card-title">Available Aircraft</h2>
-                <div class="list-group">
-                    {% for aircraft in aircraft %}
-                    <div class="list-group-item">
-                        <h5 class="mb-1">{{ aircraft.tail_number }}</h5>
-                        <p class="mb-1">{{ aircraft.make_model }}</p>
-                        <small>Year: {{ aircraft.year }}</small>
+            
+            {% if has_google_auth %}
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title mb-0">Google Calendar</h2>
                     </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-
-        <div class="card mt-4">
-            <div class="card-body">
-                <h2 class="card-title">Available Instructors</h2>
-                <div class="list-group">
-                    {% for instructor in instructors %}
-                    <div class="list-group-item">
-                        <h5 class="mb-1">{{ instructor.first_name }} {{ instructor.last_name }}</h5>
-                        <p class="mb-1">{{ instructor.email }}</p>
-                        <small>Phone: {{ instructor.phone }}</small>
+                    <div class="card-body">
+                        <p class="text-muted">Your bookings are automatically synced with your Google Calendar.</p>
                     </div>
-                    {% endfor %}
                 </div>
-            </div>
+            {% else %}
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title mb-0">Google Calendar</h2>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Connect your Google Calendar to automatically sync your bookings.</p>
+                        <a href="{{ url_for('booking.google_auth') }}" class="btn btn-primary w-100">
+                            <i class="fab fa-google"></i> Connect Google Calendar
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>

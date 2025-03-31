@@ -17,7 +17,7 @@ def load_test_data():
         # Clear existing data
         Booking.query.delete()
         Aircraft.query.delete()
-        User.query.filter(User.is_admin == False).delete()
+        User.query.delete()  # Delete all users
         
         # Load test data
         with open('tests/test_data.json', 'r') as f:

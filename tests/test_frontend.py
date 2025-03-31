@@ -9,7 +9,7 @@ def test_home_page(client):
     """Test the home page is accessible and contains expected content"""
     response = client.get('/')
     assert response.status_code == 200
-    assert b'Welcome to Eyes Outside Aviation' in response.data
+    assert b'Next Level Tailwheel' in response.data
     assert b'Your trusted partner in flight training' in response.data
     assert b'Login' in response.data
 
@@ -28,7 +28,7 @@ def test_aircraft_management_ui(client, logged_in_admin, test_aircraft):
     assert response.status_code == 200
     assert b'Aircraft Management' in response.data
     assert b'Add New Aircraft' in response.data
-    assert test_aircraft.tail_number.encode() in response.data
+    assert test_aircraft.registration.encode() in response.data
 
 def test_instructor_management_ui(client, logged_in_admin, test_instructor):
     """Test the instructor management UI and functionality"""
@@ -62,7 +62,7 @@ def test_booking_list_ui(client, logged_in_user, test_aircraft):
     response = client.get('/booking/list')
     assert response.status_code == 200
     assert b'My Bookings' in response.data
-    assert test_aircraft.tail_number.encode() in response.data
+    assert test_aircraft.registration.encode() in response.data
 
 def test_navigation_ui(client, logged_in_user, logged_in_admin):
     """Test the navigation UI and functionality"""
