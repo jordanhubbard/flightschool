@@ -1,11 +1,42 @@
 from app import db, login_manager
-from flask_login import UserMixin
+from flask_login import UserMixin, AnonymousUserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 
 @login_manager.user_loader
 def load_user(id):
     return User.query.get(int(id))
+
+class AnonymousUser(AnonymousUserMixin):
+    """Anonymous user class."""
+    id = None
+    first_name = None
+    last_name = None
+    email = None
+    is_admin = False
+    is_instructor = False
+    role = None
+    status = 'anonymous'
+    google_calendar_enabled = False
+    certificates = None
+
+    def can(self, permission):
+        return False
+
+    def is_active(self):
+        return False
+
+    def is_authenticated(self):
+        return False
+
+    def is_anonymous(self):
+        return True
+
+    def get_id(self):
+        return None
+
+# Configure login manager to use custom anonymous user class
+login_manager.anonymous_user = AnonymousUser
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -16,6 +47,7 @@ class User(UserMixin, db.Model):
     phone = db.Column(db.String(20))
     address = db.Column(db.String(256))
     password_hash = db.Column(db.String(128))
+    role = db.Column(db.String(20), default='student')  # student, instructor, admin
     is_admin = db.Column(db.Boolean, default=False)
     is_instructor = db.Column(db.Boolean, default=False)
     student_id = db.Column(db.String(20), unique=True)

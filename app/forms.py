@@ -5,19 +5,26 @@ from app.models import User
 from datetime import datetime
 
 class LoginForm(FlaskForm):
+    """Login form."""
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
-    remember = BooleanField('Remember Me')
+    remember_me = BooleanField('Remember Me')
     submit = SubmitField('Sign In')
+
+    def __init__(self, *args, **kwargs):
+        super(LoginForm, self).__init__(*args, **kwargs)
+        if not self.csrf_token.current_token:
+            self.csrf_token._get_token()
 
 class RegistrationForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
-    name = StringField('Name', validators=[DataRequired()])
-    phone = StringField('Phone')
+    first_name = StringField('First Name', validators=[DataRequired()])
+    last_name = StringField('Last Name', validators=[DataRequired()])
+    phone = StringField('Phone', validators=[Optional()])
+    student_id = StringField('Student ID', validators=[Optional()])
+    certificates = StringField('Certificates', validators=[Optional()])
     password = PasswordField('Password', validators=[DataRequired()])
     password2 = PasswordField('Repeat Password', validators=[DataRequired(), EqualTo('password')])
-    student_id = StringField('Student ID')
-    certificates = StringField('Certificates')
     submit = SubmitField('Register')
 
     def validate_email(self, email):
@@ -73,12 +80,13 @@ class UserForm(FlaskForm):
 class AircraftForm(FlaskForm):
     registration = StringField('Registration', validators=[DataRequired()])
     make_model = StringField('Make/Model', validators=[DataRequired()])
-    year = IntegerField('Year', validators=[DataRequired()])
+    year = IntegerField('Year', validators=[Optional()])
     status = SelectField('Status', choices=[
         ('available', 'Available'),
-        ('maintenance', 'Maintenance'),
-        ('inactive', 'Inactive')
-    ])
+        ('maintenance', 'In Maintenance'),
+        ('retired', 'Retired')
+    ], validators=[DataRequired()])
+    rate_per_hour = FloatField('Rate per Hour', validators=[DataRequired()])
     submit = SubmitField('Submit')
 
 class InstructorForm(FlaskForm):
@@ -110,24 +118,19 @@ class MaintenanceTypeForm(FlaskForm):
     submit = SubmitField('Submit')
 
 class MaintenanceRecordForm(FlaskForm):
-    maintenance_type = SelectField('Maintenance Type', validators=[DataRequired()], coerce=int)
-    performed_at = DateTimeField('Performed At', validators=[DataRequired()], format='%Y-%m-%d %H:%M')
-    performed_by = SelectField('Performed By', validators=[DataRequired()], coerce=int)
+    maintenance_type = SelectField('Maintenance Type', coerce=int, validators=[DataRequired()])
+    notes = TextAreaField('Notes', validators=[Optional()])
     hobbs_hours = FloatField('Hobbs Hours', validators=[Optional()])
     tach_hours = FloatField('Tach Hours', validators=[Optional()])
-    notes = TextAreaField('Notes', validators=[Optional()])
     submit = SubmitField('Submit')
 
 class SquawkForm(FlaskForm):
     description = TextAreaField('Description', validators=[DataRequired()])
-    status = SelectField('Status',
-        choices=[
-            ('open', 'Open'),
-            ('in_progress', 'In Progress'),
-            ('resolved', 'Resolved')
-        ],
-        validators=[DataRequired()]
-    )
+    status = SelectField('Status', choices=[
+        ('open', 'Open'),
+        ('in_progress', 'In Progress'),
+        ('resolved', 'Resolved')
+    ], validators=[DataRequired()])
     resolution_notes = TextAreaField('Resolution Notes', validators=[Optional()])
     submit = SubmitField('Submit')
 
@@ -160,9 +163,10 @@ class InvoiceForm(FlaskForm):
     submit = SubmitField('Generate Invoice')
 
 class AccountSettingsForm(FlaskForm):
-    first_name = StringField('First Name', validators=[DataRequired(), Length(min=2, max=50)])
-    last_name = StringField('Last Name', validators=[DataRequired(), Length(min=2, max=50)])
-    phone = StringField('Phone', validators=[Optional(), Length(max=20)])
-    password = PasswordField('New Password', validators=[Optional(), Length(min=6)])
-    password2 = PasswordField('Repeat New Password', validators=[Optional(), EqualTo('password')])
+    first_name = StringField('First Name', validators=[DataRequired()])
+    last_name = StringField('Last Name', validators=[DataRequired()])
+    phone = StringField('Phone', validators=[Optional()])
+    address = StringField('Address', validators=[Optional()])
+    password = PasswordField('New Password', validators=[Optional()])
+    password2 = PasswordField('Repeat New Password', validators=[EqualTo('password')])
     submit = SubmitField('Update Settings')

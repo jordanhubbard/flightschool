@@ -4,28 +4,28 @@ import pytest
 from datetime import datetime, timedelta, UTC
 from app import create_app, db
 from app.models import User, Aircraft, Booking, MaintenanceType, MaintenanceRecord, Squawk, CheckIn, CheckOut, Invoice
-from flask import session
+from flask import session, current_app
 from flask_login import LoginManager, login_user
 from sqlalchemy.orm import scoped_session
+import sqlalchemy as sa
+from flask import Flask
 
-@pytest.fixture(scope='function')
+@pytest.fixture
 def app():
     """Create and configure a new app instance for each test."""
-    app = create_app({
-        'TESTING': True,
-        'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
-        'WTF_CSRF_ENABLED': False,
-        'WTF_CSRF_CHECK_DEFAULT': False,
-        'SECRET_KEY': 'test-key',
-        'LOGIN_DISABLED': True  # Disable login requirement for testing
-    })
-
-    # Create the database and the database tables
+    app = create_app('testing')
+    app.config['TESTING'] = True
+    app.config['WTF_CSRF_ENABLED'] = False  # Disable CSRF for testing
+    app.config['SERVER_NAME'] = 'localhost'  # Required for url_for to work in tests
+    
+    # Create tables
     with app.app_context():
-        # Import all models to ensure they are registered
-        from app.models import User, Aircraft, Booking, MaintenanceType, MaintenanceRecord, Squawk, CheckIn, CheckOut, Invoice
         db.create_all()
-        yield app
+    
+    yield app
+    
+    # Clean up
+    with app.app_context():
         db.session.remove()
         db.drop_all()
 
@@ -35,166 +35,175 @@ def client(app):
     return app.test_client()
 
 @pytest.fixture
+def _db(app):
+    """Create a new database for the test."""
+    with app.app_context():
+        db.create_all()
+        yield db
+        db.session.remove()
+        db.drop_all()
+
+@pytest.fixture(scope='function')
+def session(app, _db):
+    """Create a new database session for a test."""
+    with app.app_context():
+        connection = _db.engine.connect()
+        transaction = connection.begin()
+        
+        # Create a session bound to the connection
+        session = _db.session.registry()
+        session.bind = connection
+        
+        yield session
+        
+        session.close()
+        transaction.rollback()
+        connection.close()
+
+@pytest.fixture(scope='function')
 def runner(app):
-    """A test runner for the app's Click commands."""
+    """Create a test CLI runner."""
     return app.test_cli_runner()
 
 @pytest.fixture
-def test_user(app):
+def test_user(_db):
     """Create a test user."""
-    with app.app_context():
+    with _db.session.begin():
         user = User(
-            email='test@example.com',
+            email=f'test_user_{datetime.now().timestamp()}@example.com',
             first_name='Test',
             last_name='User',
             role='student',
-            is_admin=False,
-            is_instructor=False,
             status='active'
         )
         user.set_password('password123')
-        db.session.add(user)
-        db.session.commit()
-        db.session.refresh(user)  # Refresh the instance to ensure it's bound to the session
-        yield user
-        db.session.rollback()
+        _db.session.add(user)
+        _db.session.commit()
+        return user
 
 @pytest.fixture
-def test_admin(app):
-    """Create a test admin user."""
-    with app.app_context():
-        admin = User(
-            email='admin@example.com',
-            first_name='Admin',
-            last_name='User',
-            role='admin',
-            is_admin=True,
-            is_instructor=False,
-            status='active'
-        )
-        admin.set_password('password123')
-        db.session.add(admin)
-        db.session.commit()
-        db.session.refresh(admin)  # Refresh the instance to ensure it's bound to the session
-        yield admin
-        db.session.rollback()
-
-@pytest.fixture
-def test_instructor(app):
-    """Create a test instructor user."""
-    with app.app_context():
+def test_instructor(_db):
+    """Create a test instructor."""
+    with _db.session.begin():
         instructor = User(
-            email='instructor@example.com',
-            first_name='John',
-            last_name='Doe',
-            phone='123-456-7890',
-            certificates='CFI, CFII',
+            email=f'test_instructor_{datetime.now().timestamp()}@example.com',
+            first_name='Test',
+            last_name='Instructor',
             role='instructor',
-            is_admin=False,
-            is_instructor=True,
             status='active',
-            instructor_rate_per_hour=75.00
+            is_instructor=True
         )
         instructor.set_password('password123')
-        db.session.add(instructor)
-        db.session.commit()
-        db.session.refresh(instructor)  # Refresh the instance to ensure it's bound to the session
-        yield instructor
-        db.session.rollback()
+        _db.session.add(instructor)
+        _db.session.commit()
+        return instructor
 
 @pytest.fixture
-def test_aircraft(app):
-    """Create a test aircraft."""
-    with app.app_context():
-        aircraft = Aircraft(
-            registration='N12345',
-            make_model='Cessna 172',
-            year=2020,
-            status='available',
-            rate_per_hour=150.00
+def test_admin(_db):
+    """Create a test admin user."""
+    with _db.session.begin():
+        admin = User(
+            email=f'test_admin_{datetime.now().timestamp()}@example.com',
+            first_name='Test',
+            last_name='Admin',
+            role='admin',
+            status='active',
+            is_admin=True
         )
-        db.session.add(aircraft)
-        db.session.commit()
-        db.session.refresh(aircraft)  # Refresh the instance to ensure it's bound to the session
-        yield aircraft
-        db.session.rollback()
+        admin.set_password('password123')
+        _db.session.add(admin)
+        _db.session.commit()
+        return admin
 
 @pytest.fixture
-def test_booking(app, test_user, test_aircraft, test_instructor):
+def test_aircraft(_db):
+    """Create a test aircraft."""
+    with _db.session.begin():
+        aircraft = Aircraft(
+            registration=f'N1234{datetime.now().timestamp()}',
+            make_model='Cessna 172',
+            year=1965,
+            status='available',
+            rate_per_hour=175.00
+        )
+        _db.session.add(aircraft)
+        _db.session.commit()
+        return aircraft
+
+@pytest.fixture
+def auth_client(client, test_user, _db):
+    """A test client with a logged-in user."""
+    with client.session_transaction() as sess:
+        sess['user_id'] = test_user.id
+        sess['_fresh'] = True
+    return client
+
+@pytest.fixture
+def admin_client(client, test_admin, _db):
+    """A test client with a logged-in admin user."""
+    with client.session_transaction() as sess:
+        sess['user_id'] = test_admin.id
+        sess['_fresh'] = True
+    return client
+
+@pytest.fixture(scope='function')
+def test_booking(_db, test_user, test_instructor, test_aircraft):
     """Create a test booking."""
-    with app.app_context():
+    with _db.session.begin():
         booking = Booking(
             student_id=test_user.id,
             instructor_id=test_instructor.id,
             aircraft_id=test_aircraft.id,
-            start_time=datetime.now(UTC) + timedelta(days=1),
-            end_time=datetime.now(UTC) + timedelta(days=1, hours=2),
-            status='confirmed'
+            start_time=datetime.now() + timedelta(days=1),
+            end_time=datetime.now() + timedelta(days=1, hours=2),
+            status='scheduled'
         )
-        db.session.add(booking)
-        db.session.commit()
-        db.session.refresh(booking)  # Refresh the instance to ensure it's bound to the session
-        yield booking
-        db.session.rollback()
+        _db.session.add(booking)
+        _db.session.commit()
+        return booking
 
-@pytest.fixture
-def test_check_in(app, test_booking):
+@pytest.fixture(scope='function')
+def test_check_in(_db, test_booking):
     """Create a test check-in."""
-    with app.app_context():
+    with _db.session.begin():
         check_in = CheckIn(
             booking_id=test_booking.id,
-            aircraft_id=test_booking.aircraft_id,
-            instructor_id=test_booking.instructor_id,
-            hobbs_start=1234.5,
-            tach_start=2345.6,
-            instructor_start_time=datetime.now(UTC),
-            notes='Pre-flight inspection completed'
+            time=datetime.now(),
+            hobbs_start=100.0,
+            tach_start=200.0,
+            fuel_level='full'
         )
-        db.session.add(check_in)
-        db.session.commit()
-        db.session.refresh(check_in)  # Refresh the instance to ensure it's bound to the session
-        yield check_in
-        db.session.rollback()
+        _db.session.add(check_in)
+        _db.session.commit()
+        return check_in
 
 @pytest.fixture
-def test_check_out(app, test_booking, test_check_in):
+def test_check_out(_db, test_booking):
     """Create a test check-out."""
-    with app.app_context():
+    with _db.session.begin():
         check_out = CheckOut(
             booking_id=test_booking.id,
-            aircraft_id=test_booking.aircraft_id,
-            instructor_id=test_booking.instructor_id,
-            hobbs_end=1236.5,
-            tach_end=2347.6,
-            instructor_end_time=datetime.now(UTC) + timedelta(hours=2),
-            notes='Post-flight inspection completed'
+            time=datetime.now() + timedelta(hours=2),
+            hobbs_end=102.0,
+            tach_end=202.0,
+            fuel_level='tabs'
         )
-        db.session.add(check_out)
-        db.session.commit()
-        db.session.refresh(check_out)  # Refresh the instance to ensure it's bound to the session
-        yield check_out
-        db.session.rollback()
+        _db.session.add(check_out)
+        _db.session.commit()
+        return check_out
 
 @pytest.fixture
-def test_invoice(app, test_booking, test_check_out):
+def test_invoice(_db, test_booking):
     """Create a test invoice."""
-    with app.app_context():
+    with _db.session.begin():
         invoice = Invoice(
             booking_id=test_booking.id,
-            aircraft_id=test_booking.aircraft_id,
-            student_id=test_booking.student_id,
-            invoice_number=f"INV-{datetime.now().strftime('%Y%m%d%H%M%S')}-{test_booking.id}",
-            aircraft_rate=150.00,
-            instructor_rate=75.00,
-            aircraft_time=2.0,
-            instructor_time=2.0,
+            amount=240.00,
             status='pending'
         )
-        db.session.add(invoice)
-        db.session.commit()
-        db.session.refresh(invoice)  # Refresh the instance to ensure it's bound to the session
-        yield invoice
-        db.session.rollback()
+        _db.session.add(invoice)
+        _db.session.commit()
+        return invoice
 
 @pytest.fixture
 def auth(client):
@@ -204,13 +213,13 @@ def auth(client):
             self._client = client
 
         def login(self, email='test@example.com', password='password123'):
-            return self._client.post(
-                '/auth/login',
-                data={'email': email, 'password': password}
-            )
+            return self._client.post('/auth/login', data={
+                'email': email,
+                'password': password
+            }, follow_redirects=True)
 
         def logout(self):
-            return self._client.get('/auth/logout')
+            return self._client.get('/auth/logout', follow_redirects=True)
 
     return AuthActions(client)
 
@@ -223,9 +232,7 @@ def logged_in_user(client, test_user, app):
             sess['_fresh'] = True
             sess['csrf_token'] = 'test-token'
         login_user(test_user)
-        db.session.refresh(test_user)  # Refresh the instance to ensure it's bound to the session
-        yield test_user
-        db.session.rollback()
+    return client
 
 @pytest.fixture
 def logged_in_admin(client, test_admin, app):
@@ -236,9 +243,7 @@ def logged_in_admin(client, test_admin, app):
             sess['_fresh'] = True
             sess['csrf_token'] = 'test-token'
         login_user(test_admin)
-        db.session.refresh(test_admin)  # Refresh the instance to ensure it's bound to the session
-        yield test_admin
-        db.session.rollback()
+    return client
 
 @pytest.fixture
 def logged_in_instructor(client, test_instructor, app):

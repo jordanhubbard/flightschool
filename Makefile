@@ -43,15 +43,7 @@ init: env
 	@echo "Creating instance directory..."
 	mkdir -p instance
 	@echo "Initializing database..."
-	@if [ ! -d "migrations" ]; then \
-		. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(FLASK) db init; \
-	fi
-	@if [ -d "migrations" ]; then \
-		. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(FLASK) db migrate -m "Initial migration"; \
-		. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(FLASK) db upgrade; \
-	fi
-	@echo "Creating database tables..."
-	. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(PYTHON) scripts/init_db.py
+	. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(PYTHON) init_db.py
 	@echo "Initialization complete."
 
 run: env
