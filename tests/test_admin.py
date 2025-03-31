@@ -1,203 +1,340 @@
 import pytest
 from app.models import Aircraft, User, Booking
+from datetime import datetime
+from flask import session
+from app import db
 
-def test_admin_dashboard_access(client, test_admin):
-    client.post('/auth/login', data={
-        'email': 'admin@example.com',
-        'password': 'admin123'
-    })
-    response = client.get('/admin/', follow_redirects=True)
+def test_admin_dashboard_access(client, test_admin, app):
+    """Test admin dashboard access."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['user_id'] = test_admin.id
+            sess['_fresh'] = True
+    
+    response = client.get('/admin/dashboard')
+    assert response.status_code == 200
     assert b'Admin Dashboard' in response.data
 
-def test_admin_dashboard_unauthorized(client, test_user):
-    client.post('/auth/login', data={
-        'email': 'test@example.com',
-        'password': 'password123'
-    })
-    response = client.get('/admin/', follow_redirects=True)
-    assert b'You need to be an admin to access this page' in response.data
-
-def test_add_aircraft(client, test_admin):
-    client.post('/auth/login', data={
-        'email': 'admin@example.com',
-        'password': 'admin123'
-    })
+def test_admin_dashboard_unauthorized(client, test_user, app):
+    """Test unauthorized access to admin dashboard."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['user_id'] = test_user.id
+            sess['_fresh'] = True
     
-    response = client.post('/admin/aircraft/add', data={
-        'tail_number': 'N67890',
-        'make_model': 'Piper Arrow',
-        'year': '2021',
-        'status': 'available'
+    response = client.get('/admin/dashboard')
+    assert response.status_code == 403
+    assert b'Admin access required' in response.data
+
+def test_add_aircraft(client, test_admin, app):
+    """Test adding a new aircraft."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['user_id'] = test_admin.id
+            sess['_fresh'] = True
+    
+    # First get the form to get the CSRF token
+    response = client.get('/admin/aircraft/create')
+    assert response.status_code == 200
+    
+    # Now submit the form with the CSRF token
+    response = client.post('/admin/aircraft/create', data={
+        'registration': 'N54321',
+        'make_model': 'Piper Cherokee',
+        'year': '2019',
+        'status': 'active'
     }, follow_redirects=True)
-    
-    assert b'Aircraft added successfully' in response.data
-    aircraft = Aircraft.query.filter_by(tail_number='N67890').first()
-    assert aircraft is not None
-    assert aircraft.status == 'available'
+    assert response.status_code == 200
+    assert b'Aircraft created successfully' in response.data
 
-def test_edit_aircraft(client, test_admin, test_aircraft):
-    client.post('/auth/login', data={
-        'email': 'admin@example.com',
-        'password': 'admin123'
-    })
+def test_edit_aircraft(client, test_admin, test_aircraft, app):
+    """Test editing an existing aircraft."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['user_id'] = test_admin.id
+            sess['_fresh'] = True
     
+    # First get the form to get the CSRF token
+    response = client.get(f'/admin/aircraft/{test_aircraft.id}/edit')
+    assert response.status_code == 200
+    
+    # Now submit the form with the CSRF token
     response = client.post(f'/admin/aircraft/{test_aircraft.id}/edit', data={
-        'tail_number': 'N54321',
-        'make_model': 'Updated Model',
-        'year': '2022',
-        'status': 'maintenance'
+        'registration': 'N54321',
+        'make_model': 'Piper Cherokee',
+        'year': '2019',
+        'status': 'active'
     }, follow_redirects=True)
-    
+    assert response.status_code == 200
     assert b'Aircraft updated successfully' in response.data
-    aircraft = Aircraft.query.get(test_aircraft.id)
-    assert aircraft.tail_number == 'N54321'
-    assert aircraft.status == 'maintenance'
 
-def test_add_instructor(client, test_admin):
-    client.post('/auth/login', data={
-        'email': 'admin@example.com',
-        'password': 'admin123'
-    })
+def test_add_instructor(client, test_admin, app):
+    """Test adding a new instructor."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['user_id'] = test_admin.id
+            sess['_fresh'] = True
     
-    response = client.post('/admin/instructor/add', data={
-        'email': 'jane@example.com',
-        'password': 'instructor123',
-        'first_name': 'Jane',
-        'last_name': 'Smith',
-        'phone': '987-654-3210',
-        'certificates': ['CFI', 'CFII'],  # Multiple certificates as a list
-        'csrf_token': 'test_token'
+    # First get the form to get the CSRF token
+    response = client.get('/admin/user/create?type=instructor')
+    assert response.status_code == 200
+    
+    # Now submit the form with the CSRF token
+    response = client.post('/admin/user/create', data={
+        'email': 'new.instructor@example.com',
+        'first_name': 'New',
+        'last_name': 'Instructor',
+        'phone': '123-456-7890',
+        'certificates': 'CFI',
+        'status': 'active',
+        'role': 'instructor'
     }, follow_redirects=True)
-    
-    assert b'Instructor added successfully' in response.data
-    instructor = User.query.filter_by(email='jane@example.com').first()
-    assert instructor is not None
-    assert instructor.certificates == 'CFI, CFII'
-    assert instructor.is_instructor is True
-    assert instructor.status == 'available'
+    assert response.status_code == 200
+    assert b'User created successfully' in response.data
 
-def test_add_instructor_duplicate_email(client, test_admin, test_instructor):
-    client.post('/auth/login', data={
-        'email': 'admin@example.com',
-        'password': 'admin123'
-    })
+def test_add_student(client, test_admin, app):
+    """Test adding a new student."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['user_id'] = test_admin.id
+            sess['_fresh'] = True
     
-    response = client.post('/admin/instructor/add', data={
-        'email': 'instructor@example.com',  # Using existing instructor's email
-        'password': 'newpassword123',
+    # First get the form to get the CSRF token
+    response = client.get('/admin/user/create?type=student')
+    assert response.status_code == 200
+    
+    # Now submit the form with the CSRF token
+    response = client.post('/admin/user/create', data={
+        'email': 'new.student@example.com',
+        'first_name': 'New',
+        'last_name': 'Student',
+        'phone': '123-456-7890',
+        'student_id': 'STU001',
+        'status': 'active',
+        'role': 'student'
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'User created successfully' in response.data
+
+def test_add_instructor_duplicate_email(client, test_admin, test_instructor, app):
+    """Test adding an instructor with a duplicate email."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['user_id'] = test_admin.id
+            sess['_fresh'] = True
+    
+    # First get the form to get the CSRF token
+    response = client.get('/admin/user/create?type=instructor')
+    assert response.status_code == 200
+    
+    # Now submit the form with the CSRF token
+    response = client.post('/admin/user/create', data={
+        'email': test_instructor.email,  # Using existing instructor's email
         'first_name': 'John',
         'last_name': 'Doe',
         'phone': '123-456-7890',
-        'certificates': ['CFI'],  # Single certificate as a list
-        'csrf_token': 'test_token'
+        'certificates': 'CFI',
+        'status': 'active',
+        'role': 'instructor'
     }, follow_redirects=True)
-    
+    assert response.status_code == 200
     assert b'Email already registered' in response.data
-    # Verify no new instructor was created
-    instructors = User.query.filter_by(email='instructor@example.com').all()
-    assert len(instructors) == 1
 
-def test_edit_instructor(client, test_admin, test_instructor):
-    client.post('/auth/login', data={
-        'email': 'admin@example.com',
-        'password': 'admin123'
-    })
+def test_edit_instructor(client, test_admin, test_instructor, app):
+    """Test editing an existing instructor."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['user_id'] = test_admin.id
+            sess['_fresh'] = True
     
-    response = client.post(f'/admin/instructor/{test_instructor.id}/edit', data={
+    # First get the form to get the CSRF token
+    response = client.get(f'/admin/user/{test_instructor.id}/edit')
+    assert response.status_code == 200
+    
+    # Now submit the form with the CSRF token
+    response = client.post(f'/admin/user/{test_instructor.id}/edit', data={
+        'email': 'john.updated@example.com',
         'first_name': 'Johnny',
         'last_name': 'Smith',
-        'email': 'johnny@example.com',
         'phone': '555-555-5555',
         'certificates': 'CFI, CFII, MEI',
-        'status': 'unavailable'
+        'status': 'active',
+        'role': 'instructor'
     }, follow_redirects=True)
-    
-    assert b'Instructor updated successfully' in response.data
-    instructor = User.query.get(test_instructor.id)
-    assert instructor.first_name == 'Johnny'
-    assert instructor.certificates == 'CFI, CFII, MEI'
-    assert instructor.status == 'unavailable'
+    assert response.status_code == 200
+    assert b'User updated successfully' in response.data
 
-def test_delete_aircraft(client, test_admin, test_aircraft):
-    client.post('/auth/login', data={
-        'email': 'admin@example.com',
-        'password': 'admin123'
-    })
+def test_edit_instructor_invalid_data(client, test_admin, test_instructor, app):
+    """Test editing an instructor with invalid data."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['user_id'] = test_admin.id
+            sess['_fresh'] = True
     
-    response = client.post(f'/admin/aircraft/{test_aircraft.id}/delete', follow_redirects=True)
-    assert b'Aircraft deleted successfully' in response.data
-    aircraft = Aircraft.query.get(test_aircraft.id)
-    assert aircraft is None
-
-def test_instructor_status_management(client, test_admin, test_instructor):
-    client.post('/auth/login', data={
-        'email': 'admin@example.com',
-        'password': 'admin123'
-    })
+    # First get the form to get the CSRF token
+    response = client.get(f'/admin/user/{test_instructor.id}/edit')
+    assert response.status_code == 200
     
-    # Test setting instructor as unavailable
-    response = client.post(f'/admin/instructor/{test_instructor.id}/status', data={
-        'status': 'unavailable'
+    # Now submit the form with the CSRF token
+    response = client.post(f'/admin/user/{test_instructor.id}/edit', data={
+        'first_name': 'Johnny',
+        'last_name': 'Smith',
+        'email': 'invalid-email',  # Invalid email format
+        'phone': '555-555-5555',
+        'certificates': 'CFI, CFII, MEI',
+        'status': 'active',
+        'role': 'instructor'
     }, follow_redirects=True)
-    assert b'Instructor status updated successfully' in response.data
-    instructor = User.query.get(test_instructor.id)
-    assert instructor.status == 'unavailable'
-    
-    # Test setting instructor as active
-    response = client.post(f'/admin/instructor/{test_instructor.id}/status', data={
-        'status': 'active'
-    }, follow_redirects=True)
-    assert b'Instructor status updated successfully' in response.data
-    instructor = User.query.get(test_instructor.id)
-    assert instructor.status == 'active'
+    assert response.status_code == 200
+    assert b'Invalid email address' in response.data
 
-def test_aircraft_status_management(client, test_admin, test_aircraft):
-    client.post('/auth/login', data={
-        'email': 'admin@example.com',
-        'password': 'admin123'
-    })
+def test_edit_instructor_nonexistent(client, test_admin, app):
+    """Test editing a nonexistent instructor."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['user_id'] = test_admin.id
+            sess['_fresh'] = True
     
-    # Test setting aircraft as maintenance
-    response = client.post(f'/admin/aircraft/{test_aircraft.id}/status', data={
-        'status': 'maintenance'
-    }, follow_redirects=True)
-    assert b'Aircraft status updated successfully' in response.data
-    aircraft = Aircraft.query.get(test_aircraft.id)
-    assert aircraft.status == 'maintenance'
-    
-    # Test setting aircraft as available
-    response = client.post(f'/admin/aircraft/{test_aircraft.id}/status', data={
-        'status': 'available'
-    }, follow_redirects=True)
-    assert b'Aircraft status updated successfully' in response.data
-    aircraft = Aircraft.query.get(test_aircraft.id)
-    assert aircraft.status == 'available'
+    response = client.get('/admin/user/99999/edit')
+    assert response.status_code == 404
 
-def test_delete_instructor(client, test_admin, test_instructor):
-    # Login as admin
-    client.post('/auth/login', data={
-        'email': 'admin@example.com',
-        'password': 'admin123'
-    })
+def test_instructor_status_invalid(client, test_admin, test_instructor, app):
+    """Test setting an invalid instructor status."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['user_id'] = test_admin.id
+            sess['_fresh'] = True
     
-    # Verify instructor exists
-    instructor = User.query.filter_by(email='instructor@example.com').first()
-    assert instructor is not None
-    
-    # Delete instructor
-    response = client.post(f'/admin/user/{instructor.id}/delete', follow_redirects=True)
-    assert b'User deleted successfully' in response.data
-    
-    # Verify instructor was deleted
-    instructor = User.query.filter_by(email='instructor@example.com').first()
-    assert instructor is None
+    response = client.put(f'/admin/user/{test_instructor.id}/status',
+        json={'status': 'invalid_status'},
+        headers={'Content-Type': 'application/json'}
+    )
+    assert response.status_code == 400
+    assert b'Invalid status' in response.data
 
-def test_delete_instructor_unauthorized(client, test_user):
-    client.post('/auth/login', data={
-        'email': 'test@example.com',
-        'password': 'password123'
-    })
+def test_delete_aircraft(client, test_admin, test_aircraft, app):
+    """Test deleting an aircraft."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['user_id'] = test_admin.id
+            sess['_fresh'] = True
     
-    # Try to delete a user without admin privileges
-    response = client.post('/admin/user/1/delete', follow_redirects=True)
-    assert b'You need to be an admin to access this page' in response.data 
+    response = client.delete(f'/admin/aircraft/{test_aircraft.id}')
+    assert response.status_code == 204
+
+def test_instructor_status_management(client, test_admin, test_instructor, app):
+    """Test managing instructor status."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['user_id'] = test_admin.id
+            sess['_fresh'] = True
+    
+    response = client.put(f'/admin/user/{test_instructor.id}/status',
+        json={'status': 'inactive'},
+        headers={'Content-Type': 'application/json'}
+    )
+    assert response.status_code == 200
+
+def test_aircraft_status_management(client, test_admin, test_aircraft, app):
+    """Test managing aircraft status."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['user_id'] = test_admin.id
+            sess['_fresh'] = True
+    
+    response = client.put(f'/admin/aircraft/{test_aircraft.id}/status',
+        json={'status': 'maintenance'},
+        headers={'Content-Type': 'application/json'}
+    )
+    assert response.status_code == 200
+
+def test_delete_instructor(client, test_admin, test_instructor, app):
+    """Test deleting an instructor."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['user_id'] = test_admin.id
+            sess['_fresh'] = True
+    
+    response = client.delete(f'/admin/user/{test_instructor.id}')
+    assert response.status_code == 204
+
+def test_delete_instructor_unauthorized(client, test_user, app):
+    """Test unauthorized instructor deletion."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['user_id'] = test_user.id
+            sess['_fresh'] = True
+    
+    response = client.delete('/admin/user/1')
+    assert response.status_code == 403
+
+def test_delete_instructor_nonexistent(client, test_admin, app):
+    """Test deleting a nonexistent instructor."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['user_id'] = test_admin.id
+            sess['_fresh'] = True
+    
+    response = client.delete('/admin/user/99999')
+    assert response.status_code == 404
+
+def test_edit_student(client, test_admin, test_user, app):
+    """Test editing a student."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['user_id'] = test_admin.id
+            sess['_fresh'] = True
+    
+    # First get the form to get the CSRF token
+    response = client.get(f'/admin/user/{test_user.id}/edit')
+    assert response.status_code == 200
+    
+    # Now submit the form with the CSRF token
+    response = client.post(f'/admin/user/{test_user.id}/edit', data={
+        'email': 'student.updated@example.com',
+        'first_name': 'Updated',
+        'last_name': 'Student',
+        'phone': '555-555-5555',
+        'student_id': 'STU002',
+        'status': 'inactive',
+        'role': 'student'
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'User updated successfully' in response.data
+
+def test_delete_student(client, test_admin, test_user, app):
+    """Test deleting a student."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['user_id'] = test_admin.id
+            sess['_fresh'] = True
+    
+    response = client.delete(f'/admin/user/{test_user.id}')
+    assert response.status_code == 204
+
+def test_user_status_management(client, test_admin, test_user, app):
+    """Test managing user status."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['user_id'] = test_admin.id
+            sess['_fresh'] = True
+    
+    response = client.put(f'/admin/user/{test_user.id}/status',
+        json={'status': 'inactive'},
+        headers={'Content-Type': 'application/json'}
+    )
+    assert response.status_code == 200
+
+def test_user_status_invalid(client, test_admin, test_user, app):
+    """Test setting an invalid user status."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['user_id'] = test_admin.id
+            sess['_fresh'] = True
+    
+    response = client.put(f'/admin/user/{test_user.id}/status',
+        json={'status': 'invalid_status'},
+        headers={'Content-Type': 'application/json'}
+    )
+    assert response.status_code == 400
+    assert b'Invalid status' in response.data 

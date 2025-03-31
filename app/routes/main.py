@@ -26,4 +26,9 @@ def contact():
         flash('Thank you for your message! We will get back to you soon.', 'success')
         return redirect(url_for('main.contact'))
         
-    return render_template('main/contact.html') 
+    return render_template('main/contact.html')
+
+@bp.route('/profile')
+@login_required
+def profile():
+    return render_template('main/profile.html', user=current_user) 

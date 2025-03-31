@@ -2,35 +2,38 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h1>Edit Aircraft</h1>
-    
-    <form method="POST">
-        <div class="mb-3">
-            <label for="tail_number" class="form-label">Tail Number</label>
-            <input type="text" class="form-control" id="tail_number" name="tail_number" value="{{ aircraft.tail_number }}" required>
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Edit Aircraft</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="registration" class="form-label">Registration Number</label>
+                            <input type="text" class="form-control" id="registration" name="registration" value="{{ aircraft.registration }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="model" class="form-label">Model</label>
+                            <input type="text" class="form-control" id="model" name="model" value="{{ aircraft.model }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status" required>
+                                <option value="active" {% if aircraft.status == 'active' %}selected{% endif %}>Active</option>
+                                <option value="maintenance" {% if aircraft.status == 'maintenance' %}selected{% endif %}>Maintenance</option>
+                                <option value="inactive" {% if aircraft.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                            </select>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-        
-        <div class="mb-3">
-            <label for="make_model" class="form-label">Make/Model</label>
-            <input type="text" class="form-control" id="make_model" name="make_model" value="{{ aircraft.make_model }}" required>
-        </div>
-        
-        <div class="mb-3">
-            <label for="year" class="form-label">Year</label>
-            <input type="number" class="form-control" id="year" name="year" value="{{ aircraft.year }}" required>
-        </div>
-        
-        <div class="mb-3">
-            <label for="status" class="form-label">Status</label>
-            <select class="form-control" id="status" name="status">
-                <option value="available" {% if aircraft.status == 'available' %}selected{% endif %}>Available</option>
-                <option value="maintenance" {% if aircraft.status == 'maintenance' %}selected{% endif %}>Maintenance</option>
-                <option value="reserved" {% if aircraft.status == 'reserved' %}selected{% endif %}>Reserved</option>
-            </select>
-        </div>
-        
-        <button type="submit" class="btn btn-primary">Update Aircraft</button>
-        <a href="{{ url_for('admin.manage_aircraft') }}" class="btn btn-secondary">Cancel</a>
-    </form>
+    </div>
 </div>
 {% endblock %} 

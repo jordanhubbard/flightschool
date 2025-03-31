@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Student List{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Student List</h2>
+        <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary">Add New Student</a>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Student ID</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td>{{ student.first_name }} {{ student.last_name }}</td>
+                            <td>{{ student.email }}</td>
+                            <td>{{ student.phone }}</td>
+                            <td>{{ student.student_id }}</td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button type="button" 
+                                            class="btn btn-sm {% if student.status == 'active' %}btn-success active{% else %}btn-outline-success{% endif %}"
+                                            onclick="updateUserStatus({{ student.id }}, 'active')"
+                                            {% if student.status == 'active' %}disabled{% endif %}>
+                                        Active
+                                    </button>
+                                    <button type="button" 
+                                            class="btn btn-sm {% if student.status == 'inactive' %}btn-danger active{% else %}btn-outline-danger{% endif %}"
+                                            onclick="updateUserStatus({{ student.id }}, 'inactive')"
+                                            {% if student.status == 'inactive' %}disabled{% endif %}>
+                                        Inactive
+                                    </button>
+                                </div>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('admin.manage_user', id=student.id) }}" class="btn btn-sm btn-primary">Edit</a>
+                                <form method="POST" action="{{ url_for('admin.manage_user', id=student.id) }}" class="d-inline">
+                                    <input type="hidden" name="_method" value="DELETE">
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this student?')">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateUserStatus(userId, newStatus) {
+    fetch(`/admin/user/${userId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ status: newStatus })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Reload the page to show updated status
+            location.reload();
+        } else {
+            alert('Failed to update user status');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while updating user status');
+    });
+}
+</script>
+{% endblock %} 

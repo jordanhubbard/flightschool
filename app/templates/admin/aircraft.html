@@ -23,6 +23,8 @@
                 <th>Make/Model</th>
                 <th>Year</th>
                 <th>Status</th>
+                <th>Maintenance</th>
+                <th>Squawks</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -34,9 +36,28 @@
                 <td>{{ aircraft.year }}</td>
                 <td>{{ aircraft.status }}</td>
                 <td>
-                    <a href="{{ url_for('admin.edit_aircraft', aircraft_id=aircraft.id) }}" class="btn btn-sm btn-warning">Edit</a>
-                    <form action="{{ url_for('admin.delete_aircraft', aircraft_id=aircraft.id) }}" method="POST" style="display: inline;">
-                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this aircraft?')">Delete</button>
+                    <a href="{{ url_for('maintenance.aircraft_maintenance', aircraft_id=aircraft.id) }}" 
+                       class="btn btn-sm btn-info">
+                        <i class="fas fa-tools"></i> Maintenance
+                    </a>
+                </td>
+                <td>
+                    <a href="{{ url_for('maintenance.aircraft_squawks', aircraft_id=aircraft.id) }}" 
+                       class="btn btn-sm btn-secondary">
+                        <i class="fas fa-exclamation-triangle"></i> Squawks
+                    </a>
+                </td>
+                <td>
+                    <a href="{{ url_for('admin.edit_aircraft', aircraft_id=aircraft.id) }}" 
+                       class="btn btn-sm btn-warning">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <form action="{{ url_for('admin.delete_aircraft', aircraft_id=aircraft.id) }}" 
+                          method="POST" style="display: inline;">
+                        <button type="submit" class="btn btn-sm btn-danger" 
+                                onclick="return confirm('Are you sure you want to delete this aircraft?')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
                     </form>
                 </td>
             </tr>

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Check In Aircraft</h2>
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Aircraft Details</h5>
+            <p><strong>Tail Number:</strong> {{ booking.aircraft.tail_number }}</p>
+            <p><strong>Make/Model:</strong> {{ booking.aircraft.make_model }}</p>
+            <p><strong>Student:</strong> {{ booking.student.full_name }}</p>
+            {% if booking.instructor %}
+            <p><strong>Instructor:</strong> {{ booking.instructor.full_name }}</p>
+            {% endif %}
+            
+            <h5 class="card-title mt-4">Check Out Details</h5>
+            <p><strong>Check Out Time:</strong> {{ booking.checkout_time.strftime('%Y-%m-%d %H:%M') }}</p>
+            <p><strong>Check Out Hobbs:</strong> {{ booking.checkout_hobbs }}</p>
+            <p><strong>Check Out Tach:</strong> {{ booking.checkout_tach }}</p>
+            {% if booking.checkout_squawks %}
+            <p><strong>Check Out Squawks:</strong> {{ booking.checkout_squawks }}</p>
+            {% endif %}
+            {% if booking.checkout_comments %}
+            <p><strong>Check Out Comments:</strong> {{ booking.checkout_comments }}</p>
+            {% endif %}
+            
+            <form method="POST" class="mt-4">
+                {{ form.csrf_token }}
+                <div class="form-group">
+                    {{ form.hobbs.label }}
+                    {{ form.hobbs(class="form-control") }}
+                    {% if form.hobbs.errors %}
+                        {% for error in form.hobbs.errors %}
+                            <div class="alert alert-danger">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ form.tach.label }}
+                    {{ form.tach(class="form-control") }}
+                    {% if form.tach.errors %}
+                        {% for error in form.tach.errors %}
+                            <div class="alert alert-danger">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ form.squawks.label }}
+                    {{ form.squawks(class="form-control", rows=3) }}
+                    {% if form.squawks.errors %}
+                        {% for error in form.squawks.errors %}
+                            <div class="alert alert-danger">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ form.comments.label }}
+                    {{ form.comments(class="form-control", rows=3) }}
+                    {% if form.comments.errors %}
+                        {% for error in form.comments.errors %}
+                            <div class="alert alert-danger">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-primary">Check In Aircraft</button>
+                    <a href="{{ url_for('booking.list') }}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

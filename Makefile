@@ -76,6 +76,7 @@ clean:
 	rm -rf htmlcov
 	rm -f app/flightschool.db
 	rm -rf instance
+	rm -rf migrations
 	find . -type d -name __pycache__ -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
 	@echo "Clean complete."
