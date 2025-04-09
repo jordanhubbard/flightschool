@@ -18,8 +18,7 @@ def admin_required(f):
         if not current_user.is_authenticated or current_user.role != 'admin':
             if request.is_json:
                 return jsonify({'error': 'Admin access required'}), 403
-            flash('Admin access required', 'error')
-            return redirect(url_for('main.index'))
+            return render_template('errors/403.html'), 403
         return f(*args, **kwargs)
     return decorated_function
 
@@ -347,4 +346,28 @@ def edit_booking(booking_id):
             flash('Error updating booking. Please check the form data.', 'error')
             return redirect(url_for('admin.dashboard'))
     
-    return render_template('admin/edit_booking.html', booking=booking) 
+    return render_template('admin/edit_booking.html', booking=booking)
+
+@bp.route('/aircraft')
+@login_required
+@admin_required
+def aircraft_list():
+    """List all aircraft."""
+    aircraft = Aircraft.query.all()
+    return render_template('admin/aircraft_list.html', aircraft=aircraft)
+
+@bp.route('/instructors')
+@login_required
+@admin_required
+def instructor_list():
+    """List all instructors."""
+    instructors = User.query.filter_by(role='instructor').all()
+    return render_template('admin/instructor_list.html', instructors=instructors)
+
+@bp.route('/users')
+@login_required
+@admin_required
+def user_list():
+    """List all users."""
+    users = User.query.all()
+    return render_template('admin/user_list.html', users=users) 

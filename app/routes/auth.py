@@ -25,11 +25,11 @@ def login():
         user = User.query.filter_by(email=form.email.data).first()
         if user is None or not user.check_password(form.password.data):
             flash('Invalid email or password', 'danger')
-            return redirect(url_for('auth.login'))
+            return render_template('auth/login.html', title='Sign In', form=form)
         
         if not user.is_active:
             flash('Your account is inactive. Please contact support.', 'warning')
-            return redirect(url_for('auth.login'))
+            return render_template('auth/login.html', title='Sign In', form=form)
         
         login_user(user, remember=form.remember_me.data)
         next_page = request.args.get('next')
@@ -50,6 +50,7 @@ def logout():
 @bp.route('/account-settings', methods=['GET', 'POST'])
 @login_required
 def account_settings():
+    """Handle account settings."""
     form = AccountSettingsForm(obj=current_user)
     if form.validate_on_submit():
         try:

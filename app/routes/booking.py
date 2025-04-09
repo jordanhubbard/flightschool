@@ -211,12 +211,13 @@ def cancel_booking(booking_id):
 @bp.route('/list')
 @login_required
 def list_bookings():
+    """List all bookings for the current user."""
     if current_user.is_admin:
-        bookings = Booking.query.order_by(Booking.start_time).all()
+        bookings = Booking.query.all()
     elif current_user.is_instructor:
-        bookings = Booking.query.filter_by(instructor_id=current_user.id).order_by(Booking.start_time).all()
+        bookings = Booking.query.filter_by(instructor_id=current_user.id).all()
     else:
-        bookings = Booking.query.filter_by(student_id=current_user.id).order_by(Booking.start_time).all()
+        bookings = Booking.query.filter_by(student_id=current_user.id).all()
     return render_template('booking/list.html', bookings=bookings)
 
 @bp.route('/settings/calendar')
@@ -360,57 +361,57 @@ def checkout_booking(id):
     
     return render_template('booking/checkout.html', form=form, booking=booking)
 
-@bp.route('/booking/<int:id>/check-in', methods=['GET', 'POST'])
+@bp.route('/check-in/<int:booking_id>', methods=['GET', 'POST'])
 @login_required
-def check_in(id):
-    booking = Booking.query.get_or_404(id)
+def check_in_booking(booking_id):
+    """Check in for a booking."""
+    booking = Booking.query.get_or_404(booking_id)
     if not (current_user.is_admin or booking.student_id == current_user.id or booking.instructor_id == current_user.id):
-        abort(403)
-
+        flash('Access denied.', 'error')
+        return redirect(url_for('booking.dashboard'))
+    
     form = CheckInForm()
     if form.validate_on_submit():
         check_in = CheckIn(
             booking_id=booking.id,
             hobbs_start=form.hobbs_start.data,
             tach_start=form.tach_start.data,
-            instructor_start_time=form.instructor_start_time.data if form.instructor_start_time.data else None,
+            fuel_level=form.fuel_level.data,
             notes=form.notes.data
         )
-        booking.status = 'in_progress'
         db.session.add(check_in)
+        booking.status = 'in_progress'
         db.session.commit()
-        flash('Check-in recorded successfully.')
-        return redirect(url_for('booking.view_booking', booking_id=id))
+        flash('Check-in completed successfully', 'success')
+        return redirect(url_for('booking.dashboard'))
+    
+    return render_template('booking/check_in.html', booking=booking, form=form)
 
-    return render_template('booking/check_in.html', form=form, booking=booking)
-
-@bp.route('/booking/<int:id>/check-out', methods=['GET', 'POST'])
+@bp.route('/check-out/<int:booking_id>', methods=['GET', 'POST'])
 @login_required
-def check_out(id):
-    booking = Booking.query.get_or_404(id)
+def check_out_booking(booking_id):
+    """Check out from a booking."""
+    booking = Booking.query.get_or_404(booking_id)
     if not (current_user.is_admin or booking.student_id == current_user.id or booking.instructor_id == current_user.id):
-        abort(403)
-
-    if not booking.check_in:
-        flash('Cannot check out without checking in first.')
-        return redirect(url_for('booking.view_booking', booking_id=id))
-
+        flash('Access denied.', 'error')
+        return redirect(url_for('booking.dashboard'))
+    
     form = CheckOutForm()
     if form.validate_on_submit():
         check_out = CheckOut(
             booking_id=booking.id,
             hobbs_end=form.hobbs_end.data,
             tach_end=form.tach_end.data,
-            instructor_end_time=form.instructor_end_time.data if form.instructor_end_time.data else None,
+            fuel_level=form.fuel_level.data,
             notes=form.notes.data
         )
-        booking.status = 'completed'
         db.session.add(check_out)
+        booking.status = 'completed'
         db.session.commit()
-        flash('Check-out recorded successfully.')
-        return redirect(url_for('booking.generate_invoice', id=id))
-
-    return render_template('booking/check_out.html', form=form, booking=booking)
+        flash('Check-out completed successfully', 'success')
+        return redirect(url_for('booking.dashboard'))
+    
+    return render_template('booking/check_out.html', booking=booking, form=form)
 
 @bp.route('/booking/<int:id>/invoice', methods=['GET', 'POST'])
 @login_required

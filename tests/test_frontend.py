@@ -11,7 +11,9 @@ def test_home_page(client):
     assert response.status_code == 200
     assert b'Next Level Tailwheel' in response.data
     assert b'Your trusted partner in flight training' in response.data
-    assert b'Sign In' in response.data
+    assert b'Login' in response.data  # In navigation bar
+    assert b'Log in' in response.data  # In Returning Students card
+    assert b'Already registered? Log in to book your next flight or check your schedule.' in response.data
 
 def test_admin_dashboard_ui(client, test_admin, app):
     """Test admin dashboard UI elements."""

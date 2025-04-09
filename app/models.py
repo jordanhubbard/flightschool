@@ -91,6 +91,10 @@ class User(UserMixin, db.Model):
     def __repr__(self):
         return f'<User {self.email}>'
 
+    @property
+    def is_active(self):
+        return self.status == 'active'
+
 class MaintenanceType(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
