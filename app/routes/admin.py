@@ -356,12 +356,36 @@ def aircraft_list():
     aircraft = Aircraft.query.all()
     return render_template('admin/aircraft_list.html', aircraft=aircraft)
 
+@bp.route('/aircraft/add', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def add_aircraft():
+    """Add a new aircraft."""
+    form = AircraftForm()
+    
+    if form.validate_on_submit():
+        aircraft = Aircraft(
+            registration=form.registration.data,
+            make_model=form.make_model.data,
+            year=form.year.data,
+            status=form.status.data,
+            rate_per_hour=form.rate_per_hour.data
+        )
+        
+        db.session.add(aircraft)
+        db.session.commit()
+        
+        flash('Aircraft added successfully', 'success')
+        return redirect(url_for('admin.aircraft_list'))
+    
+    return render_template('admin/aircraft_form.html', form=form)
+
 @bp.route('/instructors')
 @login_required
 @admin_required
 def instructor_list():
     """List all instructors."""
-    instructors = User.query.filter_by(role='instructor').all()
+    instructors = User.query.filter_by(is_instructor=True).all()
     return render_template('admin/instructor_list.html', instructors=instructors)
 
 @bp.route('/users')
@@ -370,4 +394,57 @@ def instructor_list():
 def user_list():
     """List all users."""
     users = User.query.all()
-    return render_template('admin/user_list.html', users=users) 
+    return render_template('admin/user_list.html', users=users)
+
+@bp.route('/instructor/create', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def create_instructor():
+    """Create a new instructor."""
+    form = UserForm()
+    
+    if form.validate_on_submit():
+        # Check if email already exists
+        existing_user = User.query.filter_by(email=form.email.data).first()
+        if existing_user:
+            flash('Email already registered', 'error')
+            return render_template('admin/instructor_form.html', form=form)
+        
+        instructor = User(
+            email=form.email.data,
+            first_name=form.first_name.data,
+            last_name=form.last_name.data,
+            phone=form.phone.data,
+            role='instructor',
+            is_instructor=True,
+            certificates=form.certificates.data,
+            status=form.status.data
+        )
+        instructor.set_password('changeme')  # Default password
+        
+        db.session.add(instructor)
+        db.session.commit()
+        
+        flash('Instructor created successfully', 'success')
+        return redirect(url_for('admin.instructor_list'))
+    
+    return render_template('admin/instructor_form.html', form=form)
+
+@bp.route('/aircraft/<int:id>/status', methods=['PUT'])
+@login_required
+@admin_required
+def update_aircraft_status(id):
+    """Update aircraft status."""
+    aircraft = Aircraft.query.get_or_404(id)
+    data = request.get_json()
+    
+    if not data or 'status' not in data:
+        return jsonify({'error': 'Status is required'}), 400
+        
+    if data['status'] not in ['available', 'maintenance', 'unavailable', 'retired']:
+        return jsonify({'error': 'Invalid status'}), 400
+    
+    aircraft.status = data['status']
+    db.session.commit()
+    
+    return jsonify({'message': 'Status updated successfully'}), 200 

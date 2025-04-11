@@ -7,7 +7,7 @@ from app import db
 def test_admin_dashboard_access(client, test_admin, _db):
     """Test admin dashboard access."""
     with client.session_transaction() as sess:
-        sess['user_id'] = test_admin.id
+        sess['_user_id'] = test_admin.id
         sess['_fresh'] = True
     
     response = client.get('/admin/dashboard')
@@ -17,7 +17,7 @@ def test_admin_dashboard_access(client, test_admin, _db):
 def test_admin_dashboard_unauthorized(client, test_user, _db):
     """Test unauthorized access to admin dashboard."""
     with client.session_transaction() as sess:
-        sess['user_id'] = test_user.id
+        sess['_user_id'] = test_user.id
         sess['_fresh'] = True
     
     response = client.get('/admin/dashboard', follow_redirects=True)
@@ -28,7 +28,7 @@ def test_add_aircraft(client, test_admin, app):
     """Test adding a new aircraft."""
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['user_id'] = test_admin.id
+            sess['_user_id'] = test_admin.id
             sess['_fresh'] = True
     
     response = client.post('/admin/aircraft/add', data={
@@ -53,7 +53,7 @@ def test_edit_aircraft(client, test_admin, test_aircraft, app):
     """Test editing an existing aircraft."""
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['user_id'] = test_admin.id
+            sess['_user_id'] = test_admin.id
             sess['_fresh'] = True
     
     response = client.post(f'/admin/aircraft/{test_aircraft.id}/edit', data={
@@ -77,7 +77,7 @@ def test_edit_aircraft(client, test_admin, test_aircraft, app):
 def test_add_instructor(client, test_admin, _db):
     """Test adding a new instructor."""
     with client.session_transaction() as sess:
-        sess['user_id'] = test_admin.id
+        sess['_user_id'] = test_admin.id
         sess['_fresh'] = True
     
     response = client.post('/admin/instructors/add', data={
@@ -94,7 +94,7 @@ def test_add_instructor(client, test_admin, _db):
 def test_add_student(client, test_admin, _db):
     """Test adding a new student."""
     with client.session_transaction() as sess:
-        sess['user_id'] = test_admin.id
+        sess['_user_id'] = test_admin.id
         sess['_fresh'] = True
     
     response = client.post('/admin/students/add', data={
@@ -112,7 +112,7 @@ def test_add_instructor_duplicate_email(client, test_admin, test_instructor, app
     """Test adding an instructor with a duplicate email."""
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['user_id'] = test_admin.id
+            sess['_user_id'] = test_admin.id
             sess['_fresh'] = True
     
     response = client.post('/admin/user/create', data={
@@ -131,7 +131,7 @@ def test_add_instructor_duplicate_email(client, test_admin, test_instructor, app
 def test_edit_instructor(client, test_admin, test_instructor, _db):
     """Test editing an instructor."""
     with client.session_transaction() as sess:
-        sess['user_id'] = test_admin.id
+        sess['_user_id'] = test_admin.id
         sess['_fresh'] = True
     
     response = client.post(f'/admin/instructors/{test_instructor.id}/edit', data={
@@ -146,7 +146,7 @@ def test_edit_instructor(client, test_admin, test_instructor, _db):
 def test_edit_instructor_invalid_data(client, test_admin, test_instructor, _db):
     """Test editing an instructor with invalid data."""
     with client.session_transaction() as sess:
-        sess['user_id'] = test_admin.id
+        sess['_user_id'] = test_admin.id
         sess['_fresh'] = True
     
     response = client.post(f'/admin/instructors/{test_instructor.id}/edit', data={
@@ -161,7 +161,7 @@ def test_edit_instructor_invalid_data(client, test_admin, test_instructor, _db):
 def test_edit_instructor_nonexistent(client, test_admin, _db):
     """Test editing a nonexistent instructor."""
     with client.session_transaction() as sess:
-        sess['user_id'] = test_admin.id
+        sess['_user_id'] = test_admin.id
         sess['_fresh'] = True
     
     response = client.post('/admin/instructors/999/edit', data={
@@ -176,7 +176,7 @@ def test_instructor_status_invalid(client, test_admin, test_instructor, app):
     """Test setting an invalid instructor status."""
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['user_id'] = test_admin.id
+            sess['_user_id'] = test_admin.id
             sess['_fresh'] = True
 
         response = client.put(f'/admin/user/{test_instructor.id}/status',
@@ -189,7 +189,7 @@ def test_delete_aircraft(client, test_admin, test_aircraft, app):
     """Test deleting an aircraft."""
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['user_id'] = test_admin.id
+            sess['_user_id'] = test_admin.id
             sess['_fresh'] = True
     
     response = client.delete(f'/admin/aircraft/{test_aircraft.id}')
@@ -203,7 +203,7 @@ def test_instructor_status_management(client, test_admin, test_instructor, app):
     """Test managing instructor status."""
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['user_id'] = test_admin.id
+            sess['_user_id'] = test_admin.id
             sess['_fresh'] = True
 
         # Test setting instructor to inactive
@@ -218,7 +218,7 @@ def test_aircraft_status_management(client, test_admin, test_aircraft, app):
     """Test managing aircraft status."""
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['user_id'] = test_admin.id
+            sess['_user_id'] = test_admin.id
             sess['_fresh'] = True
     
     response = client.put(f'/admin/aircraft/{test_aircraft.id}/status',
@@ -230,7 +230,7 @@ def test_aircraft_status_management(client, test_admin, test_aircraft, app):
 def test_delete_instructor(client, test_admin, test_instructor, _db):
     """Test deleting an instructor."""
     with client.session_transaction() as sess:
-        sess['user_id'] = test_admin.id
+        sess['_user_id'] = test_admin.id
         sess['_fresh'] = True
     
     response = client.post(f'/admin/instructors/{test_instructor.id}/delete', follow_redirects=True)
@@ -240,7 +240,7 @@ def test_delete_instructor(client, test_admin, test_instructor, _db):
 def test_delete_instructor_unauthorized(client, test_user, test_instructor, _db):
     """Test unauthorized deletion of an instructor."""
     with client.session_transaction() as sess:
-        sess['user_id'] = test_user.id
+        sess['_user_id'] = test_user.id
         sess['_fresh'] = True
     
     response = client.post(f'/admin/instructors/{test_instructor.id}/delete', follow_redirects=True)
@@ -250,7 +250,7 @@ def test_delete_instructor_unauthorized(client, test_user, test_instructor, _db)
 def test_delete_instructor_nonexistent(client, test_admin, _db):
     """Test deleting a nonexistent instructor."""
     with client.session_transaction() as sess:
-        sess['user_id'] = test_admin.id
+        sess['_user_id'] = test_admin.id
         sess['_fresh'] = True
     
     response = client.post('/admin/instructors/999/delete', follow_redirects=True)
@@ -259,7 +259,7 @@ def test_delete_instructor_nonexistent(client, test_admin, _db):
 def test_edit_student(client, test_admin, test_user, _db):
     """Test editing a student."""
     with client.session_transaction() as sess:
-        sess['user_id'] = test_admin.id
+        sess['_user_id'] = test_admin.id
         sess['_fresh'] = True
     
     response = client.post(f'/admin/students/{test_user.id}/edit', data={
@@ -274,7 +274,7 @@ def test_edit_student(client, test_admin, test_user, _db):
 def test_delete_student(client, test_admin, test_user, _db):
     """Test deleting a student."""
     with client.session_transaction() as sess:
-        sess['user_id'] = test_admin.id
+        sess['_user_id'] = test_admin.id
         sess['_fresh'] = True
     
     response = client.post(f'/admin/students/{test_user.id}/delete', follow_redirects=True)
@@ -284,7 +284,7 @@ def test_delete_student(client, test_admin, test_user, _db):
 def test_user_status_management(client, test_admin, test_user, _db):
     """Test managing user status."""
     with client.session_transaction() as sess:
-        sess['user_id'] = test_admin.id
+        sess['_user_id'] = test_admin.id
         sess['_fresh'] = True
     
     # Deactivate user
@@ -304,7 +304,7 @@ def test_user_status_management(client, test_admin, test_user, _db):
 def test_user_status_invalid(client, test_admin, test_user, _db):
     """Test invalid user status update."""
     with client.session_transaction() as sess:
-        sess['user_id'] = test_admin.id
+        sess['_user_id'] = test_admin.id
         sess['_fresh'] = True
     
     response = client.post(f'/admin/users/{test_user.id}/status', data={

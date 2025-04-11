@@ -102,5 +102,34 @@
             </div>
         </div>
     </div>
+
+    <!-- Contact Us Section -->
+    <div class="row mt-5">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="card-title">Contact Us</h2>
+                    <p class="card-text">Have questions about our flight school or programs? Get in touch with us today.</p>
+                    <p><i class="fas fa-envelope me-2"></i> info@nextleveltailwheel.com</p>
+                    <p><i class="fas fa-phone me-2"></i> (555) 123-4567</p>
+                    <p><i class="fas fa-map-marker-alt me-2"></i> 123 Airport Road, Anywhere, USA</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="card-title">Quick Links</h2>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="{{ url_for('main.about') }}"><i class="fas fa-info-circle me-2"></i>About Us</a></li>
+                        <li class="mb-2"><a href="{{ url_for('main.training') }}"><i class="fas fa-graduation-cap me-2"></i>Training Programs</a></li>
+                        <li class="mb-2"><a href="{{ url_for('main.aircraft') }}"><i class="fas fa-plane me-2"></i>Our Aircraft</a></li>
+                        <li class="mb-2"><a href="{{ url_for('main.faq') }}"><i class="fas fa-question-circle me-2"></i>FAQs</a></li>
+                        <li class="mb-2"><a href="{{ url_for('auth.register') }}"><i class="fas fa-user-plus me-2"></i>Register</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %} 

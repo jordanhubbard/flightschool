@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for
+from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app, session
 from flask_login import login_required, current_user
 from app.models import User, Aircraft, Booking
 from app import db
@@ -31,4 +31,22 @@ def contact():
 @bp.route('/profile')
 @login_required
 def profile():
-    return render_template('main/profile.html', user=current_user) 
+    return render_template('main/profile.html', user=current_user)
+
+@bp.route('/training')
+def training():
+    return render_template('main/training.html')
+
+@bp.route('/aircraft')
+def aircraft():
+    aircraft_list = Aircraft.query.all()
+    return render_template('main/aircraft.html', aircraft=aircraft_list)
+
+@bp.route('/faq')
+def faq():
+    return render_template('main/faq.html')
+
+@bp.route('/debug')
+def debug():
+    """Debug route to check authentication status."""
+    return render_template('debug.html') 

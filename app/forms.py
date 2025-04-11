@@ -1,8 +1,9 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField, DateTimeField, FloatField, TextAreaField, SelectMultipleField, IntegerField
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField, DateTimeField, FloatField, TextAreaField, SelectMultipleField, IntegerField, FileField
 from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, Optional, Length
 from app.models import User
 from datetime import datetime
+import re
 
 class LoginForm(FlaskForm):
     """Login form."""
@@ -78,16 +79,43 @@ class UserForm(FlaskForm):
             raise ValidationError('Email already registered')
 
 class AircraftForm(FlaskForm):
-    registration = StringField('Registration', validators=[DataRequired()])
-    make_model = StringField('Make/Model', validators=[DataRequired()])
+    registration = StringField('Tail Number', validators=[DataRequired()])
+    make = StringField('Make', validators=[DataRequired()])
+    model = StringField('Model', validators=[DataRequired()])
     year = IntegerField('Year', validators=[Optional()])
+    description = TextAreaField('Description', validators=[Optional()])
     status = SelectField('Status', choices=[
         ('available', 'Available'),
         ('maintenance', 'In Maintenance'),
         ('retired', 'Retired')
     ], validators=[DataRequired()])
-    rate_per_hour = FloatField('Rate per Hour', validators=[DataRequired()])
+    category = SelectField('Category', choices=[
+        ('single_engine_land', 'Single Engine Land'),
+        ('multi_engine_land', 'Multi Engine Land'),
+        ('single_engine_sea', 'Single Engine Sea'),
+        ('multi_engine_sea', 'Multi Engine Sea'),
+        ('helicopter', 'Helicopter')
+    ], validators=[Optional()])
+    engine_type = SelectField('Engine Type', choices=[
+        ('piston', 'Piston'),
+        ('turboprop', 'Turboprop'),
+        ('jet', 'Jet')
+    ], validators=[Optional()])
+    num_engines = IntegerField('Number of Engines', default=1, validators=[Optional()])
+    ifr_equipped = BooleanField('IFR Equipped')
+    gps = BooleanField('GPS')
+    autopilot = BooleanField('Autopilot')
+    rate_per_hour = FloatField('Hourly Rate', validators=[DataRequired()])
+    hobbs_time = FloatField('Current Hobbs Time', validators=[Optional()])
+    tach_time = FloatField('Current Tach Time', validators=[Optional()])
+    last_maintenance = DateTimeField('Last Maintenance Date', validators=[Optional()], format='%Y-%m-%d')
+    image = FileField('Aircraft Image', validators=[Optional()])
     submit = SubmitField('Submit')
+    
+    def validate_registration(self, field):
+        # Ensure tail number follows N-number format (N followed by digits)
+        if not re.match(r'^N\d+[A-Z]*$', field.data):
+            raise ValidationError('Tail number must be in N-number format (e.g., N12345)')
 
 class InstructorForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])

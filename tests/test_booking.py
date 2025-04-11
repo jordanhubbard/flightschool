@@ -8,7 +8,7 @@ def test_booking_dashboard_access(client, test_user, app):
     """Test access to booking dashboard."""
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['user_id'] = test_user.id
+            sess['_user_id'] = test_user.id
             sess['_fresh'] = True
     
     response = client.get('/booking/dashboard')
@@ -19,7 +19,7 @@ def test_create_booking(client, test_user, test_aircraft, test_instructor, app):
     """Test creating a new booking."""
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['user_id'] = test_user.id
+            sess['_user_id'] = test_user.id
             sess['_fresh'] = True
     
     start_time = datetime.now(UTC) + timedelta(days=1)
@@ -36,7 +36,7 @@ def test_create_booking_without_instructor(client, test_user, test_aircraft, app
     """Test creating a booking without an instructor."""
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['user_id'] = test_user.id
+            sess['_user_id'] = test_user.id
             sess['_fresh'] = True
     
     start_time = datetime.now(UTC) + timedelta(days=1)
@@ -52,7 +52,7 @@ def test_create_booking_conflict(client, test_user, test_aircraft, app):
     """Test creating a booking with a time conflict."""
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['user_id'] = test_user.id
+            sess['_user_id'] = test_user.id
             sess['_fresh'] = True
     
     start_time = datetime.now(UTC) + timedelta(days=1)
@@ -79,7 +79,7 @@ def test_cancel_booking(client, test_user, test_aircraft, app):
     """Test canceling a booking."""
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['user_id'] = test_user.id
+            sess['_user_id'] = test_user.id
             sess['_fresh'] = True
         
         # Create a booking first
@@ -103,7 +103,7 @@ def test_view_bookings(client, test_user, test_aircraft, app):
     """Test viewing list of bookings."""
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['user_id'] = test_user.id
+            sess['_user_id'] = test_user.id
             sess['_fresh'] = True
         
         # Create a booking first

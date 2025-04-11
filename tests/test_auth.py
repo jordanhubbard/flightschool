@@ -13,7 +13,7 @@ def test_login(client, test_user, _db):
     }, follow_redirects=True)
     assert response.status_code == 200
     assert b'Welcome back' in response.data
-    assert session.get('user_id') == test_user.id
+    assert session.get('_user_id') == test_user.id
 
 def test_login_invalid_credentials(client, test_user, _db):
     """Test login with invalid credentials."""
@@ -24,7 +24,7 @@ def test_login_invalid_credentials(client, test_user, _db):
     }, follow_redirects=True)
     assert response.status_code == 200
     assert b'Invalid email or password' in response.data
-    assert session.get('user_id') is None
+    assert session.get('_user_id') is None
 
 def test_login_inactive_user(client, test_user, _db):
     """Test login with inactive user."""
@@ -38,18 +38,18 @@ def test_login_inactive_user(client, test_user, _db):
     }, follow_redirects=True)
     assert response.status_code == 200
     assert b'Your account is inactive' in response.data
-    assert session.get('user_id') is None
+    assert session.get('_user_id') is None
 
 def test_logout(client, test_user, _db):
     """Test user logout."""
     with client.session_transaction() as sess:
-        sess['user_id'] = test_user.id
+        sess['_user_id'] = test_user.id
         sess['_fresh'] = True
     
     response = client.get('/auth/logout', follow_redirects=True)
     assert response.status_code == 200
     assert b'You have been logged out' in response.data
-    assert session.get('user_id') is None
+    assert session.get('_user_id') is None
 
 def test_login_required(client):
     """Test login required decorator."""
@@ -66,5 +66,5 @@ def test_remember_me(client, test_user, _db):
     }, follow_redirects=True)
     assert response.status_code == 200
     assert b'Welcome back' in response.data
-    assert session.get('user_id') == test_user.id
+    assert session.get('_user_id') == test_user.id
     assert session.get('_fresh') is True

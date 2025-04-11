@@ -1,60 +1,242 @@
 {% extends "base.html" %}
 
+{% block title %}{% if aircraft %}Edit Aircraft{% else %}Add New Aircraft{% endif %}{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">{{ title }}</h5>
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Admin Navigation</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('admin.create_aircraft') if not aircraft else url_for('admin.edit_aircraft', id=aircraft.id) }}">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        {% if aircraft %}
-                        <input type="hidden" name="id" value="{{ aircraft.id }}">
+                    <div class="nav flex-column nav-pills">
+                        <a href="{{ url_for('admin.dashboard') }}" class="nav-link">
+                            <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                        </a>
+                        <a href="{{ url_for('admin.user_list') }}" class="nav-link">
+                            <i class="fas fa-users me-2"></i> Users
+                        </a>
+                        <a href="{{ url_for('admin.instructor_list') }}" class="nav-link">
+                            <i class="fas fa-chalkboard-teacher me-2"></i> Instructors
+                        </a>
+                        <a href="{{ url_for('admin.aircraft_list') }}" class="nav-link active">
+                            <i class="fas fa-plane me-2"></i> Aircraft
+                        </a>
+                        <a href="{{ url_for('admin.schedule') }}" class="nav-link">
+                            <i class="fas fa-calendar-alt me-2"></i> Schedule
+                        </a>
+                        <a href="{{ url_for('admin.settings') }}" class="nav-link">
+                            <i class="fas fa-cogs me-2"></i> Settings
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <a href="{{ url_for('admin.aircraft_list') }}" class="btn btn-secondary d-block mb-2">
+                        <i class="fas fa-arrow-left me-2"></i> Back to Aircraft List
+                    </a>
+                    {% if aircraft %}
+                    <a href="{{ url_for('admin.maintenance_add', aircraft_id=aircraft.id) }}" class="btn btn-info d-block mb-2">
+                        <i class="fas fa-wrench me-2"></i> Log Maintenance
+                    </a>
+                    <a href="{{ url_for('admin.aircraft_view', id=aircraft.id) }}" class="btn btn-success d-block">
+                        <i class="fas fa-eye me-2"></i> View Aircraft Details
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">{% if aircraft %}Edit Aircraft{% else %}Add New Aircraft{% endif %}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                        
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <h4 class="alert-heading">Please correct the following errors:</h4>
+                            <ul class="mb-0">
+                                {% for field, errors in form.errors.items() %}
+                                <li>{{ field }}: {{ errors|join(' ') }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
                         {% endif %}
-
-                        <div class="mb-3">
-                            <label for="registration" class="form-label">Registration Number</label>
-                            <input type="text" class="form-control" id="registration" name="registration" 
-                                   value="{{ aircraft.registration if aircraft else '' }}" 
-                                   pattern="^N[0-9]{1,5}[A-Z]?$" required>
-                            <div class="form-text">Format: N followed by numbers (e.g. N12345 or N123AB)</div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h4>Basic Information</h4>
+                                <hr>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="tail_number" class="form-label">Tail Number*</label>
+                                <input type="text" class="form-control" id="tail_number" name="tail_number" 
+                                      value="{{ aircraft.tail_number if aircraft else '' }}" required>
+                                <div class="form-text">Enter the aircraft's registration number (e.g., N12345)</div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="status" class="form-label">Status*</label>
+                                <select class="form-select" id="status" name="status" required>
+                                    <option value="available" {% if aircraft and aircraft.status == 'available' %}selected{% endif %}>Available</option>
+                                    <option value="maintenance" {% if aircraft and aircraft.status == 'maintenance' %}selected{% endif %}>In Maintenance</option>
+                                    <option value="unavailable" {% if aircraft and aircraft.status == 'unavailable' %}selected{% endif %}>Unavailable</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="make" class="form-label">Make*</label>
+                                <input type="text" class="form-control" id="make" name="make" 
+                                      value="{{ aircraft.make if aircraft else '' }}" required>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="model" class="form-label">Model*</label>
+                                <input type="text" class="form-control" id="model" name="model" 
+                                      value="{{ aircraft.model if aircraft else '' }}" required>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="year" class="form-label">Year*</label>
+                                <input type="number" class="form-control" id="year" name="year" min="1903" max="2023" 
+                                      value="{{ aircraft.year if aircraft else '' }}" required>
+                            </div>
+                            
+                            <div class="col-md-12 mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" name="description" rows="3">{{ aircraft.description if aircraft else '' }}</textarea>
+                                <div class="form-text">Brief description of the aircraft, features, etc.</div>
+                            </div>
                         </div>
-
-                        <div class="mb-3">
-                            <label for="make_model" class="form-label">Make/Model</label>
-                            <input type="text" class="form-control" id="make_model" name="make_model" 
-                                   value="{{ aircraft.make_model if aircraft else '' }}" 
-                                   placeholder="e.g. Cessna 172, Piper PA-28" required>
+                        
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h4>Technical Specifications</h4>
+                                <hr>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="engine_type" class="form-label">Engine Type</label>
+                                <select class="form-select" id="engine_type" name="engine_type">
+                                    <option value="piston" {% if aircraft and aircraft.engine_type == 'piston' %}selected{% endif %}>Piston</option>
+                                    <option value="turboprop" {% if aircraft and aircraft.engine_type == 'turboprop' %}selected{% endif %}>Turboprop</option>
+                                    <option value="jet" {% if aircraft and aircraft.engine_type == 'jet' %}selected{% endif %}>Jet</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="num_engines" class="form-label">Number of Engines</label>
+                                <select class="form-select" id="num_engines" name="num_engines">
+                                    <option value="1" {% if aircraft and aircraft.num_engines == 1 %}selected{% endif %}>Single</option>
+                                    <option value="2" {% if aircraft and aircraft.num_engines == 2 %}selected{% endif %}>Twin</option>
+                                    <option value="3" {% if aircraft and aircraft.num_engines == 3 %}selected{% endif %}>Three</option>
+                                    <option value="4" {% if aircraft and aircraft.num_engines == 4 %}selected{% endif %}>Four</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="category" class="form-label">Category</label>
+                                <select class="form-select" id="category" name="category">
+                                    <option value="single_engine_land" {% if aircraft and aircraft.category == 'single_engine_land' %}selected{% endif %}>Single Engine Land</option>
+                                    <option value="multi_engine_land" {% if aircraft and aircraft.category == 'multi_engine_land' %}selected{% endif %}>Multi Engine Land</option>
+                                    <option value="single_engine_sea" {% if aircraft and aircraft.category == 'single_engine_sea' %}selected{% endif %}>Single Engine Sea</option>
+                                    <option value="multi_engine_sea" {% if aircraft and aircraft.category == 'multi_engine_sea' %}selected{% endif %}>Multi Engine Sea</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="equipment" class="form-label">Equipment</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="ifr_equipped" name="ifr_equipped" 
+                                          {% if aircraft and aircraft.ifr_equipped %}checked{% endif %}>
+                                    <label class="form-check-label" for="ifr_equipped">IFR Equipped</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="gps" name="gps" 
+                                          {% if aircraft and aircraft.gps %}checked{% endif %}>
+                                    <label class="form-check-label" for="gps">GPS</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="autopilot" name="autopilot" 
+                                          {% if aircraft and aircraft.autopilot %}checked{% endif %}>
+                                    <label class="form-check-label" for="autopilot">Autopilot</label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="last_maintenance" class="form-label">Last Maintenance Date</label>
+                                <input type="date" class="form-control" id="last_maintenance" name="last_maintenance" 
+                                      value="{{ aircraft.last_maintenance.strftime('%Y-%m-%d') if aircraft and aircraft.last_maintenance else '' }}">
+                            </div>
                         </div>
-
-                        <div class="mb-3">
-                            <label for="year" class="form-label">Year</label>
-                            <input type="number" class="form-control" id="year" name="year" 
-                                   value="{{ aircraft.year if aircraft else '' }}" 
-                                   min="1900" max="{{ current_year }}" required>
+                        
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h4>Pricing & Availability</h4>
+                                <hr>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="hourly_rate" class="form-label">Hourly Rate ($)*</label>
+                                <input type="number" class="form-control" id="hourly_rate" name="hourly_rate" min="0" step="0.01" 
+                                      value="{{ aircraft.hourly_rate if aircraft else '' }}" required>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="hobbs_time" class="form-label">Current Hobbs Time</label>
+                                <input type="number" class="form-control" id="hobbs_time" name="hobbs_time" min="0" step="0.1" 
+                                      value="{{ aircraft.hobbs_time if aircraft else '' }}">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="tach_time" class="form-label">Current Tach Time</label>
+                                <input type="number" class="form-control" id="tach_time" name="tach_time" min="0" step="0.1" 
+                                      value="{{ aircraft.tach_time if aircraft else '' }}">
+                            </div>
                         </div>
-
-                        <div class="mb-3">
-                            <label for="status" class="form-label">Status</label>
-                            <select class="form-select" id="status" name="status" required>
-                                <option value="available" {% if aircraft and aircraft.status == 'available' %}selected{% endif %}>
-                                    Available
-                                </option>
-                                <option value="maintenance" {% if aircraft and aircraft.status == 'maintenance' %}selected{% endif %}>
-                                    Maintenance
-                                </option>
-                                <option value="inactive" {% if aircraft and aircraft.status == 'inactive' %}selected{% endif %}>
-                                    Inactive
-                                </option>
-                            </select>
+                        
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h4>Image</h4>
+                                <hr>
+                            </div>
+                            
+                            <div class="col-md-12 mb-3">
+                                <label for="image" class="form-label">Aircraft Image</label>
+                                <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                                <div class="form-text">Upload a photo of the aircraft (max 5MB)</div>
+                                
+                                {% if aircraft and aircraft.image_url %}
+                                <div class="mt-2">
+                                    <p>Current image:</p>
+                                    <img src="{{ aircraft.image_url }}" alt="{{ aircraft.tail_number }}" class="img-thumbnail" style="max-height: 200px;">
+                                    <div class="form-check mt-2">
+                                        <input class="form-check-input" type="checkbox" id="delete_image" name="delete_image">
+                                        <label class="form-check-label" for="delete_image">Delete current image</label>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
                         </div>
-
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">Cancel</a>
-                            <button type="submit" class="btn btn-primary">Save</button>
+                        
+                        <div class="d-flex justify-content-end">
+                            <a href="{{ url_for('admin.aircraft_list') }}" class="btn btn-secondary me-2">Cancel</a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save me-2"></i> 
+                                {% if aircraft %}Save Changes{% else %}Add Aircraft{% endif %}
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -62,4 +244,26 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Form validation
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(event) {
+            let valid = true;
+            
+            // Validate tail number format (e.g., N12345)
+            const tailNumber = document.getElementById('tail_number').value;
+            const tailNumberRegex = /^[A-Z]{1,2}\d{1,5}$/;
+            if (!tailNumberRegex.test(tailNumber)) {
+                alert('Please enter a valid tail number (e.g., N12345)');
+                valid = false;
+            }
+            
+            if (!valid) {
+                event.preventDefault();
+            }
+        });
+    });
+</script>
 {% endblock %} 

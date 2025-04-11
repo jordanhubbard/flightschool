@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Book a Flight{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Book a Flight</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('booking.book') }}">
+                        {{ form.csrf_token }}
+                        
+                        <div class="mb-3">
+                            <label for="start_time" class="form-label">Start Time</label>
+                            {{ form.start_time(class="form-control", id="start_time") }}
+                            {% if form.start_time.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.start_time.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="duration" class="form-label">Duration (hours)</label>
+                            {{ form.duration(class="form-control", id="duration") }}
+                            {% if form.duration.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.duration.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="aircraft_id" class="form-label">Aircraft</label>
+                            {{ form.aircraft_id(class="form-control", id="aircraft_id") }}
+                            {% if form.aircraft_id.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.aircraft_id.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="instructor_id" class="form-label">Instructor (optional)</label>
+                            {{ form.instructor_id(class="form-control", id="instructor_id") }}
+                            {% if form.instructor_id.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.instructor_id.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Book Flight</button>
+                            <a href="{{ url_for('booking.dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

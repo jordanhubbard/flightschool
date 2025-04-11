@@ -9,6 +9,8 @@ from flask_login import login_user
 from sqlalchemy.orm import scoped_session, sessionmaker
 import sqlalchemy as sa
 from flask import Flask
+from sqlalchemy import event
+from flask_sqlalchemy import SQLAlchemy
 
 @pytest.fixture(scope='function')
 def app():
@@ -18,13 +20,12 @@ def app():
     app.config['TESTING'] = True
     app.config['WTF_CSRF_ENABLED'] = False
     
-    # Initialize the app context
-    ctx = app.app_context()
-    ctx.push()
-    
-    yield app
-    
-    ctx.pop()
+    with app.app_context():
+        db.init_app(app)  # Ensure db is initialized with the app
+        db.create_all()
+        yield app
+        db.session.remove()
+        db.drop_all()
 
 @pytest.fixture(scope='function')
 def client(app):
@@ -32,34 +33,22 @@ def client(app):
     return app.test_client()
 
 @pytest.fixture(scope='function')
-def _db(app):
-    """Create a new database for each test."""
-    db.create_all()
-    yield db
-    db.session.remove()
-    db.drop_all()
-
-@pytest.fixture(scope='function')
-def session(app, _db):
+def session(app):
     """Create a new database session for each test."""
-    connection = _db.engine.connect()
-    transaction = connection.begin()
-    
-    # Create a session factory bound to this connection
-    session_factory = sessionmaker(bind=connection)
-    
-    # Create a scoped session to ensure thread-local session management
-    session = scoped_session(session_factory)
-    
-    # Make the session the current one for SQLAlchemy
-    _db.session = session
-    
-    yield session
-    
-    # Cleanup
-    session.remove()
-    transaction.rollback()
-    connection.close()
+    with app.app_context():
+        connection = db.engine.connect()
+        transaction = connection.begin()
+        
+        session_factory = sessionmaker(bind=connection)
+        session = scoped_session(session_factory)
+        
+        db.session = session
+        
+        yield session
+        
+        session.remove()
+        transaction.rollback()
+        connection.close()
 
 @pytest.fixture(scope='function')
 def runner(app):
@@ -70,101 +59,94 @@ def runner(app):
 def test_user(session):
     """Create a test user."""
     user = User(
-        email='test_user@example.com',
+        email='test@example.com',
         first_name='Test',
         last_name='User',
-        phone='123-456-7890',
-        student_id='STU001',
-        status='active',
         role='student'
     )
     user.set_password('password123')
     session.add(user)
     session.commit()
+    session.refresh(user)
     return user
 
 @pytest.fixture(scope='function')
 def test_instructor(session):
     """Create a test instructor."""
     instructor = User(
-        email='test_instructor@example.com',
+        email='instructor@example.com',
         first_name='Test',
         last_name='Instructor',
-        phone='123-456-7890',
-        status='active',
-        role='instructor'
+        role='instructor',
+        is_instructor=True
     )
     instructor.set_password('password123')
     session.add(instructor)
     session.commit()
+    session.refresh(instructor)
     return instructor
 
 @pytest.fixture(scope='function')
 def test_admin(session):
-    """Create a test admin user."""
+    """Create a test admin."""
     admin = User(
-        email='test_admin@example.com',
+        email='admin@example.com',
         first_name='Test',
         last_name='Admin',
-        phone='123-456-7890',
-        status='active',
-        role='admin'
+        role='admin',
+        is_admin=True
     )
     admin.set_password('password123')
     session.add(admin)
     session.commit()
+    session.refresh(admin)
     return admin
 
 @pytest.fixture(scope='function')
 def test_aircraft(session):
     """Create a test aircraft."""
     aircraft = Aircraft(
-        registration='N1234',
-        make_model='Piper Cherokee',
-        year=2019,
-        status='active',
+        registration='N12345',
+        make_model='Cessna 172',
+        year=2020,
+        status='available',
         rate_per_hour=150.0
     )
     session.add(aircraft)
     session.commit()
+    session.refresh(aircraft)
     return aircraft
 
 @pytest.fixture(scope='function')
-def auth_client(app, client, test_user, session):
-    """A test client with a logged-in user."""
-    with app.test_request_context():
-        with client.session_transaction() as sess:
-            sess['_user_id'] = str(test_user.id)
-            sess['_fresh'] = True
-        login_user(test_user)
-        session.add(test_user)
-        session.commit()
+def auth_client(client, test_user):
+    """Create a test client with a logged-in user."""
+    with client.session_transaction() as sess:
+        sess['_user_id'] = test_user.id
+        sess['_fresh'] = True
     return client
 
 @pytest.fixture(scope='function')
-def admin_client(app, client, test_admin, session):
-    """A test client with a logged-in admin user."""
-    with app.test_request_context():
-        with client.session_transaction() as sess:
-            sess['_user_id'] = str(test_admin.id)
-            sess['_fresh'] = True
-        login_user(test_admin)
-        session.add(test_admin)
-        session.commit()
+def admin_client(client, test_admin):
+    """Create a test client with a logged-in admin."""
+    with client.session_transaction() as sess:
+        sess['_user_id'] = test_admin.id
+        sess['_fresh'] = True
     return client
 
 @pytest.fixture(scope='function')
-def test_booking(session, test_user, test_aircraft):
+def test_booking(session, test_user, test_instructor, test_aircraft):
     """Create a test booking."""
     booking = Booking(
         student_id=test_user.id,
+        instructor_id=test_instructor.id,
         aircraft_id=test_aircraft.id,
-        start_time=datetime.now(UTC) + timedelta(days=1),
-        end_time=datetime.now(UTC) + timedelta(days=1, hours=1),
+        start_time=datetime.now(),
+        end_time=datetime.now() + timedelta(hours=1),
         status='confirmed'
     )
     session.add(booking)
     session.commit()
+    session.refresh(booking)
     return booking
 
 @pytest.fixture(scope='function')
@@ -172,25 +154,32 @@ def test_check_in(session, test_booking):
     """Create a test check-in."""
     check_in = CheckIn(
         booking_id=test_booking.id,
+        aircraft_id=test_booking.aircraft_id,
+        instructor_id=test_booking.instructor_id,
         hobbs_start=1234.5,
         tach_start=2345.6,
         notes='Pre-flight inspection completed'
     )
     session.add(check_in)
     session.commit()
+    session.refresh(check_in)
     return check_in
 
 @pytest.fixture(scope='function')
 def test_check_out(session, test_check_in):
     """Create a test check-out."""
     check_out = CheckOut(
-        check_in_id=test_check_in.id,
+        booking_id=test_check_in.booking_id,
+        aircraft_id=test_check_in.aircraft_id,
+        instructor_id=test_check_in.instructor_id,
         hobbs_end=1235.5,
         tach_end=2346.6,
+        total_aircraft_time=1.0,
         notes='Post-flight inspection completed'
     )
     session.add(check_out)
     session.commit()
+    session.refresh(check_out)
     return check_out
 
 @pytest.fixture(scope='function')
@@ -198,11 +187,12 @@ def test_invoice(session, test_booking):
     """Create a test invoice."""
     invoice = Invoice(
         booking_id=test_booking.id,
-        amount=150.0,
+        amount=100.00,
         status='pending'
     )
     session.add(invoice)
     session.commit()
+    session.refresh(invoice)
     return invoice
 
 @pytest.fixture
@@ -228,7 +218,7 @@ def logged_in_user(app, client, test_user):
     """A test client with a logged-in regular user."""
     with app.test_request_context():
         with client.session_transaction() as sess:
-            sess['user_id'] = test_user.id
+            sess['_user_id'] = test_user.id
             sess['_fresh'] = True
     return client
 
@@ -237,7 +227,7 @@ def logged_in_admin(app, client, test_admin):
     """A test client with a logged-in admin user."""
     with app.test_request_context():
         with client.session_transaction() as sess:
-            sess['user_id'] = test_admin.id
+            sess['_user_id'] = test_admin.id
             sess['_fresh'] = True
     return client
 
@@ -246,6 +236,6 @@ def logged_in_instructor(app, client, test_instructor):
     """A test client with a logged-in instructor."""
     with app.test_request_context():
         with client.session_transaction() as sess:
-            sess['user_id'] = test_instructor.id
+            sess['_user_id'] = test_instructor.id
             sess['_fresh'] = True
     return client

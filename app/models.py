@@ -143,11 +143,24 @@ class Aircraft(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     registration = db.Column(db.String(10), unique=True, nullable=False)
     tail_number = db.Column(db.String(10), unique=True)  # For backward compatibility
+    make = db.Column(db.String(50))
+    model = db.Column(db.String(50))
     type = db.Column(db.String(50))  # Optional now
-    make_model = db.Column(db.String(100), nullable=False)  # Required field for aircraft model
+    make_model = db.Column(db.String(100))  # For backward compatibility
+    description = db.Column(db.Text)
     year = db.Column(db.Integer)  # Year of manufacture
     status = db.Column(db.String(20), nullable=False, default='available')  # available, maintenance, retired
+    category = db.Column(db.String(50))  # single_engine_land, multi_engine_land, etc.
+    engine_type = db.Column(db.String(20))  # piston, turboprop, jet
+    num_engines = db.Column(db.Integer, default=1)
+    ifr_equipped = db.Column(db.Boolean, default=False)
+    gps = db.Column(db.Boolean, default=False)
+    autopilot = db.Column(db.Boolean, default=False)
     rate_per_hour = db.Column(db.Float, nullable=False)  # Aircraft rental rate per hour
+    hobbs_time = db.Column(db.Float)  # Current hobbs time
+    tach_time = db.Column(db.Float)  # Current tach time
+    last_maintenance = db.Column(db.DateTime)  # Last maintenance date
+    image_filename = db.Column(db.String(100))  # Filename for aircraft image
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -158,10 +171,27 @@ class Aircraft(db.Model):
     check_ins = db.relationship('CheckIn', backref='aircraft', lazy='dynamic')
 
     def __init__(self, **kwargs):
+        # Handle backward compatibility
         if 'tail_number' in kwargs and 'registration' not in kwargs:
             kwargs['registration'] = kwargs.pop('tail_number')
+        
+        # Handle make and model fields
+        if 'make' in kwargs and 'model' in kwargs and 'make_model' not in kwargs:
+            kwargs['make_model'] = f"{kwargs['make']} {kwargs['model']}"
+        elif 'make_model' in kwargs and 'make' not in kwargs and 'model' not in kwargs:
+            # Try to split make_model into make and model
+            parts = kwargs['make_model'].split(' ', 1)
+            if len(parts) > 1:
+                kwargs['make'] = parts[0]
+                kwargs['model'] = parts[1]
+            else:
+                kwargs['make'] = kwargs['make_model']
+                kwargs['model'] = ''
+        
+        # Handle type field for backward compatibility
         if 'make_model' in kwargs and 'type' not in kwargs:
             kwargs['type'] = kwargs['make_model']
+            
         super().__init__(**kwargs)
 
     @property
@@ -180,11 +210,24 @@ class Aircraft(db.Model):
             'id': self.id,
             'registration': self.registration,
             'tail_number': self.registration,  # For backward compatibility
-            'type': self.type,
+            'make': self.make,
+            'model': self.model,
             'make_model': self.make_model,
+            'type': self.type,
+            'description': self.description,
             'year': self.year,
             'status': self.status,
+            'category': self.category,
+            'engine_type': self.engine_type,
+            'num_engines': self.num_engines,
+            'ifr_equipped': self.ifr_equipped,
+            'gps': self.gps,
+            'autopilot': self.autopilot,
             'rate_per_hour': self.rate_per_hour,
+            'hobbs_time': self.hobbs_time,
+            'tach_time': self.tach_time,
+            'last_maintenance': self.last_maintenance.isoformat() if self.last_maintenance else None,
+            'image_filename': self.image_filename,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }

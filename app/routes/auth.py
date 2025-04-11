@@ -67,8 +67,14 @@ def account_settings():
             db.session.rollback()
             current_app.logger.error(f'Account settings update error: {str(e)}')
             flash('Failed to update account settings. Please try again.', 'error')
+    elif request.method == 'GET':
+        # Pre-populate form with user data
+        form.first_name.data = current_user.first_name
+        form.last_name.data = current_user.last_name
+        form.phone.data = current_user.phone
+        form.address.data = current_user.address if hasattr(current_user, 'address') else None
     
-    return render_template('auth/account_settings.html', form=form)
+    return render_template('auth/account_settings.html', form=form, title='Account Settings', user=current_user)
 
 @bp.route('/settings', methods=['GET', 'POST'])
 @login_required
