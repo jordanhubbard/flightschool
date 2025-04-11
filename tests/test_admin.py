@@ -4,7 +4,7 @@ from datetime import datetime
 from flask import session
 from app import db
 
-def test_admin_dashboard_access(client, test_admin, _db):
+def test_admin_dashboard_access(client, test_admin, session):
     """Test admin dashboard access."""
     with client.session_transaction() as sess:
         sess['_user_id'] = test_admin.id
@@ -14,7 +14,7 @@ def test_admin_dashboard_access(client, test_admin, _db):
     assert response.status_code == 200
     assert b'Admin Dashboard' in response.data
 
-def test_admin_dashboard_unauthorized(client, test_user, _db):
+def test_admin_dashboard_unauthorized(client, test_user, session):
     """Test unauthorized access to admin dashboard."""
     with client.session_transaction() as sess:
         sess['_user_id'] = test_user.id
@@ -74,7 +74,7 @@ def test_edit_aircraft(client, test_admin, test_aircraft, app):
     assert aircraft.status == 'active'
     assert aircraft.rate_per_hour == 175.00
 
-def test_add_instructor(client, test_admin, _db):
+def test_add_instructor(client, test_admin, session):
     """Test adding a new instructor."""
     with client.session_transaction() as sess:
         sess['_user_id'] = test_admin.id
@@ -91,7 +91,7 @@ def test_add_instructor(client, test_admin, _db):
     assert response.status_code == 200
     assert b'Instructor added successfully' in response.data
 
-def test_add_student(client, test_admin, _db):
+def test_add_student(client, test_admin, session):
     """Test adding a new student."""
     with client.session_transaction() as sess:
         sess['_user_id'] = test_admin.id
@@ -128,7 +128,7 @@ def test_add_instructor_duplicate_email(client, test_admin, test_instructor, app
     assert response.status_code == 200
     assert b'Email already registered' in response.data
 
-def test_edit_instructor(client, test_admin, test_instructor, _db):
+def test_edit_instructor(client, test_admin, test_instructor, session):
     """Test editing an instructor."""
     with client.session_transaction() as sess:
         sess['_user_id'] = test_admin.id
@@ -143,7 +143,7 @@ def test_edit_instructor(client, test_admin, test_instructor, _db):
     assert response.status_code == 200
     assert b'Instructor updated successfully' in response.data
 
-def test_edit_instructor_invalid_data(client, test_admin, test_instructor, _db):
+def test_edit_instructor_invalid_data(client, test_admin, test_instructor, session):
     """Test editing an instructor with invalid data."""
     with client.session_transaction() as sess:
         sess['_user_id'] = test_admin.id
@@ -158,7 +158,7 @@ def test_edit_instructor_invalid_data(client, test_admin, test_instructor, _db):
     assert response.status_code == 200
     assert b'Invalid email address' in response.data
 
-def test_edit_instructor_nonexistent(client, test_admin, _db):
+def test_edit_instructor_nonexistent(client, test_admin, session):
     """Test editing a nonexistent instructor."""
     with client.session_transaction() as sess:
         sess['_user_id'] = test_admin.id
@@ -227,7 +227,7 @@ def test_aircraft_status_management(client, test_admin, test_aircraft, app):
     )
     assert response.status_code == 200
 
-def test_delete_instructor(client, test_admin, test_instructor, _db):
+def test_delete_instructor(client, test_admin, test_instructor, session):
     """Test deleting an instructor."""
     with client.session_transaction() as sess:
         sess['_user_id'] = test_admin.id
@@ -237,7 +237,7 @@ def test_delete_instructor(client, test_admin, test_instructor, _db):
     assert response.status_code == 200
     assert b'Instructor deleted successfully' in response.data
 
-def test_delete_instructor_unauthorized(client, test_user, test_instructor, _db):
+def test_delete_instructor_unauthorized(client, test_user, test_instructor, session):
     """Test unauthorized deletion of an instructor."""
     with client.session_transaction() as sess:
         sess['_user_id'] = test_user.id
@@ -247,7 +247,7 @@ def test_delete_instructor_unauthorized(client, test_user, test_instructor, _db)
     assert response.status_code == 200
     assert b'Admin access required' in response.data
 
-def test_delete_instructor_nonexistent(client, test_admin, _db):
+def test_delete_instructor_nonexistent(client, test_admin, session):
     """Test deleting a nonexistent instructor."""
     with client.session_transaction() as sess:
         sess['_user_id'] = test_admin.id
@@ -256,7 +256,7 @@ def test_delete_instructor_nonexistent(client, test_admin, _db):
     response = client.post('/admin/instructors/999/delete', follow_redirects=True)
     assert response.status_code == 404
 
-def test_edit_student(client, test_admin, test_user, _db):
+def test_edit_student(client, test_admin, test_user, session):
     """Test editing a student."""
     with client.session_transaction() as sess:
         sess['_user_id'] = test_admin.id
@@ -271,7 +271,7 @@ def test_edit_student(client, test_admin, test_user, _db):
     assert response.status_code == 200
     assert b'Student updated successfully' in response.data
 
-def test_delete_student(client, test_admin, test_user, _db):
+def test_delete_student(client, test_admin, test_user, session):
     """Test deleting a student."""
     with client.session_transaction() as sess:
         sess['_user_id'] = test_admin.id
@@ -281,7 +281,7 @@ def test_delete_student(client, test_admin, test_user, _db):
     assert response.status_code == 200
     assert b'Student deleted successfully' in response.data
 
-def test_user_status_management(client, test_admin, test_user, _db):
+def test_user_status_management(client, test_admin, test_user, session):
     """Test managing user status."""
     with client.session_transaction() as sess:
         sess['_user_id'] = test_admin.id
@@ -301,7 +301,7 @@ def test_user_status_management(client, test_admin, test_user, _db):
     assert response.status_code == 200
     assert b'User status updated successfully' in response.data
 
-def test_user_status_invalid(client, test_admin, test_user, _db):
+def test_user_status_invalid(client, test_admin, test_user, session):
     """Test invalid user status update."""
     with client.session_transaction() as sess:
         sess['_user_id'] = test_admin.id

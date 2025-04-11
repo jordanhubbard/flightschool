@@ -21,7 +21,6 @@ def app():
     app.config['WTF_CSRF_ENABLED'] = False
     
     with app.app_context():
-        db.init_app(app)  # Ensure db is initialized with the app
         db.create_all()
         yield app
         db.session.remove()

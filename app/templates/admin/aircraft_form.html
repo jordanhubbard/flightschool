@@ -43,10 +43,10 @@
                         <i class="fas fa-arrow-left me-2"></i> Back to Aircraft List
                     </a>
                     {% if aircraft %}
-                    <a href="{{ url_for('admin.maintenance_add', aircraft_id=aircraft.id) }}" class="btn btn-info d-block mb-2">
+                    <a href="{{ url_for('admin.maintenance_records', aircraft_id=aircraft.id) }}" class="btn btn-info d-block mb-2">
                         <i class="fas fa-wrench me-2"></i> Log Maintenance
                     </a>
-                    <a href="{{ url_for('admin.aircraft_view', id=aircraft.id) }}" class="btn btn-success d-block">
+                    <a href="{{ url_for('admin.edit_aircraft', id=aircraft.id) }}" class="btn btn-success d-block">
                         <i class="fas fa-eye me-2"></i> View Aircraft Details
                     </a>
                     {% endif %}

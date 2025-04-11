@@ -4,7 +4,7 @@ from flask_login import current_user
 from app.models import User
 from app import db
 
-def test_login(client, test_user, _db):
+def test_login(client, test_user, session):
     """Test user login."""
     response = client.post('/auth/login', data={
         'email': test_user.email,
@@ -15,7 +15,7 @@ def test_login(client, test_user, _db):
     assert b'Welcome back' in response.data
     assert session.get('_user_id') == test_user.id
 
-def test_login_invalid_credentials(client, test_user, _db):
+def test_login_invalid_credentials(client, test_user, session):
     """Test login with invalid credentials."""
     response = client.post('/auth/login', data={
         'email': test_user.email,
@@ -26,10 +26,10 @@ def test_login_invalid_credentials(client, test_user, _db):
     assert b'Invalid email or password' in response.data
     assert session.get('_user_id') is None
 
-def test_login_inactive_user(client, test_user, _db):
+def test_login_inactive_user(client, test_user, session):
     """Test login with inactive user."""
     test_user.is_active = False
-    _db.session.commit()
+    session.session.commit()
     
     response = client.post('/auth/login', data={
         'email': test_user.email,
@@ -40,7 +40,7 @@ def test_login_inactive_user(client, test_user, _db):
     assert b'Your account is inactive' in response.data
     assert session.get('_user_id') is None
 
-def test_logout(client, test_user, _db):
+def test_logout(client, test_user, session):
     """Test user logout."""
     with client.session_transaction() as sess:
         sess['_user_id'] = test_user.id
@@ -53,11 +53,11 @@ def test_logout(client, test_user, _db):
 
 def test_login_required(client):
     """Test login required decorator."""
-    response = client.get('/booking/dashboard', follow_redirects=True)
+    response = client.get('/dashboard', follow_redirects=True)
     assert response.status_code == 200
     assert b'Please log in to access this page' in response.data
 
-def test_remember_me(client, test_user, _db):
+def test_remember_me(client, test_user, session):
     """Test remember me functionality."""
     response = client.post('/auth/login', data={
         'email': test_user.email,

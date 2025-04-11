@@ -17,10 +17,10 @@
                 <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action">
                     <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                 </a>
-                <a href="{{ url_for('admin.users') }}" class="list-group-item list-group-item-action">
+                <a href="{{ url_for('admin.user_list') }}" class="list-group-item list-group-item-action">
                     <i class="fas fa-users me-2"></i>Users
                 </a>
-                <a href="{{ url_for('admin.aircraft') }}" class="list-group-item list-group-item-action">
+                <a href="{{ url_for('admin.aircraft_list') }}" class="list-group-item list-group-item-action">
                     <i class="fas fa-plane me-2"></i>Aircraft
                 </a>
                 <a href="{{ url_for('admin.schedule') }}" class="list-group-item list-group-item-action">
@@ -72,7 +72,7 @@
                     
                     <div class="mb-4">
                         <h6>Synchronization Settings</h6>
-                        <form action="{{ url_for('admin.save_calendar_settings') }}" method="post">
+                        <form action="{{ url_for('admin.calendar_settings') }}" method="post">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             
                             <div class="form-check mb-3">
@@ -115,7 +115,7 @@
                     <h5 class="mb-0">Calendar Display Settings</h5>
                 </div>
                 <div class="card-body">
-                    <form action="{{ url_for('admin.save_calendar_display_settings') }}" method="post">
+                    <form action="{{ url_for('admin.calendar_settings') }}" method="post">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         
                         <div class="mb-3">

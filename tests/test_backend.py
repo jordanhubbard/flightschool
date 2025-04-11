@@ -1,56 +1,14 @@
 from flask_login import current_user
-from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta, UTC
 from flask import session
 from app.models import User, Aircraft, Booking
 from app import db
 import pytest
 
-db = SQLAlchemy()
-
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    first_name = db.Column(db.String(64))
-    last_name = db.Column(db.String(64))
-    name = db.Column(db.String(128))  # Full name, computed from first_name and last_name
-    phone = db.Column(db.String(20))
-    address = db.Column(db.String(256))
-    password_hash = db.Column(db.String(128))
-    is_admin = db.Column(db.Boolean, default=False)
-    is_instructor = db.Column(db.Boolean, default=False)
-    student_id = db.Column(db.String(20), unique=True)
-    certificates = db.Column(db.String(200))
-    status = db.Column(db.String(20), default='active')  # active, unavailable, inactive
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Google Calendar Integration
-    google_calendar_enabled = db.Column(db.Boolean, default=False)
-    google_calendar_token = db.Column(db.String(500))
-    google_calendar_refresh_token = db.Column(db.String(500))
-    google_calendar_token_expiry = db.Column(db.DateTime)
-    google_calendar_id = db.Column(db.String(100))
-
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-
-    @property
-    def full_name(self):
-        if self.first_name and self.last_name:
-            return f"{self.first_name} {self.last_name}"
-        return self.name
-    
-    def __repr__(self):
-        return f'<User {self.email}>'
-
 def test_instructor_management(client, test_admin, app):
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['user_id'] = test_admin.id
+            sess['_user_id'] = test_admin.id
             sess['_fresh'] = True
     
     response = client.post('/admin/instructor/create', data={
@@ -102,11 +60,11 @@ def test_booking_management(client, test_user, test_aircraft, app):
         db.session.commit()
         db.session.refresh(booking)
     
-    # Test viewing the booking
-    response = client.get(f'/booking/{booking.id}')
-    assert response.status_code == 200
-    assert test_aircraft.registration.encode() in response.data
-    assert b'Pending' in response.data
+        # Test viewing the booking within the app context
+        response = client.get(f'/booking/{booking.id}')
+        assert response.status_code == 200
+        assert test_aircraft.registration.encode() in response.data
+        assert b'Pending' in response.data
 
 def test_booking_cancellation(client, test_user, test_aircraft, app):
     with app.app_context():
@@ -127,10 +85,10 @@ def test_booking_cancellation(client, test_user, test_aircraft, app):
         db.session.commit()
         db.session.refresh(booking)
     
-    # Test canceling the booking
-    response = client.post(f'/booking/{booking.id}/cancel')
-    assert response.status_code == 200
-    assert b'Booking cancelled successfully' in response.data
+        # Test canceling the booking within the app context
+        response = client.post(f'/booking/{booking.id}/cancel')
+        assert response.status_code == 200
+        assert b'Booking cancelled successfully' in response.data
 
 def test_user_management(client, test_admin, app):
     with app.app_context():

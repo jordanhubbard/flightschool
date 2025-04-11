@@ -11,26 +11,26 @@ def test_booking_dashboard_access(client, test_user, app):
             sess['_user_id'] = test_user.id
             sess['_fresh'] = True
     
-    response = client.get('/booking/dashboard')
+    response = client.get('/dashboard')
     assert response.status_code == 200
     assert b'Book a Flight' in response.data
 
-def test_create_booking(client, test_user, test_aircraft, test_instructor, app):
+def test_create_booking(client, test_user, test_aircraft, test_instructor, app, session):
     """Test creating a new booking."""
     with app.app_context():
         with client.session_transaction() as sess:
             sess['_user_id'] = test_user.id
             sess['_fresh'] = True
-    
-    start_time = datetime.now(UTC) + timedelta(days=1)
-    response = client.post('/booking/book', data={
-        'start_time': start_time.strftime('%Y-%m-%dT%H:%M'),
-        'duration': '1',
-        'aircraft_id': str(test_aircraft.id),
-        'instructor_id': str(test_instructor.id)
-    }, follow_redirects=True)
-    assert response.status_code == 200
-    assert b'Booking created successfully' in response.data
+
+        start_time = datetime.now(UTC) + timedelta(days=1)
+        response = client.post('/book', data={
+            'start_time': start_time.strftime('%Y-%m-%dT%H:%M'),
+            'duration': '1',
+            'aircraft_id': str(test_aircraft.id),
+            'instructor_id': str(test_instructor.id)
+        }, follow_redirects=True)
+        assert response.status_code == 200
+        assert b'Booking created successfully' in response.data
 
 def test_create_booking_without_instructor(client, test_user, test_aircraft, app):
     """Test creating a booking without an instructor."""
@@ -40,7 +40,7 @@ def test_create_booking_without_instructor(client, test_user, test_aircraft, app
             sess['_fresh'] = True
     
     start_time = datetime.now(UTC) + timedelta(days=1)
-    response = client.post('/booking/book', data={
+    response = client.post('/book', data={
         'start_time': start_time.strftime('%Y-%m-%dT%H:%M'),
         'duration': '1',
         'aircraft_id': str(test_aircraft.id)
@@ -58,7 +58,7 @@ def test_create_booking_conflict(client, test_user, test_aircraft, app):
     start_time = datetime.now(UTC) + timedelta(days=1)
     
     # Create first booking
-    response = client.post('/booking/book', data={
+    response = client.post('/book', data={
         'start_time': start_time.strftime('%Y-%m-%dT%H:%M'),
         'duration': '1',
         'aircraft_id': str(test_aircraft.id)
@@ -67,7 +67,7 @@ def test_create_booking_conflict(client, test_user, test_aircraft, app):
     assert b'Booking created successfully' in response.data
     
     # Try to create second booking at same time
-    response = client.post('/booking/book', data={
+    response = client.post('/book', data={
         'start_time': start_time.strftime('%Y-%m-%dT%H:%M'),
         'duration': '1',
         'aircraft_id': str(test_aircraft.id)
@@ -95,7 +95,7 @@ def test_cancel_booking(client, test_user, test_aircraft, app):
         db.session.refresh(booking)
     
     # Cancel the booking
-    response = client.post(f'/booking/booking/{booking.id}/cancel', follow_redirects=True)
+    response = client.post(f'/booking/{booking.id}/cancel', follow_redirects=True)
     assert response.status_code == 200
     assert b'Booking cancelled successfully' in response.data
 
@@ -118,7 +118,7 @@ def test_view_bookings(client, test_user, test_aircraft, app):
         db.session.commit()
         db.session.refresh(booking)
     
-    response = client.get('/booking/list')
+    response = client.get('/list')
     assert response.status_code == 200
     assert test_aircraft.registration.encode() in response.data
     assert b'Confirmed' in response.data
@@ -133,7 +133,7 @@ def test_check_in_booking(client, test_booking, test_user):
     test_booking.status = 'confirmed'
     db.session.commit()
 
-    response = client.post(f'/booking/check-in/{test_booking.id}', data={
+    response = client.post(f'/check-in/{test_booking.id}', data={
         'hobbs_start': '1234.5',
         'tach_start': '2345.6',
         'instructor_start_time': datetime.now(UTC).strftime('%Y-%m-%dT%H:%M'),
@@ -163,7 +163,7 @@ def test_check_out_booking(client, test_booking, test_check_in, test_user):
     test_booking.status = 'in_progress'
     db.session.commit()
 
-    response = client.post(f'/booking/check-out/{test_booking.id}', data={
+    response = client.post(f'/check-out/{test_booking.id}', data={
         'hobbs_end': '1236.2',
         'tach_end': '2347.1',
         'instructor_end_time': datetime.now(UTC).strftime('%Y-%m-%dT%H:%M'),

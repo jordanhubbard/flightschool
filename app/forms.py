@@ -72,6 +72,10 @@ class UserForm(FlaskForm):
     ])
     certificates = StringField('Certificates')
     student_id = StringField('Student ID')
+    
+    def __init__(self, *args, **kwargs):
+        self.obj = kwargs.get('obj', None)
+        super(UserForm, self).__init__(*args, **kwargs)
 
     def validate_email(self, email):
         user = User.query.filter_by(email=email.data).first()
