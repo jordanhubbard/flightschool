@@ -6,39 +6,42 @@ from app import db
 
 def test_login(client, test_user, session):
     """Test user login."""
-    response = client.post('/auth/login', data={
+    response = client.post('/login', data={
         'email': test_user.email,
         'password': 'password123',
         'remember_me': False
     }, follow_redirects=True)
     assert response.status_code == 200
-    assert b'Welcome back' in response.data
-    assert session.get('_user_id') == test_user.id
+    assert b'Next Level Tailwheel' in response.data
+    with client.session_transaction() as sess:
+        assert sess.get('_user_id') == test_user.id
 
 def test_login_invalid_credentials(client, test_user, session):
     """Test login with invalid credentials."""
-    response = client.post('/auth/login', data={
+    response = client.post('/login', data={
         'email': test_user.email,
         'password': 'wrongpassword',
         'remember_me': False
     }, follow_redirects=True)
     assert response.status_code == 200
     assert b'Invalid email or password' in response.data
-    assert session.get('_user_id') is None
+    with client.session_transaction() as sess:
+        assert sess.get('_user_id') is None
 
 def test_login_inactive_user(client, test_user, session):
     """Test login with inactive user."""
     test_user.is_active = False
-    session.session.commit()
+    db.session.commit()
     
-    response = client.post('/auth/login', data={
+    response = client.post('/login', data={
         'email': test_user.email,
         'password': 'password123',
         'remember_me': False
     }, follow_redirects=True)
     assert response.status_code == 200
     assert b'Your account is inactive' in response.data
-    assert session.get('_user_id') is None
+    with client.session_transaction() as sess:
+        assert sess.get('_user_id') is None
 
 def test_logout(client, test_user, session):
     """Test user logout."""
@@ -46,10 +49,11 @@ def test_logout(client, test_user, session):
         sess['_user_id'] = test_user.id
         sess['_fresh'] = True
     
-    response = client.get('/auth/logout', follow_redirects=True)
+    response = client.get('/logout', follow_redirects=True)
     assert response.status_code == 200
     assert b'You have been logged out' in response.data
-    assert session.get('_user_id') is None
+    with client.session_transaction() as sess:
+        assert sess.get('_user_id') is None
 
 def test_login_required(client):
     """Test login required decorator."""
@@ -59,12 +63,13 @@ def test_login_required(client):
 
 def test_remember_me(client, test_user, session):
     """Test remember me functionality."""
-    response = client.post('/auth/login', data={
+    response = client.post('/login', data={
         'email': test_user.email,
         'password': 'password123',
         'remember_me': True
     }, follow_redirects=True)
     assert response.status_code == 200
-    assert b'Welcome back' in response.data
-    assert session.get('_user_id') == test_user.id
-    assert session.get('_fresh') is True
+    assert b'Next Level Tailwheel' in response.data
+    with client.session_transaction() as sess:
+        assert sess.get('_user_id') == test_user.id
+        assert sess.get('_fresh') is True

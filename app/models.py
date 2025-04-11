@@ -263,6 +263,10 @@ class CheckIn(db.Model):
     instructor_start_time = db.Column(db.DateTime, nullable=True)
     notes = db.Column(db.Text)
     
+    @property
+    def timestamp(self):
+        return self.check_in_time
+
     def __repr__(self):
         return f'<CheckIn {self.id}>'
 

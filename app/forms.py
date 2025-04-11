@@ -34,10 +34,10 @@ class RegistrationForm(FlaskForm):
             raise ValidationError('Please use a different email address.')
 
 class BookingForm(FlaskForm):
-    aircraft = SelectField('Aircraft', validators=[DataRequired()], coerce=int)
-    instructor = SelectField('Instructor', validators=[DataRequired()], coerce=int)
-    start_time = DateTimeField('Start Time', validators=[DataRequired()], format='%Y-%m-%d %H:%M')
-    end_time = DateTimeField('End Time', validators=[DataRequired()], format='%Y-%m-%d %H:%M')
+    aircraft_id = SelectField('Aircraft', validators=[DataRequired()], coerce=int)
+    instructor_id = SelectField('Instructor', coerce=int)
+    start_time = DateTimeField('Start Time', validators=[DataRequired()], format='%Y-%m-%dT%H:%M')
+    duration = FloatField('Duration (hours)', validators=[DataRequired()])
     submit = SubmitField('Book Flight')
 
 class GoogleCalendarSettingsForm(FlaskForm):

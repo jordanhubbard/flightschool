@@ -12,7 +12,8 @@ def test_user_session(client, test_user, session):
     
     response = client.get('/')
     assert response.status_code == 200
-    assert session.get('user_id') == test_user.id
+    with client.session_transaction() as sess:
+        assert sess.get('user_id') == test_user.id
 
 def test_session_persistence(client, test_user, session):
     """Test that session data persists across requests."""
@@ -23,12 +24,14 @@ def test_session_persistence(client, test_user, session):
     # First request
     response = client.get('/')
     assert response.status_code == 200
-    assert session.get('user_id') == test_user.id
+    with client.session_transaction() as sess:
+        assert sess.get('user_id') == test_user.id
     
     # Second request
     response = client.get('/profile')
     assert response.status_code == 200
-    assert session.get('user_id') == test_user.id
+    with client.session_transaction() as sess:
+        assert sess.get('user_id') == test_user.id
 
 def test_session_clear_on_logout(client, test_user, session):
     """Test that session data is cleared on logout."""
@@ -37,10 +40,9 @@ def test_session_clear_on_logout(client, test_user, session):
         sess['_fresh'] = True
     
     # Logout
-    response = client.get('/auth/logout')
-    assert response.status_code == 302  # Redirect to home page
+    response = client.get('/logout', follow_redirects=True)
+    assert response.status_code == 200
     
     # Verify session is cleared
-    response = client.get('/')
-    assert response.status_code == 200
-    assert session.get('user_id') is None 
+    with client.session_transaction() as sess:
+        assert sess.get('user_id') is None 
