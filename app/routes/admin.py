@@ -323,7 +323,8 @@ def add_aircraft():
     if form.validate_on_submit():
         aircraft = Aircraft(
             registration=form.registration.data,
-            make_model=form.make_model.data,
+            make=form.make.data,
+            model=form.model.data,
             year=form.year.data,
             status=form.status.data
         )
@@ -347,7 +348,7 @@ def instructor_list():
 def user_list():
     """List all users."""
     users = User.query.all()
-    return render_template('admin/user_list.html', users=users)
+    return render_template('admin/user_form.html', users=users)
 
 @bp.route('/instructor/create', methods=['GET', 'POST'])
 @login_required
