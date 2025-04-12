@@ -1,132 +1,27 @@
 {% extends "base.html" %}
 
-{% block title %}Home{% endblock %}
+{% block title %}Login{% endblock %}
 
 {% block content %}
-<div class="hero-section position-relative mb-4">
-    <div class="hero-image" style="height: 400px; background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7)), url('{{ url_for('static', filename='images/tailwheel-hero.jpg') }}'); background-size: cover; background-position: center;">
-        <div class="container h-100">
-            <div class="row h-100 align-items-center">
-                <div class="col-md-8">
-                    <h1 class="display-4 text-white fw-bold" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Master the Art of Tailwheel Flying</h1>
-                    <p class="lead text-white mb-4" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">Experience the thrill of traditional aviation with expert instruction in classic tailwheel aircraft.</p>
-                    {% if not current_user.is_authenticated %}
-                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg px-4 py-2" style="font-weight: 500;">Start Your Journey</a>
-                    {% else %}
-                    <a href="{{ url_for('booking.dashboard') }}" class="btn btn-primary btn-lg px-4 py-2" style="font-weight: 500;">Go to Dashboard</a>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <div class="container">
-    <div class="row mb-4">
-        <div class="col-md-12 text-center">
-            <h2 class="display-5">Welcome to Next Level Tailwheel</h2>
-            <p class="lead">Your journey to becoming a pilot starts here</p>
-        </div>
-    </div>
-
-    {% if not current_user.is_authenticated %}
-    <div class="row mb-5">
-        <div class="col-md-6">
-            <div class="card h-100">
+    <div class="row justify-content-center align-items-center" style="min-height: 60vh;">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow">
                 <div class="card-body">
-                    <h2 class="card-title">For New Students</h2>
-                    <p class="card-text">Ready to start your aviation journey? Register with us to begin your flight training experience.</p>
-                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Register Now</a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h2 class="card-title">Returning Students</h2>
-                    <p class="card-text">Already registered? Log in to book your next flight or check your schedule.</p>
-                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Login</a>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <div class="row mb-5">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-body">
-                    <h2 class="card-title">Why Choose Next Level Tailwheel?</h2>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="text-center">
-                                <i class="fas fa-plane fa-3x mb-3 text-primary"></i>
-                                <h4>Modern Fleet</h4>
-                                <p>Our well-maintained aircraft fleet ensures safe and reliable training.</p>
-                            </div>
+                    <h2 class="card-title text-center mb-4">Login</h2>
+                    <form method="POST" action="{{ url_for('auth.login') }}">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
                         </div>
-                        <div class="col-md-4">
-                            <div class="text-center">
-                                <i class="fas fa-user-tie fa-3x mb-3 text-primary"></i>
-                                <h4>Experienced Instructors</h4>
-                                <p>Learn from certified flight instructors with years of experience.</p>
-                            </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
                         </div>
-                        <div class="col-md-4">
-                            <div class="text-center">
-                                <i class="fas fa-calendar-check fa-3x mb-3 text-primary"></i>
-                                <h4>Flexible Scheduling</h4>
-                                <p>Book your training sessions at times that work for you.</p>
-                            </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Login</button>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-body">
-                    <h2 class="card-title">Ready to Start Your Journey?</h2>
-                    <p class="card-text">Join our flight school and take the first step towards your aviation dreams. Whether you're pursuing a private pilot's license or advanced certifications, we're here to help you succeed.</p>
-                    <div class="text-center">
-                        {% if not current_user.is_authenticated %}
-                        <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">Get Started Today</a>
-                        {% else %}
-                        <a href="{{ url_for('booking.dashboard') }}" class="btn btn-primary btn-lg">Schedule a Flight</a>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Contact Us Section -->
-    <div class="row mt-5">
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h2 class="card-title">Contact Us</h2>
-                    <p class="card-text">Have questions about our flight school or programs? Get in touch with us today.</p>
-                    <p><i class="fas fa-envelope me-2"></i> info@nextleveltailwheel.com</p>
-                    <p><i class="fas fa-phone me-2"></i> (555) 123-4567</p>
-                    <p><i class="fas fa-map-marker-alt me-2"></i> 123 Airport Road, Anywhere, USA</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h2 class="card-title">Quick Links</h2>
-                    <ul class="list-unstyled">
-                        <li class="mb-2"><a href="{{ url_for('main.about') }}"><i class="fas fa-info-circle me-2"></i>About Us</a></li>
-                        <li class="mb-2"><a href="{{ url_for('main.training') }}"><i class="fas fa-graduation-cap me-2"></i>Training Programs</a></li>
-                        <li class="mb-2"><a href="{{ url_for('main.aircraft') }}"><i class="fas fa-plane me-2"></i>Our Aircraft</a></li>
-                        <li class="mb-2"><a href="{{ url_for('main.faq') }}"><i class="fas fa-question-circle me-2"></i>FAQs</a></li>
-                        <li class="mb-2"><a href="{{ url_for('auth.register') }}"><i class="fas fa-user-plus me-2"></i>Register</a></li>
-                    </ul>
+                    </form>
                 </div>
             </div>
         </div>
