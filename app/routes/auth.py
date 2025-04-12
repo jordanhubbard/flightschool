@@ -9,7 +9,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from app.forms import LoginForm, RegistrationForm, AccountSettingsForm
 from app.calendar_service import GoogleCalendarService
 from datetime import datetime, UTC
-from werkzeug.urls import urlparse
+from urllib.parse import urlparse
 
 bp = Blueprint('auth', __name__)
 calendar_service = GoogleCalendarService()

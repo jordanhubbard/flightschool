@@ -8,6 +8,8 @@ VENV = venv
 PYTHON = $(VENV)/bin/python
 PIP = $(VENV)/bin/pip
 FLASK = $(VENV)/bin/flask
+PYTEST = $(VENV)/bin/pytest
+COVERAGE = $(VENV)/bin/coverage
 
 # Environment variables for Flask
 export FLASK_APP = app
@@ -32,10 +34,11 @@ help:
 
 env:
 	@echo "Creating virtual environment..."
-	python -m venv $(VENV)
-	@echo "Installing pip-tools..."
-	$(PIP) install pip-tools
-	@echo "Virtual environment created. Activate it with: source venv/bin/activate"
+	@if [ ! -d "$(VENV)" ]; then \
+		python -m venv $(VENV); \
+		$(PIP) install pip-tools; \
+	fi
+	@echo "Virtual environment ready. Activate it with: source venv/bin/activate"
 
 init: env
 	@echo "Installing dependencies..."
@@ -53,13 +56,14 @@ run: env
 	. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(FLASK) run --debug -h 0.0.0.0 -p $(PORT)
 
 test: init
-	@echo "Running tests..."
-	. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(PYTHON) -m pytest -v
-	@echo "Backend tests complete."
-	. $(VENV)/bin/activate && PYTHONPATH=$PYTHONPATH:. pytest tests/test_frontend.py -v
-	@echo "Front end tests complete"
-	. $(VENV)/bin/activate && PYTHONPATH=$PYTHONPATH:. pytest tests/test_admin.py -v
-	@echo "Admin operation tests complete"
+	@echo "Installing test dependencies..."
+	$(PIP) install pytest pytest-cov coverage
+	@echo "Running tests with coverage..."
+	. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(COVERAGE) run -m pytest -v
+	@echo "Generating coverage report..."
+	. $(VENV)/bin/activate && $(COVERAGE) report
+	. $(VENV)/bin/activate && $(COVERAGE) html
+	@echo "Coverage report generated in htmlcov/index.html"
 
 clean:
 	@echo "Cleaning project..."

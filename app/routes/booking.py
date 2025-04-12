@@ -87,7 +87,7 @@ def instructor_dashboard():
     instructor_bookings = Booking.query.filter_by(instructor_id=current_user.id).order_by(Booking.start_time).all()
     return render_template('booking/instructor_dashboard.html', bookings=instructor_bookings)
 
-@bp.route('/book', methods=['GET', 'POST'])
+@bp.route('/bookings', methods=['GET', 'POST'])
 @login_required
 def create_booking():
     form = BookingForm()
@@ -120,7 +120,7 @@ def create_booking():
     
     return render_template('booking/create.html', form=form)
 
-@bp.route('/booking/<int:booking_id>')
+@bp.route('/bookings/<int:booking_id>')
 @login_required
 def view_booking(booking_id):
     booking = Booking.query.get_or_404(booking_id)
@@ -129,10 +129,10 @@ def view_booking(booking_id):
         return redirect(url_for('booking.dashboard'))
     return render_template('booking/view.html', booking=booking)
 
-@bp.route('/booking/<int:id>/cancel', methods=['POST'])
+@bp.route('/bookings/<int:booking_id>/cancel', methods=['POST'])
 @login_required
-def cancel_booking(id):
-    booking = Booking.query.get_or_404(id)
+def cancel_booking(booking_id):
+    booking = Booking.query.get_or_404(booking_id)
     
     if booking.student_id != current_user.id and not current_user.is_admin:
         flash('You are not authorized to cancel this booking', 'error')
@@ -143,7 +143,7 @@ def cancel_booking(id):
     flash('Booking cancelled successfully', 'success')
     return jsonify({'message': 'Booking cancelled successfully'}), 200
 
-@bp.route('/list')
+@bp.route('/bookings')
 @login_required
 def list():
     if current_user.is_admin:
