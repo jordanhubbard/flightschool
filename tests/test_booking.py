@@ -13,6 +13,7 @@ def test_booking_dashboard_access(client, test_user, app):
     
     response = client.get('/dashboard')
     assert response.status_code == 200
+    assert b'Booking Dashboard' in response.data
     assert b'Book a Flight' in response.data
 
 def test_create_booking(client, test_user, test_aircraft, test_instructor, app, session):
@@ -122,6 +123,36 @@ def test_view_bookings(client, test_user, test_aircraft, app):
     assert response.status_code == 200
     assert test_aircraft.registration.encode() in response.data
     assert b'Confirmed' in response.data
+
+def test_check_in_out(client, test_user, test_aircraft, app):
+    """Test check-in and check-out process."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['_user_id'] = test_user.id
+            sess['_fresh'] = True
+        
+        # Create a booking
+        test_booking = Booking(
+            student_id=test_user.id,
+            aircraft_id=test_aircraft.id,
+            instructor_id=None,
+            start_time=datetime.now(UTC),
+            end_time=datetime.now(UTC),
+            status='pending'
+        )
+        db.session.add(test_booking)
+        db.session.commit()
+        db.session.refresh(test_booking)
+    
+        # Test check-in
+        response = client.post(f'/check-in/{test_booking.id}')
+        assert response.status_code == 302
+        assert response.location.endswith(f'/check-out/{test_booking.id}')
+        
+        # Test check-out
+        response = client.post(f'/check-out/{test_booking.id}')
+        assert response.status_code == 302
+        assert response.location.endswith(f'/booking/{test_booking.id}')
 
 def test_check_in_booking(client, test_booking, test_user):
     """Test checking in for a booking."""

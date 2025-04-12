@@ -106,17 +106,10 @@ def test_booking_dashboard_ui(client, test_user, app):
             sess['_user_id'] = test_user.id
             sess['_fresh'] = True
 
-        # The route or template might not be fully implemented yet
-        try:
-            response = client.get('/booking/dashboard')
-            # For routes that might be under development, allow 404
-            assert response.status_code in (200, 302, 404)
-            # Only check content if status is 200
-            if response.status_code == 200:
-                data = response.data.decode('utf-8')
-                assert 'Schedule' in data or 'Dashboard' in data
-        except Exception as e:
-            pytest.skip(f"Booking dashboard page not fully implemented: {e}")
+        response = client.get('/dashboard')
+        assert response.status_code == 200
+        data = response.data.decode('utf-8')
+        assert 'Book a Flight' in data or 'My Schedule' in data
 
 def test_booking_list_ui(client, test_user, app):
     """Test booking list UI elements."""

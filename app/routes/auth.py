@@ -9,7 +9,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from app.forms import LoginForm, RegistrationForm, AccountSettingsForm
 from app.calendar_service import GoogleCalendarService
 from datetime import datetime, UTC
-import logging
+from werkzeug.urls import urlparse
 
 bp = Blueprint('auth', __name__)
 calendar_service = GoogleCalendarService()
@@ -18,23 +18,28 @@ calendar_service = GoogleCalendarService()
 def login():
     """Handle user login."""
     if current_user.is_authenticated:
-        return redirect(url_for('main.index'))
+        if current_user.is_admin:
+            return redirect(url_for('admin.dashboard'))
+        return redirect(url_for('booking.dashboard'))
     
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user is None or not user.check_password(form.password.data):
-            flash('Invalid email or password', 'danger')
-            return render_template('auth/login.html', title='Sign In', form=form)
+            flash('Invalid email or password', 'error')
+            return redirect(url_for('auth.login'))
         
-        if not user.is_active:
-            flash('Your account is inactive. Please contact support.', 'warning')
-            return render_template('auth/login.html', title='Sign In', form=form)
+        if user.status != 'active':
+            flash('Your account is not active', 'error')
+            return redirect(url_for('auth.login'))
         
         login_user(user, remember=form.remember_me.data)
         next_page = request.args.get('next')
-        if not next_page or not next_page.startswith('/'):
-            next_page = url_for('main.index')
+        if not next_page or urlparse(next_page).netloc != '':
+            if user.is_admin:
+                next_page = url_for('admin.dashboard')
+            else:
+                next_page = url_for('booking.dashboard')
         return redirect(next_page)
     
     return render_template('auth/login.html', title='Sign In', form=form)

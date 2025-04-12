@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Login{% endblock %}
+{% block title %}Login - {{ config.SCHOOL_NAME }}{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -10,18 +10,32 @@
                 <div class="card-body">
                     <h2 class="card-title text-center mb-4">Login</h2>
                     <form method="POST" action="{{ url_for('auth.login') }}">
+                        {{ form.hidden_tag() }}
                         <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" name="email" required>
+                            {{ form.email.label(class="form-label") }}
+                            {{ form.email(class="form-control") }}
+                            {% for error in form.email.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
                         </div>
                         <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control" id="password" name="password" required>
+                            {{ form.password.label(class="form-label") }}
+                            {{ form.password(class="form-control") }}
+                            {% for error in form.password.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        <div class="mb-3 form-check">
+                            {{ form.remember_me(class="form-check-input") }}
+                            {{ form.remember_me.label(class="form-check-label") }}
                         </div>
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Login</button>
+                            {{ form.submit(class="btn btn-primary") }}
                         </div>
                     </form>
+                </div>
+                <div class="card-footer text-center">
+                    <p class="mb-0">Don't have an account? <a href="{{ url_for('auth.register') }}">Register here</a></p>
                 </div>
             </div>
         </div>

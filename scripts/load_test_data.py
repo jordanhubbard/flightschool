@@ -8,7 +8,7 @@ from datetime import datetime
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app import create_app, db
-from app.models import Aircraft, User, Booking
+from app.models import Aircraft, User, Booking, MaintenanceType, MaintenanceRecord, Squawk
 
 def load_test_data():
     app = create_app()
@@ -16,68 +16,98 @@ def load_test_data():
     with app.app_context():
         # Clear existing data
         Booking.query.delete()
+        MaintenanceRecord.query.delete()
+        Squawk.query.delete()
+        MaintenanceType.query.delete()
         Aircraft.query.delete()
-        User.query.delete()  # Delete all users
+        User.query.delete()
         
         # Load test data
-        with open('tests/test_data.json', 'r') as f:
+        with open('test_data.json', 'r') as f:
             data = json.load(f)
         
+        # Create users first (needed for foreign keys)
+        user_map = {}  # To store email -> User object mapping
+        for user_data in data['users']:
+            user = User(
+                email=user_data['email'],
+                first_name=user_data['first_name'],
+                last_name=user_data['last_name'],
+                role=user_data['role'],
+                is_admin=user_data.get('is_admin', False),
+                is_instructor=user_data.get('is_instructor', False),
+                status=user_data.get('status', 'active'),
+                phone=user_data.get('phone'),
+                student_id=user_data.get('student_id'),
+                certificates=user_data.get('certificates'),
+                instructor_rate_per_hour=user_data.get('instructor_rate_per_hour')
+            )
+            user.set_password(user_data['password'])
+            db.session.add(user)
+            db.session.flush()
+            user_map[user.email] = user
+        
         # Create aircraft
-        aircraft_map = {}  # To store tail_number -> id mapping
+        aircraft_map = {}  # To store registration -> Aircraft object mapping
         for aircraft_data in data['aircraft']:
             aircraft = Aircraft(**aircraft_data)
             db.session.add(aircraft)
-            db.session.flush()  # This will assign the id
-            aircraft_map[aircraft.tail_number] = aircraft.id
+            db.session.flush()
+            aircraft_map[aircraft.registration] = aircraft
         
-        # Create instructors
-        instructor_map = {}  # To store email -> id mapping
-        for instructor_data in data['instructors']:
-            # Split name into first_name and last_name
-            name_parts = instructor_data['name'].split(' ', 1)
-            instructor = User(
-                email=instructor_data['email'],
-                first_name=name_parts[0],
-                last_name=name_parts[1] if len(name_parts) > 1 else '',
-                name=instructor_data['name'],
-                phone=instructor_data['phone'],
-                is_admin=instructor_data['is_admin'],
-                is_instructor=True,  # Set is_instructor to True for all instructors
-                certificates=','.join(instructor_data['certificates']),
-                status=instructor_data.get('status', 'available')  # Use status from JSON or default to available
+        # Create maintenance types
+        maint_type_map = {}  # To store name -> MaintenanceType object mapping
+        for mtype_data in data['maintenance_types']:
+            created_by = user_map[mtype_data.pop('created_by_email')]
+            mtype = MaintenanceType(
+                name=mtype_data['name'],
+                description=mtype_data['description'],
+                interval_days=mtype_data.get('interval_days'),
+                interval_hours=mtype_data.get('interval_hours'),
+                created_by=created_by
             )
-            instructor.set_password('password123')  # Set a default password
-            db.session.add(instructor)
-            db.session.flush()  # This will assign the id
-            instructor_map[instructor.email] = instructor.id
+            db.session.add(mtype)
+            db.session.flush()
+            maint_type_map[mtype.name] = mtype
         
-        # Create students
-        student_map = {}
-        for student_data in data['students']:
-            # Split name into first_name and last_name
-            name_parts = student_data['name'].split(' ', 1)
-            student = User(
-                email=student_data['email'],
-                first_name=name_parts[0],
-                last_name=name_parts[1] if len(name_parts) > 1 else '',
-                name=student_data['name'],
-                phone=student_data['phone'],
-                student_id=student_data['student_id'],
-                is_admin=False,
-                is_instructor=False  # Explicitly set is_instructor to False for students
+        # Create maintenance records
+        for record_data in data['maintenance_records']:
+            aircraft = aircraft_map[record_data['aircraft_registration']]
+            mtype = maint_type_map[record_data['maintenance_type']]
+            performed_by = user_map[record_data['performed_by_email']]
+            record = MaintenanceRecord(
+                aircraft=aircraft,
+                maintenance_type=mtype,
+                performed_at=datetime.fromisoformat(record_data['performed_at']),
+                performed_by=performed_by,
+                notes=record_data['notes'],
+                hobbs_hours=record_data['hobbs_hours'],
+                tach_hours=record_data['tach_hours']
             )
-            student.set_password('password123')  # Set a default password
-            db.session.add(student)
-            db.session.flush()  # This will assign the id
-            student_map[student.email] = student.id
-
+            db.session.add(record)
+        
+        # Create squawks
+        for squawk_data in data['squawks']:
+            aircraft = aircraft_map[squawk_data['aircraft_registration']]
+            reported_by = user_map[squawk_data['reported_by_email']]
+            squawk = Squawk(
+                aircraft=aircraft,
+                description=squawk_data['description'],
+                reported_by=reported_by,
+                status=squawk_data['status'],
+                created_at=datetime.fromisoformat(squawk_data['created_at'])
+            )
+            db.session.add(squawk)
+        
         # Create bookings
         for booking_data in data['bookings']:
+            student = user_map[booking_data['student_email']]
+            instructor = user_map[booking_data['instructor_email']] if booking_data.get('instructor_email') else None
+            aircraft = aircraft_map[booking_data['aircraft_registration']]
             booking = Booking(
-                student_id=student_map[booking_data['student_email']],
-                instructor_id=instructor_map[booking_data['instructor_email']],
-                aircraft_id=aircraft_map[booking_data['tail_number']],
+                student=student,
+                instructor=instructor,
+                aircraft=aircraft,
                 start_time=datetime.fromisoformat(booking_data['start_time']),
                 end_time=datetime.fromisoformat(booking_data['end_time']),
                 status=booking_data['status']
@@ -86,11 +116,9 @@ def load_test_data():
 
         db.session.commit()
         print("Test data loaded successfully!")
-        print("\nDefault login credentials:")
-        print("Admin: john.smith@flightschool.com / password123")
-        print("Instructor: sarah.jones@flightschool.com / password123")
-        print("Student 1: student1@example.com / password123")
-        print("Student 2: student2@example.com / password123")
+        print("\nLogin credentials from test_data.json:")
+        for user_data in data['users']:
+            print(f"{user_data['role'].title()}: {user_data['email']} / {user_data['password']}")
 
 if __name__ == '__main__':
     load_test_data() 

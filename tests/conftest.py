@@ -238,3 +238,69 @@ def logged_in_instructor(app, client, test_instructor):
             sess['_user_id'] = test_instructor.id
             sess['_fresh'] = True
     return client
+
+@pytest.fixture(scope='function')
+def admin_user(session):
+    """Create an admin user for testing."""
+    user = User(
+        email='admin@example.com',
+        first_name='Admin',
+        last_name='User',
+        role='admin',
+        status='active'
+    )
+    user.set_password('admin123')
+    session.add(user)
+    session.commit()
+    return user
+
+@pytest.fixture(scope='function')
+def instructor_user(session):
+    """Create an instructor user for testing."""
+    user = User(
+        email='instructor@example.com',
+        first_name='Instructor',
+        last_name='User',
+        role='instructor',
+        status='active'
+    )
+    user.set_password('instructor123')
+    session.add(user)
+    session.commit()
+    return user
+
+@pytest.fixture(scope='function')
+def student_user(session):
+    """Create a student user for testing."""
+    user = User(
+        email='student@example.com',
+        first_name='Student',
+        last_name='User',
+        role='student',
+        status='active'
+    )
+    user.set_password('student123')
+    session.add(user)
+    session.commit()
+    return user
+
+@pytest.fixture(scope='function')
+def logged_in_admin(client, admin_user):
+    """Log in as admin user."""
+    with client.session_transaction() as session:
+        session['user_id'] = admin_user.id
+    return admin_user
+
+@pytest.fixture(scope='function')
+def logged_in_instructor(client, instructor_user):
+    """Log in as instructor user."""
+    with client.session_transaction() as session:
+        session['user_id'] = instructor_user.id
+    return instructor_user
+
+@pytest.fixture(scope='function')
+def logged_in_student(client, student_user):
+    """Log in as student user."""
+    with client.session_transaction() as session:
+        session['user_id'] = student_user.id
+    return student_user

@@ -1,112 +1,122 @@
 {
+    "users": [
+        {
+            "email": "admin@example.com",
+            "first_name": "Admin",
+            "last_name": "User",
+            "role": "admin",
+            "is_admin": true,
+            "password": "admin123",
+            "status": "active"
+        },
+        {
+            "email": "instructor@example.com",
+            "first_name": "John",
+            "last_name": "Smith",
+            "role": "instructor",
+            "is_instructor": true,
+            "password": "instructor123",
+            "status": "active",
+            "certificates": "CFI, CFII, MEI",
+            "instructor_rate_per_hour": 75.0,
+            "phone": "555-0123"
+        },
+        {
+            "email": "student@example.com",
+            "first_name": "Jane",
+            "last_name": "Doe",
+            "role": "student",
+            "password": "student123",
+            "status": "active",
+            "student_id": "S12345",
+            "certificates": "PPL",
+            "phone": "555-0124"
+        }
+    ],
     "aircraft": [
         {
-            "tail_number": "N12345",
-            "make_model": "Cessna 172",
-            "year": 2020,
+            "registration": "N12345",
+            "make": "Cessna",
+            "model": "172S",
+            "year": 2010,
             "status": "available",
-            "rate_per_hour": 150.00
+            "category": "single_engine_land",
+            "engine_type": "piston",
+            "num_engines": 1,
+            "ifr_equipped": true,
+            "gps": true,
+            "autopilot": true,
+            "rate_per_hour": 165.0,
+            "hobbs_time": 2345.6,
+            "tach_time": 2300.4,
+            "description": "Well-maintained Skyhawk with G1000 avionics"
         },
         {
-            "tail_number": "N67890",
-            "make_model": "Piper PA-28",
-            "year": 2019,
+            "registration": "N54321",
+            "make": "Piper",
+            "model": "PA-28-181",
+            "year": 2015,
             "status": "available",
-            "rate_per_hour": 165.00
-        },
-        {
-            "tail_number": "N24680",
-            "make_model": "Diamond DA40",
-            "year": 2021,
-            "status": "maintenance",
-            "rate_per_hour": 185.00
+            "category": "single_engine_land",
+            "engine_type": "piston",
+            "num_engines": 1,
+            "ifr_equipped": true,
+            "gps": true,
+            "autopilot": false,
+            "rate_per_hour": 155.0,
+            "hobbs_time": 1234.5,
+            "tach_time": 1200.3,
+            "description": "Archer III with modern avionics"
         }
     ],
-    "instructors": [
+    "maintenance_types": [
         {
-            "email": "john.smith@flightschool.com",
-            "name": "John Smith",
-            "phone": "555-0101",
-            "certificates": ["CFI", "CFII", "MEI"],
-            "is_admin": true,
-            "status": "available",
-            "instructor_rate_per_hour": 75.00
+            "name": "100-Hour Inspection",
+            "description": "Required 100-hour inspection for aircraft used for hire",
+            "interval_hours": 100.0,
+            "created_by_email": "admin@example.com"
         },
         {
-            "email": "sarah.jones@flightschool.com",
-            "name": "Sarah Jones",
-            "phone": "555-0102",
-            "certificates": ["CFI", "CFII"],
-            "is_admin": false,
-            "status": "available",
-            "instructor_rate_per_hour": 65.00
+            "name": "Annual Inspection",
+            "description": "Required annual inspection",
+            "interval_days": 365,
+            "created_by_email": "admin@example.com"
+        },
+        {
+            "name": "Oil Change",
+            "description": "Regular oil change service",
+            "interval_hours": 50.0,
+            "created_by_email": "admin@example.com"
         }
     ],
-    "students": [
+    "maintenance_records": [
         {
-            "email": "student1@example.com",
-            "name": "Alice Johnson",
-            "phone": "555-0201",
-            "student_id": "STU001"
-        },
+            "aircraft_registration": "N12345",
+            "maintenance_type": "100-Hour Inspection",
+            "performed_at": "2025-04-01T10:00:00Z",
+            "performed_by_email": "admin@example.com",
+            "notes": "All checks completed, no issues found",
+            "hobbs_hours": 2300.0,
+            "tach_hours": 2250.0
+        }
+    ],
+    "squawks": [
         {
-            "email": "student2@example.com",
-            "name": "Bob Wilson",
-            "phone": "555-0202",
-            "student_id": "STU002"
+            "aircraft_registration": "N54321",
+            "description": "Right brake feels soft",
+            "reported_by_email": "instructor@example.com",
+            "status": "open",
+            "created_at": "2025-04-10T14:30:00Z"
         }
     ],
     "bookings": [
         {
-            "student_email": "student1@example.com",
-            "instructor_email": "john.smith@flightschool.com",
-            "tail_number": "N12345",
-            "start_time": "2024-03-20T09:00:00",
-            "end_time": "2024-03-20T11:00:00",
+            "student_email": "student@example.com",
+            "instructor_email": "instructor@example.com",
+            "aircraft_registration": "N12345",
+            "start_time": "2025-04-15T14:00:00Z",
+            "end_time": "2025-04-15T16:00:00Z",
             "status": "confirmed"
-        },
-        {
-            "student_email": "student2@example.com",
-            "instructor_email": "sarah.jones@flightschool.com",
-            "tail_number": "N67890",
-            "start_time": "2024-03-21T14:00:00",
-            "end_time": "2024-03-21T16:00:00",
-            "status": "pending"
-        }
-    ],
-    "check_ins": [
-        {
-            "booking_id": 1,
-            "hobbs_start": 1234.5,
-            "tach_start": 2345.6,
-            "instructor_start_time": "2024-03-20T09:00:00",
-            "notes": "Pre-flight inspection completed"
-        }
-    ],
-    "check_outs": [
-        {
-            "booking_id": 1,
-            "hobbs_end": 1236.2,
-            "tach_end": 2347.1,
-            "instructor_end_time": "2024-03-20T11:00:00",
-            "total_aircraft_time": 1.7,
-            "total_instructor_time": 2.0,
-            "notes": "Touch and go practice completed"
-        }
-    ],
-    "invoices": [
-        {
-            "booking_id": 1,
-            "invoice_number": "INV-2024-001",
-            "aircraft_rate": 150.00,
-            "instructor_rate": 75.00,
-            "aircraft_time": 1.7,
-            "instructor_time": 2.0,
-            "aircraft_total": 255.00,
-            "instructor_total": 150.00,
-            "total_amount": 405.00,
-            "status": "pending",
-            "notes": "Initial training flight"
         }
     ]
 } 

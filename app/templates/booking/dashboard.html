@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Booking Dashboard{% endblock %}
+{% block title %}{{ title }}{% endblock %}
 
 {% block extra_css %}
 <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
@@ -32,28 +32,30 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h1 class="mb-4">My Schedule</h1>
+    <h1 class="mb-4">Booking Dashboard</h1>
     
-    <div class="row">
-        <div class="col-md-8">
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="card-title mb-0">Book a Flight</h5>
-                </div>
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
                 <div class="card-body">
-                    <p>Use the button below to schedule your next flight.</p>
-                    <a href="{{ url_for('booking.book') }}" class="btn btn-primary">Book a Flight</a>
+                    <h5 class="card-title">Quick Actions</h5>
+                    <a href="{{ url_for('booking.create') }}" class="btn btn-primary">Book a Flight</a>
+                    <a href="{{ url_for('booking.list') }}" class="btn btn-secondary">View All Bookings</a>
                 </div>
             </div>
-            
+        </div>
+    </div>
+    
+    <!-- Upcoming Bookings -->
+    <div class="row mb-4">
+        <div class="col-md-12">
             <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="card-title mb-0">My Upcoming Bookings</h5>
-                </div>
                 <div class="card-body">
-                    {% if bookings %}
+                    <h5 class="card-title">Upcoming Bookings</h5>
+                    {% if upcoming_bookings %}
                         <div class="table-responsive">
-                            <table class="table table-hover">
+                            <table class="table">
                                 <thead>
                                     <tr>
                                         <th>Date</th>
@@ -64,60 +66,102 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for booking in bookings %}
-                                    <tr>
-                                        <td>{{ booking.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
-                                        <td>{{ booking.aircraft.registration }}</td>
-                                        <td>{{ booking.instructor.full_name if booking.instructor else 'No Instructor' }}</td>
-                                        <td>{{ booking.status.title() }}</td>
-                                        <td>
-                                            <a href="{{ url_for('booking.view_booking', booking_id=booking.id) }}" class="btn btn-sm btn-info">View</a>
-                                            {% if booking.status == 'confirmed' %}
-                                            <form method="post" action="{{ url_for('booking.cancel_booking', booking_id=booking.id) }}" style="display:inline;">
-                                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to cancel this booking?')">Cancel</button>
-                                            </form>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
+                                    {% for booking in upcoming_bookings %}
+                                        <tr>
+                                            <td>{{ booking.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                                            <td>{{ booking.aircraft.registration }}</td>
+                                            <td>{{ booking.instructor.full_name if booking.instructor else 'None' }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ 'success' if booking.status == 'confirmed' else 'warning' }}">
+                                                    {{ booking.status }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a href="{{ url_for('booking.view', id=booking.id) }}" class="btn btn-sm btn-info">View</a>
+                                                {% if booking.status == 'confirmed' %}
+                                                    <a href="{{ url_for('booking.cancel', id=booking.id) }}" class="btn btn-sm btn-danger">Cancel</a>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
                     {% else %}
-                        <p>You don't have any upcoming bookings.</p>
+                        <p>No upcoming bookings.</p>
                     {% endif %}
-                    <a href="{{ url_for('booking.list_bookings') }}" class="btn btn-outline-primary mt-3">View All Bookings</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Available Resources -->
+    <div class="row">
+        <!-- Available Aircraft -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Available Aircraft</h5>
+                    {% if available_aircraft %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Registration</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for aircraft in available_aircraft %}
+                                        <tr>
+                                            <td>{{ aircraft.registration }}</td>
+                                            <td>{{ aircraft.make_model }}</td>
+                                            <td>
+                                                <span class="badge bg-success">Available</span>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p>No aircraft available.</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
         
-        <div class="col-md-4">
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="card-title mb-0">Quick Links</h5>
-                </div>
-                <div class="card-body">
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item"><a href="{{ url_for('booking.list_bookings') }}">My Bookings</a></li>
-                        <li class="list-group-item"><a href="{{ url_for('auth.account_settings') }}">Account Settings</a></li>
-                        {% if current_user.is_admin %}
-                        <li class="list-group-item"><a href="{{ url_for('admin.dashboard') }}">Admin Dashboard</a></li>
-                        {% endif %}
-                    </ul>
-                </div>
-            </div>
-            
+        <!-- Available Instructors -->
+        <div class="col-md-6">
             <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="card-title mb-0">Calendar Integration</h5>
-                </div>
                 <div class="card-body">
-                    {% if has_google_auth %}
-                        <p>Your Google Calendar is connected.</p>
-                        <a href="{{ url_for('booking.calendar_settings') }}" class="btn btn-outline-primary">Calendar Settings</a>
+                    <h5 class="card-title">Available Instructors</h5>
+                    {% if available_instructors %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Certificates</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for instructor in available_instructors %}
+                                        <tr>
+                                            <td>{{ instructor.full_name }}</td>
+                                            <td>{{ instructor.certificates }}</td>
+                                            <td>
+                                                <span class="badge bg-success">Available</span>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     {% else %}
-                        <p>Connect your Google Calendar to automatically sync your bookings.</p>
-                        <a href="{{ url_for('booking.google_auth') }}" class="btn btn-outline-primary">Connect Google Calendar</a>
+                        <p>No instructors available.</p>
                     {% endif %}
                 </div>
             </div>

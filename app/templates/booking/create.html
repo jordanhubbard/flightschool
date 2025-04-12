@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Create Booking{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">Create New Booking</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('booking.create_booking') }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.aircraft_id.label(class="form-label") }}
+                            {{ form.aircraft_id(class="form-select") }}
+                            {% if form.aircraft_id.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.aircraft_id.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.instructor_id.label(class="form-label") }}
+                            {{ form.instructor_id(class="form-select") }}
+                            {% if form.instructor_id.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.instructor_id.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.start_time.label(class="form-label") }}
+                            {{ form.start_time(class="form-control", type="datetime-local") }}
+                            {% if form.start_time.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.start_time.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.end_time.label(class="form-label") }}
+                            {{ form.end_time(class="form-control", type="datetime-local") }}
+                            {% if form.end_time.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.end_time.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.notes.label(class="form-label") }}
+                            {{ form.notes(class="form-control", rows=3) }}
+                            {% if form.notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.notes.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Create Booking</button>
+                            <a href="{{ url_for('booking.list') }}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

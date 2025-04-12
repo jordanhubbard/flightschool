@@ -8,32 +8,35 @@ def load_user(id):
     return User.query.get(int(id))
 
 class AnonymousUser(AnonymousUserMixin):
-    """Anonymous user class."""
-    id = None
-    first_name = None
-    last_name = None
-    email = None
-    is_admin = False
-    is_instructor = False
-    role = None
-    status = 'anonymous'
-    google_calendar_enabled = False
-    certificates = None
+    """Anonymous user class for unauthenticated users."""
+    def __init__(self):
+        self.id = None
+        self.email = None
+        self.first_name = None
+        self.last_name = None
+        self.role = None
+        self.status = 'inactive'
+        self.is_admin = False
+        self.is_instructor = False
+        self.is_student = False
 
-    def can(self, permission):
-        return False
-
+    @property
     def is_active(self):
         return False
 
+    @property
     def is_authenticated(self):
         return False
 
+    @property
     def is_anonymous(self):
         return True
 
     def get_id(self):
         return None
+
+    def __repr__(self):
+        return '<AnonymousUser>'
 
 # Configure login manager to use custom anonymous user class
 login_manager.anonymous_user = AnonymousUser

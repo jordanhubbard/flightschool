@@ -12,8 +12,7 @@ def test_login(client, test_user, session):
         'remember_me': False
     }, follow_redirects=True)
     assert response.status_code == 200
-    # Check that we're redirected to the homepage successfully
-    assert b'Next Level Tailwheel' in response.data
+    assert b'Booking Dashboard' in response.data
 
 def test_login_invalid_credentials(client, test_user, session):
     """Test login with invalid credentials."""
@@ -23,9 +22,7 @@ def test_login_invalid_credentials(client, test_user, session):
         'remember_me': False
     }, follow_redirects=True)
     assert response.status_code == 200
-    # Check for company name which appears in the homepage
-    assert b'Next Level Tailwheel' in response.data
-    # Ensure session doesn't have user ID
+    assert b'Invalid email or password' in response.data
     with client.session_transaction() as sess:
         assert sess.get('_user_id') is None
 
@@ -40,9 +37,7 @@ def test_login_inactive_user(client, test_user, session):
         'remember_me': False
     }, follow_redirects=True)
     assert response.status_code == 200
-    # Check for company name which appears in the homepage
-    assert b'Next Level Tailwheel' in response.data
-    # Ensure session doesn't have user ID
+    assert b'Your account is not active' in response.data
     with client.session_transaction() as sess:
         assert sess.get('_user_id') is None
 
@@ -60,12 +55,9 @@ def test_logout(client, test_user, session):
 
 def test_login_required(client):
     """Test login required decorator."""
-    # We can't directly test a login_required page without fixing the AnonymousUser issue,
-    # so we'll just check navigation elements on a public page
-    response = client.get('/')
+    response = client.get('/dashboard', follow_redirects=True)
     assert response.status_code == 200
-    # Verify we can access a public page and see the school name
-    assert b'Next Level Tailwheel' in response.data
+    assert b'Sign In' in response.data
 
 def test_remember_me(client, test_user, session):
     """Test remember me functionality."""
@@ -75,5 +67,26 @@ def test_remember_me(client, test_user, session):
         'remember_me': True
     }, follow_redirects=True)
     assert response.status_code == 200
-    # Check that we're redirected to the homepage successfully
-    assert b'Next Level Tailwheel' in response.data
+    assert b'Booking Dashboard' in response.data
+    with client.session_transaction() as sess:
+        assert sess.get('_remember') == '1'
+
+def test_admin_login_redirect(client, test_admin, session):
+    """Test admin login redirect."""
+    response = client.post('/login', data={
+        'email': test_admin.email,
+        'password': 'password123',
+        'remember_me': False
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Admin Dashboard' in response.data
+
+def test_student_login_redirect(client, test_student, session):
+    """Test student login redirect."""
+    response = client.post('/login', data={
+        'email': test_student.email,
+        'password': 'password123',
+        'remember_me': False
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Booking Dashboard' in response.data

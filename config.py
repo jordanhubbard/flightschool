@@ -11,6 +11,7 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///flightschool.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
+    WTF_CSRF_ENABLED = True
     SCHOOL_NAME = os.environ.get('SCHOOL_NAME', 'Next Level Tailwheel')
     CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'info@nextleveltailwheel.com')
     CONTACT_PHONE = os.environ.get('CONTACT_PHONE', '(555) 123-4567')

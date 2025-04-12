@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, current_app
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
@@ -51,4 +51,11 @@ from app.models import User, Aircraft, Booking, CheckIn, CheckOut, Invoice
 
 @login_manager.user_loader
 def load_user(id):
-    return User.query.get(int(id)) 
+    """Load user from database."""
+    current_app.logger.debug(f"Loading user with ID: {id}")
+    user = User.query.get(int(id))
+    if user:
+        current_app.logger.debug(f"Loaded user: {user}, Role: {user.role}, Is Admin: {user.is_admin}")
+    else:
+        current_app.logger.debug("User not found")
+    return user 

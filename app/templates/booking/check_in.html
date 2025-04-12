@@ -23,7 +23,7 @@
                     <h5 class="mb-0">Check In Details</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('booking.check_in_booking', booking_id=booking.id) }}">
+                    <form method="POST" action="{{ url_for('booking.check_in', booking_id=booking.id) }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         
                         <div class="row mb-3">

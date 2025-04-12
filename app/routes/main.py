@@ -2,12 +2,18 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for,
 from flask_login import login_required, current_user
 from app.models import User, Aircraft, Booking
 from app import db
+from app.forms import LoginForm
 
 bp = Blueprint('main', __name__)
 
 @bp.route('/')
 def index():
-    return render_template('main/index.html')
+    if current_user.is_authenticated:
+        if current_user.role == 'admin':
+            return redirect(url_for('admin.dashboard'))
+        return redirect(url_for('booking.dashboard'))
+    form = LoginForm()
+    return render_template('main/index.html', form=form)
 
 @bp.route('/about')
 def about():

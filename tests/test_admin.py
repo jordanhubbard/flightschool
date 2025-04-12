@@ -4,25 +4,23 @@ from datetime import datetime
 from flask import session
 from app import db
 
-def test_admin_dashboard_access(client, test_admin, session):
+def test_admin_dashboard_access(client, logged_in_admin):
     """Test admin dashboard access."""
-    with client.session_transaction() as sess:
-        sess['_user_id'] = test_admin.id
-        sess['_fresh'] = True
-    
     response = client.get('/admin/dashboard')
     assert response.status_code == 200
     assert b'Admin Dashboard' in response.data
 
-def test_admin_dashboard_unauthorized(client, test_user, session):
-    """Test unauthorized access to admin dashboard."""
-    with client.session_transaction() as sess:
-        sess['_user_id'] = test_user.id
-        sess['_fresh'] = True
-    
-    response = client.get('/admin/dashboard', follow_redirects=True)
-    assert response.status_code == 200
+def test_admin_dashboard_no_access(client, logged_in_student):
+    """Test admin dashboard access denied for non-admin."""
+    response = client.get('/admin/dashboard')
+    assert response.status_code == 403
     assert b'Admin access required' in response.data
+
+def test_admin_dashboard_not_logged_in(client):
+    """Test admin dashboard access denied when not logged in."""
+    response = client.get('/admin/dashboard')
+    assert response.status_code == 302
+    assert '/login' in response.location
 
 def test_add_aircraft(client, test_admin, app):
     """Test adding a new aircraft."""
@@ -110,25 +108,17 @@ def test_add_student(client, test_admin, session):
     assert response.status_code == 200
     assert b'User created successfully' in response.data
 
-def test_add_instructor_duplicate_email(client, test_admin, test_instructor, app):
-    """Test adding an instructor with a duplicate email."""
-    with app.app_context():
-        with client.session_transaction() as sess:
-            sess['_user_id'] = test_admin.id
-            sess['_fresh'] = True
-    
-    response = client.post('/admin/user/create', data={
+def test_add_instructor_duplicate_email(client, test_instructor):
+    response = client.post('/admin/user/create?type=instructor', data={
         'email': test_instructor.email,  # Using existing instructor's email
-        'first_name': 'John',
-        'last_name': 'Doe',
+        'first_name': 'New',
+        'last_name': 'Instructor',
         'phone': '123-456-7890',
         'certificates': 'CFI',
-        'status': 'active',
-        'role': 'instructor',
-        'instructor_rate_per_hour': '75.00'
+        'status': 'active'
     }, follow_redirects=True)
     assert response.status_code == 200
-    assert b'Email already registered' in response.data
+    assert b'Error creating user: Email already registered' in response.data
 
 def test_edit_instructor(client, test_admin, test_instructor, session):
     """Test editing an instructor."""
@@ -147,12 +137,7 @@ def test_edit_instructor(client, test_admin, test_instructor, session):
     assert response.status_code == 200
     assert b'User updated successfully' in response.data
 
-def test_edit_instructor_invalid_data(client, test_admin, test_instructor, session):
-    """Test editing an instructor with invalid data."""
-    with client.session_transaction() as sess:
-        sess['_user_id'] = test_admin.id
-        sess['_fresh'] = True
-    
+def test_edit_instructor_invalid_data(client, test_instructor):
     response = client.post(f'/admin/user/{test_instructor.id}/edit', data={
         'email': 'invalid_email',
         'first_name': 'Updated',
@@ -162,7 +147,7 @@ def test_edit_instructor_invalid_data(client, test_admin, test_instructor, sessi
         'status': 'active'
     }, follow_redirects=True)
     assert response.status_code == 200
-    assert b'Invalid email address' in response.data
+    assert b'Error updating user: Invalid email address' in response.data
 
 def test_edit_instructor_nonexistent(client, test_admin, session):
     """Test editing a nonexistent instructor."""
@@ -180,18 +165,17 @@ def test_edit_instructor_nonexistent(client, test_admin, session):
     }, follow_redirects=True)
     assert response.status_code == 404
 
-def test_instructor_status_invalid(client, test_admin, test_instructor, app):
-    """Test setting an invalid instructor status."""
-    with app.app_context():
-        with client.session_transaction() as sess:
-            sess['_user_id'] = test_admin.id
-            sess['_fresh'] = True
-
-        response = client.put(f'/admin/user/{test_instructor.id}/status',
-            json={'status': 'invalid_status'},
-            headers={'Content-Type': 'application/json'}
-        )
-        assert response.status_code == 400
+def test_instructor_status_invalid(client, test_instructor):
+    response = client.post(f'/admin/user/{test_instructor.id}/edit', data={
+        'email': 'instructor@example.com',
+        'first_name': 'Test',
+        'last_name': 'Instructor',
+        'phone': '123-456-7890',
+        'certificates': 'CFI',
+        'status': 'invalid_status'  # Invalid status value
+    }, follow_redirects=True)
+    assert response.status_code == 400
+    assert b'Invalid status value' in response.data
 
 def test_delete_aircraft(client, test_admin, test_aircraft, app):
     """Test deleting an aircraft."""
@@ -310,15 +294,13 @@ def test_user_status_management(client, test_admin, test_user, session):
     assert response.status_code == 200
     assert b'User status updated successfully' in response.data
 
-def test_user_status_invalid(client, test_admin, test_user, session):
-    """Test invalid user status update."""
-    with client.session_transaction() as sess:
-        sess['_user_id'] = test_admin.id
-        sess['_fresh'] = True
-    
-    response = client.put(f'/admin/user/{test_user.id}/status',
-        json={'status': 'invalid_status'},
-        headers={'Content-Type': 'application/json'}
-    )
+def test_user_status_invalid(client, test_user):
+    response = client.post(f'/admin/user/{test_user.id}/edit', data={
+        'email': 'user@example.com',
+        'first_name': 'Test',
+        'last_name': 'User',
+        'phone': '123-456-7890',
+        'status': 'invalid_status'  # Invalid status value
+    }, follow_redirects=True)
     assert response.status_code == 400
-    assert b'Invalid status' in response.data 
+    assert b'Invalid status value' in response.data 

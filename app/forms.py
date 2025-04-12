@@ -1,9 +1,12 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField, DateTimeField, FloatField, TextAreaField, SelectMultipleField, IntegerField, FileField
-from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, Optional, Length
+from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, Optional, Length, NumberRange
 from app.models import User
 from datetime import datetime
 import re
+from flask_wtf.csrf import CSRFProtect
+
+csrf = CSRFProtect()
 
 class LoginForm(FlaskForm):
     """Login form."""
@@ -34,11 +37,12 @@ class RegistrationForm(FlaskForm):
             raise ValidationError('Please use a different email address.')
 
 class BookingForm(FlaskForm):
-    aircraft_id = SelectField('Aircraft', validators=[DataRequired()], coerce=int)
-    instructor_id = SelectField('Instructor', coerce=int)
-    start_time = DateTimeField('Start Time', validators=[DataRequired()], format='%Y-%m-%dT%H:%M')
-    duration = FloatField('Duration (hours)', validators=[DataRequired()])
-    submit = SubmitField('Book Flight')
+    start_time = DateTimeField('Start Time', format='%Y-%m-%dT%H:%M', validators=[DataRequired()])
+    end_time = DateTimeField('End Time', format='%Y-%m-%dT%H:%M', validators=[DataRequired()])
+    aircraft_id = SelectField('Aircraft', coerce=int, validators=[DataRequired()])
+    instructor_id = SelectField('Instructor', coerce=int, validators=[Optional()])
+    notes = TextAreaField('Notes', validators=[Optional()])
+    submit = SubmitField('Create Booking')
 
 class GoogleCalendarSettingsForm(FlaskForm):
     enabled = BooleanField('Enable Google Calendar Integration')
