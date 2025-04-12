@@ -76,38 +76,32 @@ def create_user():
     user_type = request.args.get('type', 'student')
     form = UserForm()
     
-    if request.method == 'POST':
-        if form.validate_on_submit():
-            user = User(
-                email=form.email.data,
-                first_name=form.first_name.data,
-                last_name=form.last_name.data,
-                phone=form.phone.data,
-                role=user_type,
-                status=form.status.data
-            )
-            if user_type == 'instructor':
-                user.certificates = form.certificates.data
-            elif user_type == 'student':
-                user.student_id = form.student_id.data
-            user.set_password('changeme')
-            
-            try:
-                db.session.add(user)
-                db.session.commit()
-                flash('User created successfully', 'success')
-                return redirect(url_for('admin.dashboard'))
-            except Exception as e:
-                db.session.rollback()
-                flash('Error creating user', 'error')
-        else:
-            flash('Please correct the errors below', 'error')
+    if form.validate_on_submit():
+        user = User(
+            email=form.email.data,
+            first_name=form.first_name.data,
+            last_name=form.last_name.data,
+            phone=form.phone.data,
+            role=user_type,
+            status=form.status.data
+        )
+        if user_type == 'instructor':
+            user.certificates = form.certificates.data
+        elif user_type == 'student':
+            user.student_id = form.student_id.data
+        user.set_password('changeme')
+        
+        try:
+            db.session.add(user)
+            db.session.commit()
+            flash('User created successfully', 'success')
+            return redirect(url_for('admin.dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Error creating user: Email already registered', 'error')
+            return render_template('admin/user_form.html', form=form, user_type=user_type)
     
-    return render_template('admin/user_form.html', 
-                         form=form,
-                         user=None, 
-                         user_type=user_type,
-                         title=f'Create New {user_type.title()}')
+    return render_template('admin/user_form.html', form=form, user_type=user_type)
 
 @bp.route('/user/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -116,47 +110,36 @@ def edit_user(id):
     user = User.query.get_or_404(id)
     form = UserForm(obj=user)
     
-    if request.method == 'POST':
-        if form.validate_on_submit():
-            user.email = form.email.data
-            user.first_name = form.first_name.data
-            user.last_name = form.last_name.data
-            user.phone = form.phone.data
-            user.status = form.status.data
-            
-            if user.role == 'instructor':
-                user.certificates = form.certificates.data
-            elif user.role == 'student':
-                user.student_id = form.student_id.data
-            
-            try:
-                db.session.commit()
-                flash('User updated successfully', 'success')
-                return redirect(url_for('admin.dashboard'))
-            except Exception as e:
-                db.session.rollback()
-                flash('Error updating user', 'error')
-        else:
-            flash('Please correct the errors below', 'error')
+    if form.validate_on_submit():
+        user.email = form.email.data
+        user.first_name = form.first_name.data
+        user.last_name = form.last_name.data
+        user.phone = form.phone.data
+        user.status = form.status.data
+        if user.role == 'instructor':
+            user.certificates = form.certificates.data
+        elif user.role == 'student':
+            user.student_id = form.student_id.data
+        
+        try:
+            db.session.commit()
+            flash('User updated successfully', 'success')
+            return redirect(url_for('admin.dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Error updating user: Invalid email address', 'error')
+            return render_template('admin/user_form.html', form=form, user=user)
     
-    return render_template('admin/user_form.html', 
-                         form=form,
-                         user=user,
-                         user_type=user.role,
-                         title=f'Edit {user.role.title()}')
+    return render_template('admin/user_form.html', form=form, user=user)
 
 @bp.route('/user/<int:id>', methods=['DELETE'])
 @login_required
 @admin_required
 def delete_user(id):
     user = User.query.get_or_404(id)
-    try:
-        db.session.delete(user)
-        db.session.commit()
-        return jsonify({"message": "User deleted successfully"}), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": "Failed to delete user"}), 500
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({'message': 'User deleted successfully'}), 200
 
 @bp.route('/aircraft/create', methods=['GET', 'POST'])
 @login_required
@@ -168,7 +151,8 @@ def create_aircraft():
         if form.validate_on_submit():
             aircraft = Aircraft(
                 registration=form.registration.data,
-                make_model=form.make_model.data,
+                make=form.make.data,
+                model=form.model.data,
                 year=form.year.data,
                 status=form.status.data
             )
@@ -194,42 +178,25 @@ def create_aircraft():
 def edit_aircraft(id):
     aircraft = Aircraft.query.get_or_404(id)
     form = AircraftForm(obj=aircraft)
-    
-    if request.method == 'POST':
-        if form.validate_on_submit():
-            aircraft.registration = form.registration.data
-            aircraft.make_model = form.make_model.data
-            aircraft.year = form.year.data
-            aircraft.status = form.status.data
-            
-            try:
-                db.session.commit()
-                flash('Aircraft updated successfully', 'success')
-                return redirect(url_for('admin.dashboard'))
-            except Exception as e:
-                db.session.rollback()
-                flash('Error updating aircraft', 'error')
-        else:
-            flash('Please correct the errors below', 'error')
-    
-    return render_template('admin/aircraft_form.html', 
-                         form=form,
-                         title='Edit Aircraft',
-                         aircraft=aircraft,
-                         current_year=datetime.now().year)
+    if form.validate_on_submit():
+        aircraft.registration = form.registration.data
+        aircraft.make = form.make.data
+        aircraft.model = form.model.data
+        aircraft.year = form.year.data
+        aircraft.status = form.status.data
+        db.session.commit()
+        flash('Aircraft updated successfully', 'success')
+        return redirect(url_for('admin.aircraft_list'))
+    return render_template('admin/aircraft_form.html', form=form, title='Edit Aircraft')
 
 @bp.route('/aircraft/<int:id>', methods=['DELETE'])
 @login_required
 @admin_required
 def delete_aircraft(id):
     aircraft = Aircraft.query.get_or_404(id)
-    try:
-        db.session.delete(aircraft)
-        db.session.commit()
-        return jsonify({"message": "Aircraft deleted successfully"}), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": "Failed to delete aircraft"}), 500
+    db.session.delete(aircraft)
+    db.session.commit()
+    return jsonify({'message': 'Aircraft deleted successfully'}), 200
 
 @bp.route('/user/<int:id>/status', methods=['PUT'])
 @login_required
@@ -237,20 +204,12 @@ def delete_aircraft(id):
 def update_user_status(id):
     user = User.query.get_or_404(id)
     data = request.get_json()
-    
     if not data or 'status' not in data:
         return jsonify({'error': 'Status is required'}), 400
-        
-    if data['status'] not in ['active', 'inactive', 'on_leave']:
-        return jsonify({'error': 'Invalid status'}), 400
     
     user.status = data['status']
-    try:
-        db.session.commit()
-        return jsonify({'message': 'Status updated successfully'}), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': 'Failed to update user status'}), 500
+    db.session.commit()
+    return jsonify({'message': 'Status updated successfully'}), 200
 
 @bp.route('/maintenance/types', methods=['GET', 'POST'])
 @login_required
@@ -360,25 +319,19 @@ def aircraft_list():
 @login_required
 @admin_required
 def add_aircraft():
-    """Add a new aircraft."""
     form = AircraftForm()
-    
     if form.validate_on_submit():
         aircraft = Aircraft(
             registration=form.registration.data,
             make_model=form.make_model.data,
             year=form.year.data,
-            status=form.status.data,
-            rate_per_hour=form.rate_per_hour.data
+            status=form.status.data
         )
-        
         db.session.add(aircraft)
         db.session.commit()
-        
         flash('Aircraft added successfully', 'success')
         return redirect(url_for('admin.aircraft_list'))
-    
-    return render_template('admin/aircraft_form.html', form=form)
+    return render_template('admin/aircraft_form.html', form=form, title='Add Aircraft')
 
 @bp.route('/instructors')
 @login_required
