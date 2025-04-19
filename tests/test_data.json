@@ -215,6 +215,14 @@
             "description": "Solo endorsement for pattern work at KPAO in C172S N12345",
             "expiration": "2025-05-10T00:00:00Z",
             "document_url": "https://example.com/endorsements/12345.pdf"
+        },
+        {
+            "student_email": "student2@example.com",
+            "instructor_email": "instructor@example.com",
+            "type": "student_pilot",
+            "description": "Student pilot certificate endorsement",
+            "expiration": null,
+            "document_url": "https://example.com/endorsements/12346.pdf"
         }
     ],
     "documents": [
@@ -224,6 +232,13 @@
             "filename": "medical_certificate.pdf",
             "url": "https://example.com/documents/medical_12345.pdf",
             "expiration": "2026-04-01T00:00:00Z"
+        },
+        {
+            "user_email": "instructor@example.com",
+            "type": "cfi",
+            "filename": "cfi_certificate.pdf",
+            "url": "https://example.com/documents/cfi_12345.pdf",
+            "expiration": "2027-04-01T00:00:00Z"
         }
     ],
     "waitlist_entries": [
@@ -261,6 +276,18 @@
                 "maintenance_status": ["airworthy", "maintenance_due"]
             },
             "created_at": "2025-04-10T12:00:00Z"
+        },
+        {
+            "user_email": "instructor@example.com",
+            "action": "create",
+            "table_name": "endorsement",
+            "record_id": 1,
+            "changes": {
+                "type": "solo",
+                "student_id": 3,
+                "expiration": "2025-05-10T00:00:00Z"
+            },
+            "created_at": "2025-04-10T14:00:00Z"
         }
     ]
 }

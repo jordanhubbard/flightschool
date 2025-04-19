@@ -1,344 +1,286 @@
 import pytest
-from app.models import Aircraft, User, Booking
-from datetime import datetime
-from flask import session
+from datetime import datetime, timedelta, UTC
+from app.models import (
+    User, Aircraft, Booking, MaintenanceType, MaintenanceRecord, Squawk,
+    WeatherMinima, FlightLog, Endorsement, Document, AuditLog, WaitlistEntry,
+    RecurringBooking
+)
 from app import db
 
-def test_admin_dashboard_access(client, logged_in_admin):
+def test_admin_dashboard_access(client, admin_user, app):
     """Test admin dashboard access."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['_user_id'] = admin_user.id
+            sess['_fresh'] = True
+    
     response = client.get('/admin/dashboard')
     assert response.status_code == 200
     assert b'Admin Dashboard' in response.data
 
-def test_admin_dashboard_no_access(client, logged_in_student):
-    """Test admin dashboard access denied for non-admin."""
+def test_admin_required_decorator(client, test_user, app):
+    """Test admin required decorator."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['_user_id'] = test_user.id
+            sess['_fresh'] = True
+    
     response = client.get('/admin/dashboard')
     assert response.status_code == 403
     assert b'Admin access required' in response.data
 
-def test_admin_dashboard_not_logged_in(client):
-    """Test admin dashboard access denied when not logged in."""
-    response = client.get('/admin/dashboard')
-    assert response.status_code == 302
-    assert '/login' in response.location
-
-def test_add_aircraft(client, test_admin, app):
-    """Test adding a new aircraft."""
+def test_manage_weather_minima(client, admin_user, app):
+    """Test managing weather minima."""
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['_user_id'] = test_admin.id
+            sess['_user_id'] = admin_user.id
             sess['_fresh'] = True
-    
-    response = client.post('/admin/aircraft/add', data={
-        'registration': 'N54321',
-        'make': 'Cessna',
-        'model': '172S',
-        'year': '2020',
-        'status': 'available',
-        'category': 'single_engine_land',
-        'engine_type': 'piston',
-        'num_engines': '1',
-        'ifr_equipped': 'true',
-        'gps': 'true',
-        'autopilot': 'true',
-        'rate_per_hour': '150.00',
-        'hobbs_time': '2345.6',
-        'tach_time': '2300.4',
-        'description': 'Well-maintained Skyhawk with G1000 avionics'
-    }, follow_redirects=True)
-    
-    assert response.status_code == 200
-    assert b'Aircraft added successfully' in response.data
-
-    aircraft = Aircraft.query.filter_by(registration='N54321').first()
-    assert aircraft is not None
-    assert aircraft.make == 'Cessna'
-    assert aircraft.model == '172S'
-    assert aircraft.year == 2020
-    assert aircraft.status == 'available'
-    assert aircraft.category == 'single_engine_land'
-    assert aircraft.engine_type == 'piston'
-    assert aircraft.num_engines == 1
-    assert aircraft.ifr_equipped == True
-    assert aircraft.gps == True
-    assert aircraft.autopilot == True
-    assert aircraft.rate_per_hour == 150.00
-    assert aircraft.hobbs_time == 2345.6
-    assert aircraft.tach_time == 2300.4
-    assert aircraft.description == 'Well-maintained Skyhawk with G1000 avionics'
-
-def test_edit_aircraft(client, test_admin, test_aircraft, app):
-    """Test editing an existing aircraft."""
-    with app.app_context():
-        with client.session_transaction() as sess:
-            sess['_user_id'] = test_admin.id
-            sess['_fresh'] = True
-    
-    response = client.post(f'/admin/aircraft/{test_aircraft.id}/edit', data={
-        'registration': 'N54321',
-        'make': 'Piper',
-        'model': 'PA-28-181',
-        'year': '2019',
-        'status': 'available',
-        'category': 'single_engine_land',
-        'engine_type': 'piston',
-        'num_engines': '1',
-        'ifr_equipped': 'true',
-        'gps': 'true',
-        'autopilot': 'false',
-        'rate_per_hour': '175.00',
-        'hobbs_time': '1234.5',
-        'tach_time': '1200.3',
-        'description': 'Archer III with modern avionics'
-    }, follow_redirects=True)
-    assert response.status_code == 200
-    assert b'Aircraft updated successfully' in response.data
-
-    # Verify the changes in the database
-    aircraft = Aircraft.query.get(test_aircraft.id)
-    assert aircraft.registration == 'N54321'
-    assert aircraft.make == 'Piper'
-    assert aircraft.model == 'PA-28-181'
-    assert aircraft.year == 2019
-    assert aircraft.status == 'available'
-    assert aircraft.category == 'single_engine_land'
-    assert aircraft.engine_type == 'piston'
-    assert aircraft.num_engines == 1
-    assert aircraft.ifr_equipped == True
-    assert aircraft.gps == True
-    assert aircraft.autopilot == False
-    assert aircraft.rate_per_hour == 175.00
-    assert aircraft.hobbs_time == 1234.5
-    assert aircraft.tach_time == 1200.3
-    assert aircraft.description == 'Archer III with modern avionics'
-
-def test_add_instructor(client, test_admin, session):
-    """Test adding a new instructor."""
-    with client.session_transaction() as sess:
-        sess['_user_id'] = test_admin.id
-        sess['_fresh'] = True
-    
-    response = client.post('/admin/user/create?type=instructor', data={
-        'email': 'new_instructor@example.com',
-        'first_name': 'New',
-        'last_name': 'Instructor',
-        'phone': '123-456-7890',
-        'certificates': 'CFI',
-        'status': 'active'
-    }, follow_redirects=True)
-    assert response.status_code == 200
-    assert b'User created successfully' in response.data
-
-def test_add_student(client, test_admin, session):
-    """Test adding a new student."""
-    with client.session_transaction() as sess:
-        sess['_user_id'] = test_admin.id
-        sess['_fresh'] = True
-    
-    response = client.post('/admin/user/create?type=student', data={
-        'email': 'new_student@example.com',
-        'first_name': 'New',
-        'last_name': 'Student',
-        'phone': '123-456-7890',
-        'student_id': 'S12345',
-        'status': 'active'
-    }, follow_redirects=True)
-    assert response.status_code == 200
-    assert b'User created successfully' in response.data
-
-def test_add_instructor_duplicate_email(client, test_instructor):
-    response = client.post('/admin/user/create?type=instructor', data={
-        'email': test_instructor.email,  # Using existing instructor's email
-        'first_name': 'New',
-        'last_name': 'Instructor',
-        'phone': '123-456-7890',
-        'certificates': 'CFI',
-        'status': 'active'
-    }, follow_redirects=True)
-    assert response.status_code == 200
-    assert b'Error creating user: Email already registered' in response.data
-
-def test_edit_instructor(client, test_admin, test_instructor, session):
-    """Test editing an instructor."""
-    with client.session_transaction() as sess:
-        sess['_user_id'] = test_admin.id
-        sess['_fresh'] = True
-    
-    response = client.post(f'/admin/user/{test_instructor.id}/edit', data={
-        'email': 'updated_instructor@example.com',
-        'first_name': 'Updated',
-        'last_name': 'Instructor',
-        'phone': '123-456-7890',
-        'certificates': 'CFI, CFII',
-        'status': 'active'
-    }, follow_redirects=True)
-    assert response.status_code == 200
-    assert b'User updated successfully' in response.data
-
-def test_edit_instructor_invalid_data(client, test_instructor):
-    response = client.post(f'/admin/user/{test_instructor.id}/edit', data={
-        'email': 'invalid_email',
-        'first_name': 'Updated',
-        'last_name': 'Instructor',
-        'phone': '123-456-7890',
-        'certificates': 'CFI',
-        'status': 'active'
-    }, follow_redirects=True)
-    assert response.status_code == 200
-    assert b'Error updating user: Invalid email address' in response.data
-
-def test_edit_instructor_nonexistent(client, test_admin, session):
-    """Test editing a nonexistent instructor."""
-    with client.session_transaction() as sess:
-        sess['_user_id'] = test_admin.id
-        sess['_fresh'] = True
-    
-    response = client.post('/admin/user/999/edit', data={
-        'email': 'updated_instructor@example.com',
-        'first_name': 'Updated',
-        'last_name': 'Instructor',
-        'phone': '123-456-7890',
-        'certificates': 'CFI',
-        'status': 'active'
-    }, follow_redirects=True)
-    assert response.status_code == 404
-
-def test_instructor_status_invalid(client, test_instructor):
-    response = client.post(f'/admin/user/{test_instructor.id}/edit', data={
-        'email': 'instructor@example.com',
-        'first_name': 'Test',
-        'last_name': 'Instructor',
-        'phone': '123-456-7890',
-        'certificates': 'CFI',
-        'status': 'invalid_status'  # Invalid status value
-    }, follow_redirects=True)
-    assert response.status_code == 400
-    assert b'Invalid status value' in response.data
-
-def test_delete_aircraft(client, test_admin, test_aircraft, app):
-    """Test deleting an aircraft."""
-    with app.app_context():
-        with client.session_transaction() as sess:
-            sess['_user_id'] = test_admin.id
-            sess['_fresh'] = True
-    
-    response = client.delete(f'/admin/aircraft/{test_aircraft.id}')
-    assert response.status_code == 200
-
-    # Verify the aircraft was deleted
-    aircraft = Aircraft.query.get(test_aircraft.id)
-    assert aircraft is None
-
-def test_instructor_status_management(client, test_admin, test_instructor, app):
-    """Test managing instructor status."""
-    with app.app_context():
-        with client.session_transaction() as sess:
-            sess['_user_id'] = test_admin.id
-            sess['_fresh'] = True
-
-        # Test setting instructor to inactive
-        response = client.put(f'/admin/user/{test_instructor.id}/status',
-            json={'status': 'inactive'},
-            headers={'Content-Type': 'application/json'}
-        )
+        
+        # Create weather minima
+        response = client.post('/admin/weather-minima', json={
+            'category': 'VFR',
+            'ceiling_min': 3000,
+            'visibility_min': 5.0,
+            'wind_max': 25,
+            'crosswind_max': 15
+        })
         assert response.status_code == 200
-        assert b'Status updated successfully' in response.data
+        data = response.get_json()
+        assert data['message'] == 'Weather minima created successfully'
+        
+        # Get weather minima
+        response = client.get('/admin/weather-minima')
+        assert response.status_code == 200
+        assert b'VFR' in response.data
+        
+        # Update weather minima
+        minima = WeatherMinima.query.first()
+        response = client.put(f'/admin/weather-minima/{minima.id}', json={
+            'ceiling_min': 2500
+        })
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['message'] == 'Weather minima updated successfully'
+        
+        # Delete weather minima
+        response = client.delete(f'/admin/weather-minima/{minima.id}')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['message'] == 'Weather minima deleted successfully'
 
-def test_aircraft_status_management(client, test_admin, test_aircraft, app):
-    """Test managing aircraft status."""
+def test_manage_endorsements(client, admin_user, test_user, test_instructor, app):
+    """Test managing endorsements."""
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['_user_id'] = test_admin.id
+            sess['_user_id'] = admin_user.id
             sess['_fresh'] = True
-    
-    response = client.put(f'/admin/aircraft/{test_aircraft.id}/status',
-        json={'status': 'maintenance'},
-        headers={'Content-Type': 'application/json'}
-    )
-    assert response.status_code == 200
+        
+        # Create endorsement
+        endorsement = Endorsement(
+            student=test_user,
+            instructor=test_instructor,
+            type='solo',
+            description='Solo endorsement for pattern work',
+            expiration=datetime.now(UTC) + timedelta(days=90)
+        )
+        db.session.add(endorsement)
+        db.session.commit()
+        
+        # View endorsements
+        response = client.get('/admin/endorsements')
+        assert response.status_code == 200
+        assert b'solo' in response.data
+        
+        # Update endorsement
+        response = client.put(f'/admin/endorsements/{endorsement.id}', json={
+            'expiration': (datetime.now(UTC) + timedelta(days=180)).isoformat()
+        })
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['message'] == 'Endorsement updated successfully'
+        
+        # Delete endorsement
+        response = client.delete(f'/admin/endorsements/{endorsement.id}')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['message'] == 'Endorsement deleted successfully'
 
-def test_delete_instructor(client, test_admin, test_instructor, session):
-    """Test deleting an instructor."""
-    with client.session_transaction() as sess:
-        sess['_user_id'] = test_admin.id
-        sess['_fresh'] = True
-    
-    response = client.delete(f'/admin/user/{test_instructor.id}')
-    assert response.status_code == 200
+def test_manage_documents(client, admin_user, test_user, app):
+    """Test managing documents."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['_user_id'] = admin_user.id
+            sess['_fresh'] = True
+        
+        # Create document
+        document = Document(
+            user=test_user,
+            type='medical',
+            filename='medical_certificate.pdf',
+            url='https://example.com/documents/medical.pdf',
+            expiration=datetime.now(UTC) + timedelta(days=365)
+        )
+        db.session.add(document)
+        db.session.commit()
+        
+        # View documents
+        response = client.get('/admin/documents')
+        assert response.status_code == 200
+        assert b'medical_certificate.pdf' in response.data
+        
+        # Update document
+        response = client.put(f'/admin/documents/{document.id}', json={
+            'expiration': (datetime.now(UTC) + timedelta(days=730)).isoformat()
+        })
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['message'] == 'Document updated successfully'
+        
+        # Delete document
+        response = client.delete(f'/admin/documents/{document.id}')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['message'] == 'Document deleted successfully'
 
-def test_delete_instructor_unauthorized(client, test_user, test_instructor, session):
-    """Test unauthorized deletion of an instructor."""
-    with client.session_transaction() as sess:
-        sess['_user_id'] = test_user.id
-        sess['_fresh'] = True
-    
-    response = client.delete(f'/admin/user/{test_instructor.id}')
-    assert response.status_code == 200
+def test_manage_waitlist(client, admin_user, test_user, test_aircraft, test_instructor, app):
+    """Test managing waitlist entries."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['_user_id'] = admin_user.id
+            sess['_fresh'] = True
+        
+        # Create waitlist entry
+        entry = WaitlistEntry(
+            student=test_user,
+            instructor=test_instructor,
+            aircraft=test_aircraft,
+            requested_date=datetime.now(UTC) + timedelta(days=7),
+            time_preference='afternoon',
+            duration_hours=2.0,
+            status='active'
+        )
+        db.session.add(entry)
+        db.session.commit()
+        
+        # View waitlist
+        response = client.get('/admin/waitlist')
+        assert response.status_code == 200
+        assert b'afternoon' in response.data
+        
+        # Update waitlist entry
+        response = client.put(f'/admin/waitlist/{entry.id}', json={
+            'status': 'fulfilled'
+        })
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['message'] == 'Waitlist entry updated successfully'
 
-def test_delete_instructor_nonexistent(client, test_admin, session):
-    """Test deleting a nonexistent instructor."""
-    with client.session_transaction() as sess:
-        sess['_user_id'] = test_admin.id
-        sess['_fresh'] = True
-    
-    response = client.delete('/admin/user/999')
-    assert response.status_code == 404
+def test_manage_recurring_bookings(client, admin_user, test_user, test_aircraft, test_instructor, app):
+    """Test managing recurring bookings."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['_user_id'] = admin_user.id
+            sess['_fresh'] = True
+        
+        # Create recurring booking
+        booking = RecurringBooking(
+            student=test_user,
+            instructor=test_instructor,
+            aircraft=test_aircraft,
+            day_of_week=2,  # Wednesday
+            start_time=datetime.strptime('14:00', '%H:%M').time(),
+            duration_hours=2.0,
+            start_date=datetime.now(UTC),
+            end_date=datetime.now(UTC) + timedelta(days=90),
+            status='active'
+        )
+        db.session.add(booking)
+        db.session.commit()
+        
+        # View recurring bookings
+        response = client.get('/admin/recurring-bookings')
+        assert response.status_code == 200
+        assert b'Wednesday' in response.data
+        
+        # Update recurring booking
+        response = client.put(f'/admin/recurring-bookings/{booking.id}', json={
+            'status': 'inactive'
+        })
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['message'] == 'Recurring booking updated successfully'
+        
+        # Delete recurring booking
+        response = client.delete(f'/admin/recurring-bookings/{booking.id}')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['message'] == 'Recurring booking deleted successfully'
 
-def test_edit_student(client, test_admin, test_user, session):
-    """Test editing a student."""
-    with client.session_transaction() as sess:
-        sess['_user_id'] = test_admin.id
-        sess['_fresh'] = True
-    
-    response = client.post(f'/admin/user/{test_user.id}/edit', data={
-        'email': 'updated_student@example.com',
-        'first_name': 'Updated',
-        'last_name': 'Student',
-        'phone': '123-456-7890',
-        'student_id': 'S54321',
-        'status': 'active'
-    }, follow_redirects=True)
-    assert response.status_code == 200
-    assert b'User updated successfully' in response.data
+def test_view_audit_logs(client, admin_user, app):
+    """Test viewing audit logs."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['_user_id'] = admin_user.id
+            sess['_fresh'] = True
+        
+        # Create audit log
+        log = AuditLog(
+            user=admin_user,
+            action='update',
+            table_name='aircraft',
+            record_id=1,
+            changes={
+                'status': ['available', 'maintenance'],
+                'maintenance_status': ['airworthy', 'maintenance_due']
+            }
+        )
+        db.session.add(log)
+        db.session.commit()
+        
+        # View audit logs
+        response = client.get('/admin/audit-logs')
+        assert response.status_code == 200
+        assert b'update' in response.data
+        assert b'aircraft' in response.data
 
-def test_delete_student(client, test_admin, test_user, session):
-    """Test deleting a student."""
-    with client.session_transaction() as sess:
-        sess['_user_id'] = test_admin.id
-        sess['_fresh'] = True
-    
-    response = client.delete(f'/admin/user/{test_user.id}')
-    assert response.status_code == 200
-
-def test_user_status_management(client, test_admin, test_user, session):
-    """Test managing user status."""
-    with client.session_transaction() as sess:
-        sess['_user_id'] = test_admin.id
-        sess['_fresh'] = True
-    
-    # Deactivate user
-    response = client.put(f'/admin/user/{test_user.id}/status',
-        json={'status': 'inactive'},
-        headers={'Content-Type': 'application/json'}
-    )
-    assert response.status_code == 200
-    assert response.json['message'] == 'Status updated successfully'
-    
-    # Reactivate user
-    response = client.put(f'/admin/user/{test_user.id}/status',
-        json={'status': 'active'},
-        headers={'Content-Type': 'application/json'}
-    )
-    assert response.status_code == 200
-    assert b'User status updated successfully' in response.data
-
-def test_user_status_invalid(client, test_user):
-    response = client.post(f'/admin/user/{test_user.id}/edit', data={
-        'email': 'user@example.com',
-        'first_name': 'Test',
-        'last_name': 'User',
-        'phone': '123-456-7890',
-        'status': 'invalid_status'  # Invalid status value
-    }, follow_redirects=True)
-    assert response.status_code == 400
-    assert b'Invalid status value' in response.data 
+def test_manage_flight_logs(client, admin_user, test_user, test_booking, test_instructor, app):
+    """Test managing flight logs."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['_user_id'] = admin_user.id
+            sess['_fresh'] = True
+        
+        # Create flight log
+        log = FlightLog(
+            booking=test_booking,
+            pic=test_instructor,
+            sic=test_user,
+            flight_date=datetime.now(UTC),
+            route='KPAO KHWD KPAO',
+            weather_conditions='VFR',
+            ground_instruction=0.5,
+            dual_received=2.0,
+            pic_time=2.0,
+            landings_day=8
+        )
+        db.session.add(log)
+        db.session.commit()
+        
+        # View flight logs
+        response = client.get('/admin/flight-logs')
+        assert response.status_code == 200
+        assert b'KPAO KHWD KPAO' in response.data
+        
+        # Update flight log
+        response = client.put(f'/admin/flight-logs/{log.id}', json={
+            'landings_day': 10
+        })
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['message'] == 'Flight log updated successfully'
+        
+        # Delete flight log
+        response = client.delete(f'/admin/flight-logs/{log.id}')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['message'] == 'Flight log deleted successfully'

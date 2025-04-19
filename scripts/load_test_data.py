@@ -2,7 +2,7 @@
 import json
 import os
 import sys
-from datetime import datetime, time
+from datetime import datetime, time, timezone
 
 # Add the project root directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -62,10 +62,42 @@ def load_test_data():
         # Create aircraft
         aircraft_map = {}  # To store registration -> Aircraft object mapping
         for aircraft_data in data['aircraft']:
-            aircraft = Aircraft(**aircraft_data)
+            aircraft = Aircraft(
+                registration=aircraft_data['registration'],
+                make=aircraft_data['make'],
+                model=aircraft_data['model'],
+                year=aircraft_data['year'],
+                status=aircraft_data['status'],
+                category=aircraft_data['category'],
+                engine_type=aircraft_data['engine_type'],
+                num_engines=aircraft_data['num_engines'],
+                ifr_equipped=aircraft_data['ifr_equipped'],
+                gps=aircraft_data['gps'],
+                autopilot=aircraft_data['autopilot'],
+                rate_per_hour=aircraft_data['rate_per_hour'],
+                hobbs_time=aircraft_data['hobbs_time'],
+                tach_time=aircraft_data['tach_time'],
+                description=aircraft_data['description'],
+                maintenance_status=aircraft_data['maintenance_status'],
+                next_maintenance_date=datetime.fromisoformat(aircraft_data['next_maintenance_date']),
+                next_maintenance_hours=aircraft_data['next_maintenance_hours'],
+                insurance_expiry=datetime.fromisoformat(aircraft_data['insurance_expiry']),
+                registration_expiry=datetime.fromisoformat(aircraft_data['registration_expiry'])
+            )
             db.session.add(aircraft)
             db.session.flush()
             aircraft_map[aircraft.registration] = aircraft
+        
+        # Create weather minima
+        for minima_data in data['weather_minima']:
+            minima = WeatherMinima(
+                category=minima_data['category'],
+                ceiling_min=minima_data['ceiling_min'],
+                visibility_min=minima_data['visibility_min'],
+                wind_max=minima_data['wind_max'],
+                crosswind_max=minima_data['crosswind_max']
+            )
+            db.session.add(minima)
         
         # Create maintenance types
         maint_type_map = {}  # To store name -> MaintenanceType object mapping
@@ -110,11 +142,6 @@ def load_test_data():
                 created_at=datetime.fromisoformat(squawk_data['created_at'])
             )
             db.session.add(squawk)
-        
-        # Create weather minima
-        for minima_data in data['weather_minima']:
-            minima = WeatherMinima(**minima_data)
-            db.session.add(minima)
         
         # Create bookings
         booking_map = {}  # To store index -> Booking object mapping
