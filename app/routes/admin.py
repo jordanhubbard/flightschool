@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_login import login_required, current_user
-from app.models import User, Aircraft, Booking, MaintenanceType, MaintenanceRecord, Squawk
+from app.models import User, Aircraft, Booking, MaintenanceType, MaintenanceRecord, Squawk, Endorsement, Document, WeatherMinima, AuditLog, WaitlistEntry, RecurringBooking, FlightLog
 from app import db
 from datetime import datetime
 from functools import wraps
@@ -10,7 +10,7 @@ from wtforms.validators import DataRequired, Email, Optional, Length
 from app.forms import UserForm, AircraftForm, MaintenanceTypeForm, MaintenanceRecordForm, SquawkForm
 from werkzeug.security import generate_password_hash
 
-bp = Blueprint('admin', __name__)
+admin_bp = Blueprint('admin', __name__)
 
 def admin_required(f):
     @wraps(f)
@@ -36,13 +36,11 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-@bp.route('/dashboard')
+@admin_bp.route('/dashboard')
 @login_required
+@admin_required
 def dashboard():
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'error')
-        return redirect(url_for('main.index'))
-    
+    """Admin dashboard view."""
     # Get counts for dashboard
     instructor_count = User.query.filter_by(role='instructor', status='active').count()
     student_count = User.query.filter_by(role='student', status='active').count()
@@ -57,13 +55,13 @@ def dashboard():
                          aircraft_count=aircraft_count,
                          recent_bookings=recent_bookings)
 
-@bp.route('/calendar/settings')
+@admin_bp.route('/calendar/settings')
 @login_required
 @admin_required
 def calendar_settings():
     return render_template('admin/calendar_settings.html')
 
-@bp.route('/calendar/oauth')
+@admin_bp.route('/calendar/oauth')
 @login_required
 @admin_required
 def calendar_oauth():
@@ -85,7 +83,7 @@ def calendar_oauth():
     auth_url = f"{GOOGLE_AUTH_URL}?{'&'.join(f'{k}={v}' for k, v in params.items())}"
     return redirect(auth_url)
 
-@bp.route('/calendar/callback')
+@admin_bp.route('/calendar/callback')
 @login_required
 @admin_required
 def calendar_callback():
@@ -99,26 +97,26 @@ def calendar_callback():
     flash('Successfully connected to Google Calendar', 'success')
     return redirect(url_for('admin.calendar_settings'))
 
-@bp.route('/schedule')
+@admin_bp.route('/schedule')
 @login_required
 @admin_required
 def schedule():
     bookings = Booking.query.order_by(Booking.start_time).all()
     return render_template('admin/schedule.html', bookings=bookings)
 
-@bp.route('/reports')
+@admin_bp.route('/reports')
 @login_required
 @admin_required
 def reports():
     return render_template('admin/reports.html')
 
-@bp.route('/settings')
+@admin_bp.route('/settings')
 @login_required
 @admin_required
 def settings():
     return render_template('admin/settings.html')
 
-@bp.route('/user/create', methods=['GET', 'POST'])
+@admin_bp.route('/user/create', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def create_user():
@@ -169,7 +167,7 @@ def create_user():
 
     return render_template('admin/user_create.html', user_type=user_type)
 
-@bp.route('/user/<int:id>/edit', methods=['GET', 'POST'])
+@admin_bp.route('/user/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def edit_user(id):
@@ -213,7 +211,7 @@ def edit_user(id):
 
     return render_template('admin/user_edit.html', user=user)
 
-@bp.route('/user/<int:id>', methods=['DELETE'])
+@admin_bp.route('/user/<int:id>', methods=['DELETE'])
 @login_required
 @admin_required
 def delete_user(id):
@@ -232,7 +230,7 @@ def delete_user(id):
         flash('Failed to delete user', 'error')
         return redirect(url_for('admin.dashboard'))
 
-@bp.route('/aircraft/create', methods=['GET', 'POST'])
+@admin_bp.route('/aircraft/create', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def create_aircraft():
@@ -274,7 +272,7 @@ def create_aircraft():
                          title='Create New Aircraft',
                          current_year=datetime.now().year)
 
-@bp.route('/aircraft/<int:id>/edit', methods=['GET', 'POST'])
+@admin_bp.route('/aircraft/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def edit_aircraft(id):
@@ -302,7 +300,7 @@ def edit_aircraft(id):
         return redirect(url_for('admin.aircraft_list'))
     return render_template('admin/aircraft_form.html', form=form, title='Edit Aircraft')
 
-@bp.route('/aircraft/<int:id>', methods=['DELETE'])
+@admin_bp.route('/aircraft/<int:id>', methods=['DELETE'])
 @login_required
 @admin_required
 def delete_aircraft(id):
@@ -311,7 +309,7 @@ def delete_aircraft(id):
     db.session.commit()
     return jsonify({'message': 'Aircraft deleted successfully'}), 200
 
-@bp.route('/user/<int:id>/status', methods=['PUT'])
+@admin_bp.route('/user/<int:id>/status', methods=['PUT'])
 @login_required
 @admin_required
 def update_user_status(id):
@@ -334,7 +332,7 @@ def update_user_status(id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@bp.route('/maintenance/types', methods=['GET', 'POST'])
+@admin_bp.route('/maintenance/types', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def maintenance_types():
@@ -356,7 +354,7 @@ def maintenance_types():
                          form=form, 
                          maintenance_types=maintenance_types)
 
-@bp.route('/maintenance/records', methods=['GET', 'POST'])
+@admin_bp.route('/maintenance/records', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def maintenance_records():
@@ -383,7 +381,7 @@ def maintenance_records():
                          form=form, 
                          records=records)
 
-@bp.route('/squawks', methods=['GET', 'POST'])
+@admin_bp.route('/squawks', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def squawks():
@@ -404,7 +402,7 @@ def squawks():
                          form=form, 
                          squawks=squawks)
 
-@bp.route('/booking/<int:booking_id>/edit', methods=['GET', 'POST'])
+@admin_bp.route('/booking/<int:booking_id>/edit', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def edit_booking(booking_id):
@@ -430,7 +428,7 @@ def edit_booking(booking_id):
     
     return render_template('admin/edit_booking.html', booking=booking)
 
-@bp.route('/aircraft')
+@admin_bp.route('/aircraft')
 @login_required
 @admin_required
 def aircraft_list():
@@ -438,7 +436,7 @@ def aircraft_list():
     aircraft = Aircraft.query.all()
     return render_template('admin/aircraft_list.html', aircraft=aircraft)
 
-@bp.route('/aircraft/add', methods=['GET', 'POST'])
+@admin_bp.route('/aircraft/add', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def aircraft_add():
@@ -459,7 +457,7 @@ def aircraft_add():
         return redirect(url_for('admin.dashboard'))
     return render_template('admin/aircraft_form.html', form=form, title='Add Aircraft')
 
-@bp.route('/instructors')
+@admin_bp.route('/instructors')
 @login_required
 @admin_required
 def instructor_list():
@@ -467,7 +465,7 @@ def instructor_list():
     instructors = User.query.filter_by(role='instructor').all()
     return render_template('admin/instructor_list.html', instructors=instructors)
 
-@bp.route('/users')
+@admin_bp.route('/users')
 @login_required
 @admin_required
 def user_list():
@@ -475,19 +473,19 @@ def user_list():
     users = User.query.all()
     return render_template('admin/user_form.html', users=users)
 
-@bp.route('/instructor/create', methods=['GET', 'POST'])
+@admin_bp.route('/instructor/create', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def create_instructor():
     return redirect(url_for('admin.create_user', type='instructor'))
 
-@bp.route('/instructor/<int:id>/edit', methods=['GET', 'POST'])
+@admin_bp.route('/instructor/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def edit_instructor(id):
     return redirect(url_for('admin.edit_user', id=id))
 
-@bp.route('/aircraft/<int:id>/status', methods=['PUT'])
+@admin_bp.route('/aircraft/<int:id>/status', methods=['PUT'])
 @login_required
 @admin_required
 def update_aircraft_status(id):
@@ -505,3 +503,281 @@ def update_aircraft_status(id):
     db.session.commit()
     
     return jsonify({'message': 'Status updated successfully'}), 200 
+
+@admin_bp.route('/endorsements', methods=['GET'])
+@login_required
+@admin_required
+def endorsements():
+    """List all endorsements."""
+    endorsements = Endorsement.query.all()
+    return render_template('admin/endorsements.html', endorsements=endorsements)
+
+@admin_bp.route('/endorsements/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+@login_required
+@admin_required
+def manage_endorsement(id):
+    """Manage a specific endorsement."""
+    endorsement = Endorsement.query.get_or_404(id)
+    
+    if request.method == 'GET':
+        return render_template('admin/endorsement_form.html', endorsement=endorsement)
+    
+    elif request.method == 'PUT':
+        data = request.get_json()
+        
+        # Update endorsement
+        endorsement.type = data.get('type', endorsement.type)
+        endorsement.description = data.get('description', endorsement.description)
+        endorsement.expiration = datetime.fromisoformat(data['expiration']) if data.get('expiration') else None
+        endorsement.document_url = data.get('document_url', endorsement.document_url)
+        
+        try:
+            db.session.commit()
+            return jsonify({'message': 'Endorsement updated successfully'})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+    
+    elif request.method == 'DELETE':
+        try:
+            db.session.delete(endorsement)
+            db.session.commit()
+            return jsonify({'message': 'Endorsement deleted successfully'})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+
+@admin_bp.route('/documents', methods=['GET'])
+@login_required
+@admin_required
+def documents():
+    """List all documents."""
+    documents = Document.query.all()
+    return render_template('admin/documents.html', documents=documents)
+
+@admin_bp.route('/documents/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+@login_required
+@admin_required
+def manage_document(id):
+    """Manage a specific document."""
+    document = Document.query.get_or_404(id)
+    
+    if request.method == 'GET':
+        return render_template('admin/document_form.html', document=document)
+    
+    elif request.method == 'PUT':
+        data = request.get_json()
+        
+        # Update document
+        document.type = data.get('type', document.type)
+        document.filename = data.get('filename', document.filename)
+        document.url = data.get('url', document.url)
+        document.expiration = datetime.fromisoformat(data['expiration']) if data.get('expiration') else None
+        
+        try:
+            db.session.commit()
+            return jsonify({'message': 'Document updated successfully'})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+    
+    elif request.method == 'DELETE':
+        try:
+            db.session.delete(document)
+            db.session.commit()
+            return jsonify({'message': 'Document deleted successfully'})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+
+@admin_bp.route('/weather-minima', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def weather_minima():
+    """Manage weather minima."""
+    if request.method == 'GET':
+        minima = WeatherMinima.query.all()
+        return render_template('admin/weather_minima.html', minima=minima)
+    
+    elif request.method == 'POST':
+        data = request.get_json()
+        
+        # Create new weather minima
+        minima = WeatherMinima(
+            category=data['category'],
+            ceiling_min=data['ceiling_min'],
+            visibility_min=data['visibility_min'],
+            wind_max=data['wind_max'],
+            crosswind_max=data['crosswind_max']
+        )
+        
+        try:
+            db.session.add(minima)
+            db.session.commit()
+            return jsonify({'message': 'Weather minima created successfully'})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+
+@admin_bp.route('/weather-minima/<int:id>', methods=['PUT', 'DELETE'])
+@login_required
+@admin_required
+def manage_weather_minima(id):
+    """Manage a specific weather minima."""
+    minima = WeatherMinima.query.get_or_404(id)
+    
+    if request.method == 'PUT':
+        data = request.get_json()
+        
+        # Update weather minima
+        minima.category = data.get('category', minima.category)
+        minima.ceiling_min = data.get('ceiling_min', minima.ceiling_min)
+        minima.visibility_min = data.get('visibility_min', minima.visibility_min)
+        minima.wind_max = data.get('wind_max', minima.wind_max)
+        minima.crosswind_max = data.get('crosswind_max', minima.crosswind_max)
+        
+        try:
+            db.session.commit()
+            return jsonify({'message': 'Weather minima updated successfully'})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+    
+    elif request.method == 'DELETE':
+        try:
+            db.session.delete(minima)
+            db.session.commit()
+            return jsonify({'message': 'Weather minima deleted successfully'})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+
+@admin_bp.route('/audit-logs', methods=['GET'])
+@login_required
+@admin_required
+def audit_logs():
+    """View audit logs."""
+    logs = AuditLog.query.order_by(AuditLog.created_at.desc()).all()
+    return render_template('admin/audit_logs.html', logs=logs)
+
+@admin_bp.route('/waitlist', methods=['GET'])
+@login_required
+@admin_required
+def waitlist():
+    """View and manage waitlist entries."""
+    entries = WaitlistEntry.query.filter_by(status='active').all()
+    return render_template('admin/waitlist.html', entries=entries)
+
+@admin_bp.route('/waitlist/<int:id>', methods=['PUT'])
+@login_required
+@admin_required
+def update_waitlist_entry(id):
+    """Update a waitlist entry."""
+    entry = WaitlistEntry.query.get_or_404(id)
+    data = request.get_json()
+    
+    entry.status = data.get('status', entry.status)
+    
+    try:
+        db.session.commit()
+        return jsonify({'message': 'Waitlist entry updated successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@admin_bp.route('/recurring-bookings', methods=['GET'])
+@login_required
+@admin_required
+def recurring_bookings():
+    """View and manage recurring bookings."""
+    bookings = RecurringBooking.query.all()
+    return render_template('admin/recurring_bookings.html', bookings=bookings)
+
+@admin_bp.route('/recurring-bookings/<int:id>', methods=['PUT', 'DELETE'])
+@login_required
+@admin_required
+def manage_recurring_booking(id):
+    """Manage a recurring booking."""
+    booking = RecurringBooking.query.get_or_404(id)
+    
+    if request.method == 'PUT':
+        data = request.get_json()
+        
+        # Update recurring booking
+        booking.instructor_id = data.get('instructor_id', booking.instructor_id)
+        booking.aircraft_id = data.get('aircraft_id', booking.aircraft_id)
+        booking.day_of_week = data.get('day_of_week', booking.day_of_week)
+        if 'start_time' in data:
+            booking.start_time = datetime.strptime(data['start_time'], '%H:%M').time()
+        booking.duration_hours = data.get('duration_hours', booking.duration_hours)
+        if 'end_date' in data:
+            booking.end_date = datetime.fromisoformat(data['end_date'])
+        booking.status = data.get('status', booking.status)
+        
+        try:
+            db.session.commit()
+            return jsonify({'message': 'Recurring booking updated successfully'})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+    
+    elif request.method == 'DELETE':
+        try:
+            db.session.delete(booking)
+            db.session.commit()
+            return jsonify({'message': 'Recurring booking deleted successfully'})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+
+@admin_bp.route('/flight-logs', methods=['GET'])
+@login_required
+@admin_required
+def flight_logs():
+    """View flight logs."""
+    logs = FlightLog.query.order_by(FlightLog.flight_date.desc()).all()
+    return render_template('admin/flight_logs.html', logs=logs)
+
+@admin_bp.route('/flight-logs/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+@login_required
+@admin_required
+def manage_flight_log(id):
+    """Manage a flight log."""
+    log = FlightLog.query.get_or_404(id)
+    
+    if request.method == 'GET':
+        return render_template('admin/flight_log_form.html', log=log)
+    
+    elif request.method == 'PUT':
+        data = request.get_json()
+        
+        # Update flight log
+        log.route = data.get('route', log.route)
+        log.remarks = data.get('remarks', log.remarks)
+        log.weather_conditions = data.get('weather_conditions', log.weather_conditions)
+        log.ground_instruction = data.get('ground_instruction', log.ground_instruction)
+        log.dual_received = data.get('dual_received', log.dual_received)
+        log.pic_time = data.get('pic_time', log.pic_time)
+        log.sic_time = data.get('sic_time', log.sic_time)
+        log.cross_country = data.get('cross_country', log.cross_country)
+        log.night = data.get('night', log.night)
+        log.actual_instrument = data.get('actual_instrument', log.actual_instrument)
+        log.simulated_instrument = data.get('simulated_instrument', log.simulated_instrument)
+        log.landings_day = data.get('landings_day', log.landings_day)
+        log.landings_night = data.get('landings_night', log.landings_night)
+        
+        try:
+            db.session.commit()
+            return jsonify({'message': 'Flight log updated successfully'})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+    
+    elif request.method == 'DELETE':
+        try:
+            db.session.delete(log)
+            db.session.commit()
+            return jsonify({'message': 'Flight log deleted successfully'})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500

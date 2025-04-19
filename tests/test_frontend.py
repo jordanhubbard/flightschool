@@ -90,7 +90,7 @@ def test_instructor_management_ui(client, test_admin, app):
 
         # The route or template might not be fully implemented yet
         try:
-            response = client.get('/admin/instructors')
+            response = client.get('/admin/users')
             assert response.status_code in (200, 302)  # OK or redirect are both acceptable
             if response.status_code == 200 and response.data:
                 data = response.data.decode('utf-8')
@@ -120,7 +120,7 @@ def test_booking_list_ui(client, test_user, app):
 
         # The route or template might not be fully implemented yet
         try:
-            response = client.get('/booking/list')
+            response = client.get('/bookings')
             # For routes that might be under development, allow 404
             assert response.status_code in (200, 302, 404)
             # Only check content if status is 200
@@ -185,7 +185,7 @@ def test_instructor_management_navigation(client, test_admin, app):
 
         # The route or template might not be fully implemented yet
         try:
-            response = client.get('/admin/instructors')
+            response = client.get('/admin/users')
             assert response.status_code in (200, 302, 404)
             if response.status_code == 200 and response.data:
                 data = response.data.decode('utf-8')

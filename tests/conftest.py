@@ -61,7 +61,11 @@ def test_user(session):
         email='test@example.com',
         first_name='Test',
         last_name='User',
-        role='student'
+        role='student',
+        status='active',
+        student_id='S12345',
+        certificates='PPL',
+        phone='555-0124'
     )
     user.set_password('password123')
     session.add(user)
@@ -77,7 +81,11 @@ def test_instructor(session):
         first_name='Test',
         last_name='Instructor',
         role='instructor',
-        is_instructor=True
+        is_instructor=True,
+        status='active',
+        certificates='CFI, CFII, MEI',
+        instructor_rate_per_hour=75.0,
+        phone='555-0123'
     )
     instructor.set_password('password123')
     session.add(instructor)
@@ -93,7 +101,8 @@ def test_admin(session):
         first_name='Test',
         last_name='Admin',
         role='admin',
-        is_admin=True
+        is_admin=True,
+        status='active'
     )
     admin.set_password('password123')
     session.add(admin)
@@ -106,10 +115,20 @@ def test_aircraft(session):
     """Create a test aircraft."""
     aircraft = Aircraft(
         registration='N12345',
-        make_model='Cessna 172',
+        make='Cessna',
+        model='172S',
         year=2020,
         status='available',
-        rate_per_hour=150.0
+        category='single_engine_land',
+        engine_type='piston',
+        num_engines=1,
+        ifr_equipped=True,
+        gps=True,
+        autopilot=True,
+        rate_per_hour=150.0,
+        hobbs_time=2345.6,
+        tach_time=2300.4,
+        description='Well-maintained Skyhawk with G1000 avionics'
     )
     session.add(aircraft)
     session.commit()

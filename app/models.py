@@ -2,6 +2,7 @@ from app import db, login_manager
 from flask_login import UserMixin, AnonymousUserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+import json
 
 @login_manager.user_loader
 def load_user(id):
@@ -78,6 +79,13 @@ class User(UserMixin, db.Model):
     performed_maintenance = db.relationship('MaintenanceRecord', backref='performed_by')
     reported_squawks = db.relationship('Squawk', foreign_keys='Squawk.reported_by_id', backref='reported_by')
     resolved_squawks = db.relationship('Squawk', foreign_keys='Squawk.resolved_by_id', backref='resolved_by')
+    flight_logs = db.relationship('FlightLog', backref='pilot', foreign_keys='FlightLog.pic_id')
+    endorsements_given = db.relationship('Endorsement', backref='instructor', foreign_keys='Endorsement.instructor_id')
+    endorsements_received = db.relationship('Endorsement', backref='student', foreign_keys='Endorsement.student_id')
+    documents = db.relationship('Document', backref='user')
+    audit_logs = db.relationship('AuditLog', backref='user')
+    waitlist_entries = db.relationship('WaitlistEntry', backref='student', foreign_keys='WaitlistEntry.student_id')
+    recurring_bookings = db.relationship('RecurringBooking', backref='student', foreign_keys='RecurringBooking.student_id')
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -166,7 +174,13 @@ class Aircraft(db.Model):
     image_filename = db.Column(db.String(100))  # Filename for aircraft image
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-
+    maintenance_status = db.Column(db.String(50), default='airworthy')  # airworthy, maintenance_due, grounded
+    next_maintenance_date = db.Column(db.DateTime)
+    next_maintenance_hours = db.Column(db.Float)
+    insurance_expiry = db.Column(db.DateTime)
+    registration_expiry = db.Column(db.DateTime)
+    recurring_bookings = db.relationship('RecurringBooking', backref='aircraft')
+    waitlist_entries = db.relationship('WaitlistEntry', backref='aircraft')
     # Relationships
     maintenance_records = db.relationship('MaintenanceRecord', backref='aircraft', lazy=True)
     squawks = db.relationship('Squawk', backref='aircraft', lazy=True)
@@ -246,11 +260,16 @@ class Booking(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     google_calendar_event_id = db.Column(db.String(255), nullable=True)  # Store Google Calendar event ID
-    
+    cancellation_reason = db.Column(db.String(50))  # weather, mechanical, personal, other
+    cancellation_notes = db.Column(db.Text)
+    weather_briefing = db.Column(db.JSON)  # Store weather briefing data
+    notification_sent = db.Column(db.Boolean, default=False)
+    recurring_booking_id = db.Column(db.Integer, db.ForeignKey('recurring_booking.id'), nullable=True)
     # Relationships
     check_in = db.relationship('CheckIn', backref='booking', uselist=False)
     check_out = db.relationship('CheckOut', backref='booking', uselist=False)
     invoice = db.relationship('Invoice', backref='booking', uselist=False)
+    flight_log = db.relationship('FlightLog', backref='booking', uselist=False)
     
     def __repr__(self):
         return f'<Booking {self.id}>'
@@ -310,4 +329,89 @@ class Invoice(db.Model):
     notes = db.Column(db.Text)
     
     def __repr__(self):
-        return f'<Invoice {self.invoice_number}>' 
+        return f'<Invoice {self.invoice_number}>'
+
+class WeatherMinima(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    category = db.Column(db.String(50))  # VFR, IFR, etc.
+    ceiling_min = db.Column(db.Integer)  # Minimum ceiling in feet
+    visibility_min = db.Column(db.Float)  # Minimum visibility in statute miles
+    wind_max = db.Column(db.Integer)     # Maximum wind in knots
+    crosswind_max = db.Column(db.Integer) # Maximum crosswind component
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class FlightLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    booking_id = db.Column(db.Integer, db.ForeignKey('booking.id'), nullable=False)
+    pic_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    sic_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    flight_date = db.Column(db.DateTime, nullable=False)
+    route = db.Column(db.String(200))
+    remarks = db.Column(db.Text)
+    weather_conditions = db.Column(db.String(50))  # VFR, MVFR, IFR, LIFR
+    ground_instruction = db.Column(db.Float)
+    dual_received = db.Column(db.Float)
+    pic_time = db.Column(db.Float)
+    sic_time = db.Column(db.Float)
+    cross_country = db.Column(db.Float)
+    night = db.Column(db.Float)
+    actual_instrument = db.Column(db.Float)
+    simulated_instrument = db.Column(db.Float)
+    landings_day = db.Column(db.Integer)
+    landings_night = db.Column(db.Integer)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class Endorsement(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    instructor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    type = db.Column(db.String(100), nullable=False)  # solo, BFR, IPC, etc.
+    description = db.Column(db.Text, nullable=False)
+    expiration = db.Column(db.DateTime, nullable=True)
+    document_url = db.Column(db.String(500))  # URL to stored endorsement document
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Document(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    type = db.Column(db.String(50))  # medical, certificate, insurance, etc.
+    filename = db.Column(db.String(255))
+    url = db.Column(db.String(500))
+    expiration = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class AuditLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    action = db.Column(db.String(50), nullable=False)
+    table_name = db.Column(db.String(50), nullable=False)
+    record_id = db.Column(db.Integer, nullable=False)
+    changes = db.Column(db.JSON)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class WaitlistEntry(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    instructor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    aircraft_id = db.Column(db.Integer, db.ForeignKey('aircraft.id'), nullable=False)
+    requested_date = db.Column(db.DateTime, nullable=False)
+    time_preference = db.Column(db.String(20))  # morning, afternoon, evening
+    duration_hours = db.Column(db.Float, nullable=False)
+    status = db.Column(db.String(20), default='active')  # active, fulfilled, expired
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class RecurringBooking(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    instructor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    aircraft_id = db.Column(db.Integer, db.ForeignKey('aircraft.id'), nullable=False)
+    day_of_week = db.Column(db.Integer, nullable=False)  # 0=Monday, 6=Sunday
+    start_time = db.Column(db.Time, nullable=False)
+    duration_hours = db.Column(db.Float, nullable=False)
+    start_date = db.Column(db.DateTime, nullable=False)
+    end_date = db.Column(db.DateTime, nullable=True)
+    status = db.Column(db.String(20), default='active')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

@@ -4,9 +4,9 @@ from app.models import User, Aircraft, Booking
 from app import db
 from app.forms import LoginForm
 
-bp = Blueprint('main', __name__)
+main_bp = Blueprint('main', __name__)
 
-@bp.route('/')
+@main_bp.route('/')
 def index():
     if current_user.is_authenticated:
         if current_user.role == 'admin':
@@ -15,11 +15,11 @@ def index():
     form = LoginForm()
     return render_template('main/index.html', form=form)
 
-@bp.route('/about')
+@main_bp.route('/about')
 def about():
     return render_template('main/about.html')
 
-@bp.route('/contact', methods=['GET', 'POST'])
+@main_bp.route('/contact', methods=['GET', 'POST'])
 def contact():
     if request.method == 'POST':
         name = request.form.get('name')
@@ -34,25 +34,25 @@ def contact():
         
     return render_template('main/contact.html')
 
-@bp.route('/profile')
+@main_bp.route('/profile')
 @login_required
 def profile():
     return render_template('main/profile.html', user=current_user)
 
-@bp.route('/training')
+@main_bp.route('/training')
 def training():
     return render_template('main/training.html')
 
-@bp.route('/aircraft')
+@main_bp.route('/aircraft')
 def aircraft():
     aircraft_list = Aircraft.query.all()
     return render_template('main/aircraft.html', aircraft=aircraft_list)
 
-@bp.route('/faq')
+@main_bp.route('/faq')
 def faq():
     return render_template('main/faq.html')
 
-@bp.route('/debug')
+@main_bp.route('/debug')
 def debug():
     """Debug route to check authentication status."""
     return render_template('debug.html') 

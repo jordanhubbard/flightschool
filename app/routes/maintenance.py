@@ -5,9 +5,9 @@ from app.models import Aircraft, MaintenanceType, MaintenanceRecord, Squawk, Use
 from app.forms import MaintenanceTypeForm, MaintenanceRecordForm, SquawkForm
 from datetime import datetime
 
-bp = Blueprint('maintenance', __name__)
+maintenance_bp = Blueprint('maintenance', __name__)
 
-@bp.route('/maintenance/types')
+@maintenance_bp.route('/maintenance/types')
 @login_required
 def maintenance_types():
     if not current_user.is_admin:
@@ -16,7 +16,7 @@ def maintenance_types():
     types = MaintenanceType.query.all()
     return render_template('maintenance/types.html', types=types)
 
-@bp.route('/maintenance/types/add', methods=['GET', 'POST'])
+@maintenance_bp.route('/maintenance/types/add', methods=['GET', 'POST'])
 @login_required
 def add_maintenance_type():
     if not current_user.is_admin:
@@ -37,7 +37,7 @@ def add_maintenance_type():
         return redirect(url_for('maintenance.maintenance_types'))
     return render_template('maintenance/type_form.html', form=form, title='Add Maintenance Type')
 
-@bp.route('/maintenance/types/<int:id>/edit', methods=['GET', 'POST'])
+@maintenance_bp.route('/maintenance/types/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_maintenance_type(id):
     if not current_user.is_admin:
@@ -55,14 +55,14 @@ def edit_maintenance_type(id):
         return redirect(url_for('maintenance.maintenance_types'))
     return render_template('maintenance/type_form.html', form=form, title='Edit Maintenance Type')
 
-@bp.route('/aircraft/<int:aircraft_id>/maintenance')
+@maintenance_bp.route('/aircraft/<int:aircraft_id>/maintenance')
 @login_required
 def aircraft_maintenance(aircraft_id):
     aircraft = Aircraft.query.get_or_404(aircraft_id)
     records = MaintenanceRecord.query.filter_by(aircraft_id=aircraft_id).order_by(MaintenanceRecord.performed_at.desc()).all()
     return render_template('maintenance/aircraft_maintenance.html', aircraft=aircraft, records=records)
 
-@bp.route('/aircraft/<int:aircraft_id>/maintenance/add', methods=['GET', 'POST'])
+@maintenance_bp.route('/aircraft/<int:aircraft_id>/maintenance/add', methods=['GET', 'POST'])
 @login_required
 def add_maintenance_record(aircraft_id):
     if not current_user.is_admin:
@@ -88,14 +88,14 @@ def add_maintenance_record(aircraft_id):
         return redirect(url_for('maintenance.aircraft_maintenance', aircraft_id=aircraft_id))
     return render_template('maintenance/record_form.html', form=form, aircraft=aircraft, title='Add Maintenance Record')
 
-@bp.route('/aircraft/<int:aircraft_id>/squawks')
+@maintenance_bp.route('/aircraft/<int:aircraft_id>/squawks')
 @login_required
 def aircraft_squawks(aircraft_id):
     aircraft = Aircraft.query.get_or_404(aircraft_id)
     squawks = Squawk.query.filter_by(aircraft_id=aircraft_id).order_by(Squawk.created_at.desc()).all()
     return render_template('maintenance/aircraft_squawks.html', aircraft=aircraft, squawks=squawks)
 
-@bp.route('/aircraft/<int:aircraft_id>/squawks/add', methods=['GET', 'POST'])
+@maintenance_bp.route('/aircraft/<int:aircraft_id>/squawks/add', methods=['GET', 'POST'])
 @login_required
 def add_squawk(aircraft_id):
     aircraft = Aircraft.query.get_or_404(aircraft_id)
@@ -117,7 +117,7 @@ def add_squawk(aircraft_id):
         return redirect(url_for('maintenance.aircraft_squawks', aircraft_id=aircraft_id))
     return render_template('maintenance/squawk_form.html', form=form, aircraft=aircraft, title='Add Squawk')
 
-@bp.route('/squawks/<int:id>/edit', methods=['GET', 'POST'])
+@maintenance_bp.route('/squawks/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_squawk(id):
     squawk = Squawk.query.get_or_404(id)

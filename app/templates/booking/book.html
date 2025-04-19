@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
 {% block title %}Book a Flight{% endblock %}
 
@@ -7,64 +7,51 @@
     <div class="row">
         <div class="col-md-8 offset-md-2">
             <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="card-title mb-0">Book a Flight</h5>
+                <div class="card-header">
+                    <h5 class="mb-0">Book a Flight</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('booking.book') }}">
-                        {{ form.csrf_token }}
-                        
-                        <div class="mb-3">
-                            <label for="start_time" class="form-label">Start Time</label>
-                            {{ form.start_time(class="form-control", id="start_time") }}
-                            {% if form.start_time.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.start_time.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="duration" class="form-label">Duration (hours)</label>
-                            {{ form.duration(class="form-control", id="duration") }}
-                            {% if form.duration.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.duration.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
+                    <form method="POST" action="{{ url_for('booking.create_booking') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         
                         <div class="mb-3">
                             <label for="aircraft_id" class="form-label">Aircraft</label>
-                            {{ form.aircraft_id(class="form-control", id="aircraft_id") }}
-                            {% if form.aircraft_id.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.aircraft_id.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
+                            <select class="form-select" id="aircraft_id" name="aircraft_id" required>
+                                <option value="">Select an aircraft</option>
+                                {% for aircraft in available_aircraft %}
+                                    <option value="{{ aircraft.id }}">{{ aircraft.registration }} ({{ aircraft.make }} {{ aircraft.model }})</option>
+                                {% endfor %}
+                            </select>
                         </div>
                         
                         <div class="mb-3">
-                            <label for="instructor_id" class="form-label">Instructor (optional)</label>
-                            {{ form.instructor_id(class="form-control", id="instructor_id") }}
-                            {% if form.instructor_id.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.instructor_id.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
+                            <label for="instructor_id" class="form-label">Instructor (Optional)</label>
+                            <select class="form-select" id="instructor_id" name="instructor_id">
+                                <option value="">No instructor</option>
+                                {% for instructor in available_instructors %}
+                                    <option value="{{ instructor.id }}">{{ instructor.full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="start_time" class="form-label">Start Time</label>
+                            <input type="datetime-local" class="form-control" id="start_time" name="start_time" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="end_time" class="form-label">End Time</label>
+                            <input type="datetime-local" class="form-control" id="end_time" name="end_time" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes (Optional)</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
                         </div>
                         
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary">Book Flight</button>
-                            <a href="{{ url_for('booking.dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                            <a href="{{ url_for('booking.dashboard') }}" class="btn btn-secondary">Cancel</a>
                         </div>
                     </form>
                 </div>

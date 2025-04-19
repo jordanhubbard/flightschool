@@ -11,15 +11,17 @@ def test_instructor_management(client, test_admin, app):
             sess['_user_id'] = test_admin.id
             sess['_fresh'] = True
     
-    response = client.post('/admin/instructor/create', data={
+    response = client.post('/admin/user/create', data={
         'email': 'new.instructor@example.com',
         'first_name': 'New',
         'last_name': 'Instructor',
         'phone': '123-456-7890',
         'certificates': 'CFI',
-        'status': 'active'
+        'status': 'active',
+        'role': 'instructor',
+        'instructor_rate_per_hour': '75.00'
     }, follow_redirects=True)
-    assert b'Instructor created successfully' in response.data
+    assert b'User created successfully' in response.data
 
 def test_google_calendar_settings(client, test_admin, app):
     with app.app_context():
@@ -61,7 +63,7 @@ def test_booking_management(client, test_user, test_aircraft, app):
         db.session.refresh(booking)
     
         # Test viewing the booking within the app context
-        response = client.get(f'/booking/{booking.id}')
+        response = client.get(f'/bookings/{booking.id}')
         assert response.status_code == 200
         assert test_aircraft.registration.encode() in response.data
         assert b'Pending' in response.data
@@ -86,7 +88,7 @@ def test_booking_cancellation(client, test_user, test_aircraft, app):
         db.session.refresh(booking)
     
         # Test canceling the booking within the app context
-        response = client.post(f'/booking/{booking.id}/cancel')
+        response = client.post(f'/bookings/{booking.id}/cancel')
         assert response.status_code == 200
         assert b'Booking cancelled successfully' in response.data
 
@@ -113,13 +115,24 @@ def test_aircraft_management(client, test_admin, app):
             sess['_user_id'] = test_admin.id
             sess['_fresh'] = True
     
-    response = client.post('/admin/aircraft/create', data={
+    response = client.post('/admin/aircraft/add', data={
         'registration': 'N54321',
-        'make_model': 'Piper Cherokee',
+        'make': 'Piper',
+        'model': 'PA-28-181',
         'year': '2019',
-        'status': 'active'
+        'status': 'available',
+        'category': 'single_engine_land',
+        'engine_type': 'piston',
+        'num_engines': '1',
+        'ifr_equipped': 'true',
+        'gps': 'true',
+        'autopilot': 'false',
+        'rate_per_hour': '175.00',
+        'hobbs_time': '1234.5',
+        'tach_time': '1200.3',
+        'description': 'Archer III with modern avionics'
     }, follow_redirects=True)
-    assert b'Aircraft created successfully' in response.data
+    assert b'Aircraft added successfully' in response.data
 
 def test_schedule_management(client, test_admin, app):
     with app.app_context():

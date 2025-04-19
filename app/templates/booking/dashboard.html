@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ title }}{% endblock %}
+{% block title %}Booking Dashboard{% endblock %}
 
 {% block extra_css %}
 <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
@@ -32,33 +32,34 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h1 class="mb-4">Booking Dashboard</h1>
-    
-    <!-- Quick Actions -->
-    <div class="row mb-4">
+    <div class="row">
         <div class="col-md-12">
-            <div class="card">
+            <h1 class="mb-4">Booking Dashboard</h1>
+            
+            <!-- Quick Actions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">Quick Actions</h5>
-                    <a href="{{ url_for('booking.create') }}" class="btn btn-primary">Book a Flight</a>
-                    <a href="{{ url_for('booking.list') }}" class="btn btn-secondary">View All Bookings</a>
+                    <a href="{{ url_for('booking.create_booking') }}" class="btn btn-primary">Book a Flight</a>
+                    <a href="{{ url_for('booking.list') }}" class="btn btn-secondary">View My Bookings</a>
                 </div>
             </div>
-        </div>
-    </div>
-    
-    <!-- Upcoming Bookings -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card">
+            
+            <!-- Upcoming Bookings -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Upcoming Bookings</h5>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">Upcoming Bookings</h5>
                     {% if upcoming_bookings %}
                         <div class="table-responsive">
                             <table class="table">
                                 <thead>
                                     <tr>
                                         <th>Date</th>
+                                        <th>Time</th>
                                         <th>Aircraft</th>
                                         <th>Instructor</th>
                                         <th>Status</th>
@@ -68,18 +69,19 @@
                                 <tbody>
                                     {% for booking in upcoming_bookings %}
                                         <tr>
-                                            <td>{{ booking.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                                            <td>{{ booking.start_time.strftime('%Y-%m-%d') }}</td>
+                                            <td>{{ booking.start_time.strftime('%H:%M') }} - {{ booking.end_time.strftime('%H:%M') }}</td>
                                             <td>{{ booking.aircraft.registration }}</td>
-                                            <td>{{ booking.instructor.full_name if booking.instructor else 'None' }}</td>
+                                            <td>{{ booking.instructor.full_name if booking.instructor else 'No Instructor' }}</td>
                                             <td>
                                                 <span class="badge bg-{{ 'success' if booking.status == 'confirmed' else 'warning' }}">
                                                     {{ booking.status }}
                                                 </span>
                                             </td>
                                             <td>
-                                                <a href="{{ url_for('booking.view', id=booking.id) }}" class="btn btn-sm btn-info">View</a>
-                                                {% if booking.status == 'confirmed' %}
-                                                    <a href="{{ url_for('booking.cancel', id=booking.id) }}" class="btn btn-sm btn-danger">Cancel</a>
+                                                <a href="{{ url_for('booking.view_booking', booking_id=booking.id) }}" class="btn btn-sm btn-info">View</a>
+                                                {% if booking.status == 'pending' %}
+                                                    <a href="{{ url_for('booking.cancel_booking', booking_id=booking.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to cancel this booking?')">Cancel</a>
                                                 {% endif %}
                                             </td>
                                         </tr>
@@ -88,27 +90,25 @@
                             </table>
                         </div>
                     {% else %}
-                        <p>No upcoming bookings.</p>
+                        <p>No upcoming bookings found.</p>
                     {% endif %}
                 </div>
             </div>
-        </div>
-    </div>
-    
-    <!-- Available Resources -->
-    <div class="row">
-        <!-- Available Aircraft -->
-        <div class="col-md-6">
-            <div class="card">
+            
+            <!-- Available Aircraft -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Available Aircraft</h5>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">Available Aircraft</h5>
                     {% if available_aircraft %}
                         <div class="table-responsive">
                             <table class="table">
                                 <thead>
                                     <tr>
                                         <th>Registration</th>
-                                        <th>Type</th>
+                                        <th>Make/Model</th>
+                                        <th>Rate/Hour</th>
                                         <th>Status</th>
                                     </tr>
                                 </thead>
@@ -116,9 +116,12 @@
                                     {% for aircraft in available_aircraft %}
                                         <tr>
                                             <td>{{ aircraft.registration }}</td>
-                                            <td>{{ aircraft.make_model }}</td>
+                                            <td>{{ aircraft.make }} {{ aircraft.model }}</td>
+                                            <td>${{ "%.2f"|format(aircraft.rate_per_hour) }}</td>
                                             <td>
-                                                <span class="badge bg-success">Available</span>
+                                                <span class="badge bg-{{ 'success' if aircraft.status == 'available' else 'secondary' }}">
+                                                    {{ aircraft.status }}
+                                                </span>
                                             </td>
                                         </tr>
                                     {% endfor %}
@@ -126,42 +129,7 @@
                             </table>
                         </div>
                     {% else %}
-                        <p>No aircraft available.</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        
-        <!-- Available Instructors -->
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Available Instructors</h5>
-                    {% if available_instructors %}
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Certificates</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for instructor in available_instructors %}
-                                        <tr>
-                                            <td>{{ instructor.full_name }}</td>
-                                            <td>{{ instructor.certificates }}</td>
-                                            <td>
-                                                <span class="badge bg-success">Available</span>
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <p>No instructors available.</p>
+                        <p>No aircraft available at this time.</p>
                     {% endif %}
                 </div>
             </div>

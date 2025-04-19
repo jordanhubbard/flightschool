@@ -1,179 +1,96 @@
 {% extends "base.html" %}
 
-{% block title %}Booking Details - Flight School{% endblock %}
+{% block title %}Booking Details{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <h1>
-                <i class="fas fa-calendar-check me-2"></i>Booking Details
-                <a href="{{ url_for('booking.list_bookings') }}" class="btn btn-outline-secondary float-end">
-                    <i class="fas fa-arrow-left me-1"></i>Back to Bookings
-                </a>
-            </h1>
-        </div>
-    </div>
-
     <div class="row">
-        <div class="col-md-8">
+        <div class="col-md-12">
+            <h1 class="mb-4">Booking Details</h1>
+            
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0">
-                        <span class="badge {% if booking.status == 'confirmed' %}bg-success{% elif booking.status == 'cancelled' %}bg-danger{% elif booking.status == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %} me-2">
-                            {{ booking.status|capitalize }}
-                        </span>
-                        Flight #{{ booking.id }}
-                    </h5>
+                    <h5 class="mb-0">Booking Information</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <p class="mb-1"><strong>Date:</strong> {{ booking.start_time.strftime('%A, %B %d, %Y') }}</p>
-                            <p class="mb-1"><strong>Time:</strong> {{ booking.start_time.strftime('%H:%M') }} - {{ booking.end_time.strftime('%H:%M') }}</p>
-                            <p class="mb-1"><strong>Duration:</strong> {{ (booking.end_time - booking.start_time).total_seconds() // 3600 }} hour(s)</p>
-                        </div>
-                        <div class="col-md-6">
-                            <p class="mb-1"><strong>Student:</strong> {{ booking.student.first_name }} {{ booking.student.last_name }}</p>
-                            <p class="mb-1">
-                                <strong>Instructor:</strong> 
-                                {% if booking.instructor %}
-                                    {{ booking.instructor.first_name }} {{ booking.instructor.last_name }}
-                                {% else %}
-                                    No Instructor
-                                {% endif %}
-                            </p>
-                            <p class="mb-1"><strong>Aircraft:</strong> {{ booking.aircraft.registration }} ({{ booking.aircraft.make_model }})</p>
-                        </div>
-                    </div>
-
-                    {% if booking.notes %}
-                    <div class="mb-3">
-                        <h6>Notes</h6>
-                        <p>{{ booking.notes }}</p>
-                    </div>
-                    {% endif %}
-
-                    <hr>
-
                     <div class="row">
-                        <div class="col-12">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6>Booking Status</h6>
-                                    <p class="mb-0">
-                                        {% if booking.status == 'confirmed' %}
-                                            <i class="fas fa-check-circle text-success me-1"></i>Confirmed
-                                        {% elif booking.status == 'cancelled' %}
-                                            <i class="fas fa-times-circle text-danger me-1"></i>Cancelled
-                                        {% elif booking.status == 'in_progress' %}
-                                            <i class="fas fa-plane text-warning me-1"></i>In Progress
-                                        {% elif booking.status == 'completed' %}
-                                            <i class="fas fa-flag-checkered text-success me-1"></i>Completed
-                                        {% else %}
-                                            <i class="fas fa-question-circle text-secondary me-1"></i>{{ booking.status|capitalize }}
-                                        {% endif %}
-                                    </p>
-                                </div>
-
-                                {% if booking.status == 'confirmed' %}
-                                <div>
-                                    <form method="POST" action="{{ url_for('booking.cancel_booking', booking_id=booking.id) }}" class="d-inline">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                        <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to cancel this booking?')">
-                                            <i class="fas fa-times me-1"></i>Cancel Booking
-                                        </button>
-                                    </form>
-                                </div>
+                        <div class="col-md-6">
+                            <p><strong>Date:</strong> {{ booking.start_time.strftime('%Y-%m-%d') }}</p>
+                            <p><strong>Time:</strong> {{ booking.start_time.strftime('%H:%M') }} - {{ booking.end_time.strftime('%H:%M') }}</p>
+                            <p><strong>Status:</strong> 
+                                <span class="badge bg-{{ 
+                                    'success' if booking.status == 'confirmed' 
+                                    else 'warning' if booking.status == 'pending'
+                                    else 'danger' if booking.status == 'cancelled'
+                                    else 'info' if booking.status == 'completed'
+                                    else 'secondary'
+                                }}">
+                                    {{ booking.status }}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Aircraft:</strong> {{ booking.aircraft.registration }} ({{ booking.aircraft.make }} {{ booking.aircraft.model }})</p>
+                            <p><strong>Instructor:</strong> {{ booking.instructor.full_name if booking.instructor else 'No Instructor' }}</p>
+                            <p><strong>Student:</strong> {{ booking.student.full_name }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if booking.notes %}
+                        <div class="mt-3">
+                            <h6>Notes:</h6>
+                            <p>{{ booking.notes }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Flight Details</h5>
+                </div>
+                <div class="card-body">
+                    {% if booking.check_in %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Check-In Information</h6>
+                                <p><strong>Time:</strong> {{ booking.check_in.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                                <p><strong>Hobbs Start:</strong> {{ booking.check_in.hobbs_start }}</p>
+                                <p><strong>Tach Start:</strong> {{ booking.check_in.tach_start }}</p>
+                                {% if booking.check_in.notes %}
+                                    <p><strong>Notes:</strong> {{ booking.check_in.notes }}</p>
                                 {% endif %}
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            {% if booking.status == 'confirmed' %}
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Flight Operations</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-6">
-                            <a href="{{ url_for('booking.check_in_booking', booking_id=booking.id) }}" class="btn btn-primary d-block">
-                                <i class="fas fa-plane-departure me-1"></i>Check In
-                            </a>
+                    {% endif %}
+                    
+                    {% if booking.check_out %}
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <h6>Check-Out Information</h6>
+                                <p><strong>Time:</strong> {{ booking.check_out.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                                <p><strong>Hobbs End:</strong> {{ booking.check_out.hobbs_end }}</p>
+                                <p><strong>Tach End:</strong> {{ booking.check_out.tach_end }}</p>
+                                {% if booking.check_out.notes %}
+                                    <p><strong>Notes:</strong> {{ booking.check_out.notes }}</p>
+                                {% endif %}
+                            </div>
                         </div>
-                        <div class="col-6">
-                            <button class="btn btn-secondary d-block" disabled>
-                                <i class="fas fa-plane-arrival me-1"></i>Check Out
-                            </button>
-                            <small class="text-muted d-block mt-2">Check in required before check out</small>
-                        </div>
-                    </div>
+                    {% endif %}
                 </div>
             </div>
-            {% endif %}
-        </div>
-
-        <div class="col-md-4">
-            <div class="card mb-4">
+            
+            <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">Aircraft Details</h5>
+                    <h5 class="mb-0">Actions</h5>
                 </div>
                 <div class="card-body">
-                    <div class="text-center mb-3">
-                        {% if booking.aircraft.image_url %}
-                        <img src="{{ booking.aircraft.image_url }}" alt="{{ booking.aircraft.registration }}" class="img-fluid rounded" style="max-height: 150px;">
-                        {% else %}
-                        <div class="bg-light rounded p-4 text-center">
-                            <i class="fas fa-plane fa-4x text-secondary"></i>
-                        </div>
-                        {% endif %}
-                    </div>
-                    <p class="mb-1"><strong>Registration:</strong> {{ booking.aircraft.registration }}</p>
-                    <p class="mb-1"><strong>Make/Model:</strong> {{ booking.aircraft.make_model }}</p>
-                    <p class="mb-1"><strong>Year:</strong> {{ booking.aircraft.year }}</p>
-                    {% if booking.aircraft.hobbs %}
-                    <p class="mb-1"><strong>Hobbs:</strong> {{ booking.aircraft.hobbs }}</p>
-                    {% endif %}
-                    {% if booking.aircraft.tach %}
-                    <p class="mb-1"><strong>Tach:</strong> {{ booking.aircraft.tach }}</p>
+                    <a href="{{ url_for('booking.list') }}" class="btn btn-secondary">Back to Bookings</a>
+                    {% if booking.status == 'pending' %}
+                        <a href="{{ url_for('booking.cancel_booking', booking_id=booking.id) }}" class="btn btn-danger" onclick="return confirm('Are you sure you want to cancel this booking?')">Cancel Booking</a>
                     {% endif %}
                 </div>
             </div>
-
-            {% if booking.check_in %}
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Check In Details</h5>
-                </div>
-                <div class="card-body">
-                    <p class="mb-1"><strong>Time:</strong> {{ booking.check_in.created_at.strftime('%H:%M') }}</p>
-                    <p class="mb-1"><strong>Hobbs Start:</strong> {{ booking.check_in.hobbs_start }}</p>
-                    <p class="mb-1"><strong>Tach Start:</strong> {{ booking.check_in.tach_start }}</p>
-                    {% if booking.check_in.notes %}
-                    <p class="mb-1"><strong>Notes:</strong> {{ booking.check_in.notes }}</p>
-                    {% endif %}
-                </div>
-            </div>
-            {% endif %}
-
-            {% if booking.check_out %}
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Check Out Details</h5>
-                </div>
-                <div class="card-body">
-                    <p class="mb-1"><strong>Time:</strong> {{ booking.check_out.created_at.strftime('%H:%M') }}</p>
-                    <p class="mb-1"><strong>Hobbs End:</strong> {{ booking.check_out.hobbs_end }}</p>
-                    <p class="mb-1"><strong>Tach End:</strong> {{ booking.check_out.tach_end }}</p>
-                    {% if booking.check_out.notes %}
-                    <p class="mb-1"><strong>Notes:</strong> {{ booking.check_out.notes }}</p>
-                    {% endif %}
-                </div>
-            </div>
-            {% endif %}
         </div>
     </div>
 </div>

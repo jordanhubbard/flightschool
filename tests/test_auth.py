@@ -6,7 +6,7 @@ from app import db
 
 def test_login(client, test_user, session):
     """Test user login."""
-    response = client.post('/login', data={
+    response = client.post('/auth/login', data={
         'email': test_user.email,
         'password': 'password123',
         'remember_me': False
@@ -16,7 +16,7 @@ def test_login(client, test_user, session):
 
 def test_login_invalid_credentials(client, test_user, session):
     """Test login with invalid credentials."""
-    response = client.post('/login', data={
+    response = client.post('/auth/login', data={
         'email': test_user.email,
         'password': 'wrongpassword',
         'remember_me': False
@@ -31,7 +31,7 @@ def test_login_inactive_user(client, test_user, session):
     test_user.status = 'inactive'
     db.session.commit()
     
-    response = client.post('/login', data={
+    response = client.post('/auth/login', data={
         'email': test_user.email,
         'password': 'password123',
         'remember_me': False
@@ -47,7 +47,7 @@ def test_logout(client, test_user, session):
         sess['_user_id'] = test_user.id
         sess['_fresh'] = True
     
-    response = client.get('/logout', follow_redirects=True)
+    response = client.get('/auth/logout', follow_redirects=True)
     assert response.status_code == 200
     assert b'You have been logged out' in response.data
     with client.session_transaction() as sess:
@@ -61,7 +61,7 @@ def test_login_required(client):
 
 def test_remember_me(client, test_user, session):
     """Test remember me functionality."""
-    response = client.post('/login', data={
+    response = client.post('/auth/login', data={
         'email': test_user.email,
         'password': 'password123',
         'remember_me': True
@@ -73,7 +73,7 @@ def test_remember_me(client, test_user, session):
 
 def test_admin_login_redirect(client, test_admin, session):
     """Test admin login redirect."""
-    response = client.post('/login', data={
+    response = client.post('/auth/login', data={
         'email': test_admin.email,
         'password': 'password123',
         'remember_me': False
@@ -83,7 +83,7 @@ def test_admin_login_redirect(client, test_admin, session):
 
 def test_student_login_redirect(client, test_student, session):
     """Test student login redirect."""
-    response = client.post('/login', data={
+    response = client.post('/auth/login', data={
         'email': test_student.email,
         'password': 'password123',
         'remember_me': False

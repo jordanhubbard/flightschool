@@ -30,11 +30,12 @@ def create_app(config_name='default'):
     def inject_datetime():
         return dict(datetime=datetime)
 
-    from app.routes import auth, booking, admin, main
-    app.register_blueprint(auth.bp)
-    app.register_blueprint(booking.bp)
-    app.register_blueprint(admin.bp, url_prefix='/admin')
-    app.register_blueprint(main.bp)
+    from app.routes import auth, booking, admin, main, maintenance
+    app.register_blueprint(auth.auth_bp)
+    app.register_blueprint(booking.booking_bp)
+    app.register_blueprint(admin.admin_bp, url_prefix='/admin')
+    app.register_blueprint(main.main_bp)
+    app.register_blueprint(maintenance.maintenance_bp)
 
     @app.errorhandler(404)
     def not_found_error(error):

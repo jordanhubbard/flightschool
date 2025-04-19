@@ -24,7 +24,7 @@ def test_create_booking(client, test_user, test_aircraft, test_instructor, app, 
             sess['_fresh'] = True
 
         start_time = datetime.now(UTC) + timedelta(days=1)
-        response = client.post('/book', data={
+        response = client.post('/bookings', data={
             'start_time': start_time.strftime('%Y-%m-%dT%H:%M'),
             'duration': '1',
             'aircraft_id': str(test_aircraft.id),
@@ -41,7 +41,7 @@ def test_create_booking_without_instructor(client, test_user, test_aircraft, app
             sess['_fresh'] = True
     
     start_time = datetime.now(UTC) + timedelta(days=1)
-    response = client.post('/book', data={
+    response = client.post('/bookings', data={
         'start_time': start_time.strftime('%Y-%m-%dT%H:%M'),
         'duration': '1',
         'aircraft_id': str(test_aircraft.id)
@@ -59,7 +59,7 @@ def test_create_booking_conflict(client, test_user, test_aircraft, app):
     start_time = datetime.now(UTC) + timedelta(days=1)
     
     # Create first booking
-    response = client.post('/book', data={
+    response = client.post('/bookings', data={
         'start_time': start_time.strftime('%Y-%m-%dT%H:%M'),
         'duration': '1',
         'aircraft_id': str(test_aircraft.id)
@@ -68,7 +68,7 @@ def test_create_booking_conflict(client, test_user, test_aircraft, app):
     assert b'Booking created successfully' in response.data
     
     # Try to create second booking at same time
-    response = client.post('/book', data={
+    response = client.post('/bookings', data={
         'start_time': start_time.strftime('%Y-%m-%dT%H:%M'),
         'duration': '1',
         'aircraft_id': str(test_aircraft.id)
@@ -96,7 +96,7 @@ def test_cancel_booking(client, test_user, test_aircraft, app):
         db.session.refresh(booking)
     
     # Cancel the booking
-    response = client.post(f'/booking/{booking.id}/cancel', follow_redirects=True)
+    response = client.post(f'/bookings/{booking.id}/cancel', follow_redirects=True)
     assert response.status_code == 200
     assert b'Booking cancelled successfully' in response.data
 
@@ -119,7 +119,7 @@ def test_view_bookings(client, test_user, test_aircraft, app):
         db.session.commit()
         db.session.refresh(booking)
     
-    response = client.get('/list')
+    response = client.get('/bookings')
     assert response.status_code == 200
     assert test_aircraft.registration.encode() in response.data
     assert b'Confirmed' in response.data

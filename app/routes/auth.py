@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, session
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField
@@ -11,10 +11,10 @@ from app.calendar_service import GoogleCalendarService
 from datetime import datetime, UTC
 from urllib.parse import urlparse
 
-bp = Blueprint('auth', __name__)
+auth_bp = Blueprint('auth', __name__)
 calendar_service = GoogleCalendarService()
 
-@bp.route('/login', methods=['GET', 'POST'])
+@auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     """Handle user login."""
     if current_user.is_authenticated:
@@ -33,7 +33,12 @@ def login():
             flash('Your account is not active', 'error')
             return redirect(url_for('auth.login'))
         
-        login_user(user, remember=form.remember_me.data)
+        # Set remember flag in session
+        remember = bool(form.remember_me.data)
+        login_user(user, remember=remember)
+        if remember:
+            session['_remember'] = '1'
+        
         next_page = request.args.get('next')
         if not next_page or urlparse(next_page).netloc != '':
             if user.is_admin:
@@ -44,7 +49,7 @@ def login():
     
     return render_template('auth/login.html', title='Sign In', form=form)
 
-@bp.route('/logout')
+@auth_bp.route('/logout')
 @login_required
 def logout():
     """Handle user logout."""
@@ -52,7 +57,7 @@ def logout():
     flash('You have been logged out.', 'info')
     return redirect(url_for('main.index'))
 
-@bp.route('/account-settings', methods=['GET', 'POST'])
+@auth_bp.route('/account-settings', methods=['GET', 'POST'])
 @login_required
 def account_settings():
     """Handle account settings."""
@@ -81,7 +86,7 @@ def account_settings():
     
     return render_template('auth/account_settings.html', form=form, title='Account Settings', user=current_user)
 
-@bp.route('/settings', methods=['GET', 'POST'])
+@auth_bp.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
     """Handle account settings."""
@@ -110,14 +115,14 @@ def settings():
     
     return render_template('auth/settings.html', title='Account Settings', form=form)
 
-@bp.route('/google-auth')
+@auth_bp.route('/google-auth')
 @login_required
 def google_auth():
     """Start Google Calendar OAuth2 flow."""
     authorization_url = calendar_service.get_authorization_url()
     return redirect(authorization_url)
 
-@bp.route('/google-callback')
+@auth_bp.route('/google-callback')
 @login_required
 def google_callback():
     """Handle Google Calendar OAuth2 callback."""
@@ -139,7 +144,7 @@ def google_callback():
     
     return redirect(url_for('auth.settings'))
 
-@bp.route('/google-disconnect', methods=['POST'])
+@auth_bp.route('/google-disconnect', methods=['POST'])
 @login_required
 def google_disconnect():
     """Disconnect Google Calendar integration."""
@@ -155,7 +160,7 @@ def google_disconnect():
     
     return redirect(url_for('auth.settings'))
 
-@bp.route('/update-profile', methods=['POST'])
+@auth_bp.route('/update-profile', methods=['POST'])
 @login_required
 def update_profile():
     """Update user profile information."""
@@ -173,7 +178,7 @@ def update_profile():
     
     return redirect(url_for('auth.settings'))
 
-@bp.route('/change-password', methods=['POST'])
+@auth_bp.route('/change-password', methods=['POST'])
 @login_required
 def change_password():
     """Change user password."""
@@ -200,7 +205,7 @@ def change_password():
     
     return redirect(url_for('auth.settings'))
 
-@bp.route('/register', methods=['GET', 'POST'])
+@auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
     """Handle user registration."""
     if current_user.is_authenticated:

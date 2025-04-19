@@ -32,10 +32,19 @@ def test_add_aircraft(client, test_admin, app):
     response = client.post('/admin/aircraft/add', data={
         'registration': 'N54321',
         'make': 'Cessna',
-        'model': '172',
+        'model': '172S',
         'year': '2020',
         'status': 'available',
-        'rate_per_hour': '150.00'
+        'category': 'single_engine_land',
+        'engine_type': 'piston',
+        'num_engines': '1',
+        'ifr_equipped': 'true',
+        'gps': 'true',
+        'autopilot': 'true',
+        'rate_per_hour': '150.00',
+        'hobbs_time': '2345.6',
+        'tach_time': '2300.4',
+        'description': 'Well-maintained Skyhawk with G1000 avionics'
     }, follow_redirects=True)
     
     assert response.status_code == 200
@@ -44,10 +53,19 @@ def test_add_aircraft(client, test_admin, app):
     aircraft = Aircraft.query.filter_by(registration='N54321').first()
     assert aircraft is not None
     assert aircraft.make == 'Cessna'
-    assert aircraft.model == '172'
+    assert aircraft.model == '172S'
     assert aircraft.year == 2020
     assert aircraft.status == 'available'
+    assert aircraft.category == 'single_engine_land'
+    assert aircraft.engine_type == 'piston'
+    assert aircraft.num_engines == 1
+    assert aircraft.ifr_equipped == True
+    assert aircraft.gps == True
+    assert aircraft.autopilot == True
     assert aircraft.rate_per_hour == 150.00
+    assert aircraft.hobbs_time == 2345.6
+    assert aircraft.tach_time == 2300.4
+    assert aircraft.description == 'Well-maintained Skyhawk with G1000 avionics'
 
 def test_edit_aircraft(client, test_admin, test_aircraft, app):
     """Test editing an existing aircraft."""
@@ -58,10 +76,20 @@ def test_edit_aircraft(client, test_admin, test_aircraft, app):
     
     response = client.post(f'/admin/aircraft/{test_aircraft.id}/edit', data={
         'registration': 'N54321',
-        'make_model': 'Piper Cherokee',
+        'make': 'Piper',
+        'model': 'PA-28-181',
         'year': '2019',
-        'status': 'active',
-        'rate_per_hour': '175.00'
+        'status': 'available',
+        'category': 'single_engine_land',
+        'engine_type': 'piston',
+        'num_engines': '1',
+        'ifr_equipped': 'true',
+        'gps': 'true',
+        'autopilot': 'false',
+        'rate_per_hour': '175.00',
+        'hobbs_time': '1234.5',
+        'tach_time': '1200.3',
+        'description': 'Archer III with modern avionics'
     }, follow_redirects=True)
     assert response.status_code == 200
     assert b'Aircraft updated successfully' in response.data
@@ -69,10 +97,20 @@ def test_edit_aircraft(client, test_admin, test_aircraft, app):
     # Verify the changes in the database
     aircraft = Aircraft.query.get(test_aircraft.id)
     assert aircraft.registration == 'N54321'
-    assert aircraft.make_model == 'Piper Cherokee'
+    assert aircraft.make == 'Piper'
+    assert aircraft.model == 'PA-28-181'
     assert aircraft.year == 2019
-    assert aircraft.status == 'active'
+    assert aircraft.status == 'available'
+    assert aircraft.category == 'single_engine_land'
+    assert aircraft.engine_type == 'piston'
+    assert aircraft.num_engines == 1
+    assert aircraft.ifr_equipped == True
+    assert aircraft.gps == True
+    assert aircraft.autopilot == False
     assert aircraft.rate_per_hour == 175.00
+    assert aircraft.hobbs_time == 1234.5
+    assert aircraft.tach_time == 1200.3
+    assert aircraft.description == 'Archer III with modern avionics'
 
 def test_add_instructor(client, test_admin, session):
     """Test adding a new instructor."""

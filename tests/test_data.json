@@ -31,6 +31,17 @@
             "student_id": "S12345",
             "certificates": "PPL",
             "phone": "555-0124"
+        },
+        {
+            "email": "student2@example.com",
+            "first_name": "Bob",
+            "last_name": "Wilson",
+            "role": "student",
+            "password": "student123",
+            "status": "active",
+            "student_id": "S12346",
+            "certificates": "Student Pilot",
+            "phone": "555-0125"
         }
     ],
     "aircraft": [
@@ -49,7 +60,12 @@
             "rate_per_hour": 165.0,
             "hobbs_time": 2345.6,
             "tach_time": 2300.4,
-            "description": "Well-maintained Skyhawk with G1000 avionics"
+            "description": "Well-maintained Skyhawk with G1000 avionics",
+            "maintenance_status": "airworthy",
+            "next_maintenance_date": "2025-05-01T00:00:00Z",
+            "next_maintenance_hours": 2445.6,
+            "insurance_expiry": "2026-01-01T00:00:00Z",
+            "registration_expiry": "2026-12-31T00:00:00Z"
         },
         {
             "registration": "N54321",
@@ -66,7 +82,12 @@
             "rate_per_hour": 155.0,
             "hobbs_time": 1234.5,
             "tach_time": 1200.3,
-            "description": "Archer III with modern avionics"
+            "description": "Archer III with modern avionics",
+            "maintenance_status": "maintenance_due",
+            "next_maintenance_date": "2025-04-25T00:00:00Z",
+            "next_maintenance_hours": 1334.5,
+            "insurance_expiry": "2026-03-01T00:00:00Z",
+            "registration_expiry": "2026-12-31T00:00:00Z"
         }
     ],
     "maintenance_types": [
@@ -117,6 +138,129 @@
             "start_time": "2025-04-15T14:00:00Z",
             "end_time": "2025-04-15T16:00:00Z",
             "status": "confirmed"
+        },
+        {
+            "student_email": "student@example.com",
+            "instructor_email": "instructor@example.com",
+            "aircraft_registration": "N12345",
+            "start_time": "2025-04-10T14:00:00Z",
+            "end_time": "2025-04-10T16:00:00Z",
+            "status": "completed",
+            "cancellation_reason": null,
+            "cancellation_notes": null,
+            "weather_briefing": {
+                "metar": "KPAO 101400Z 27010KT 10SM FEW020 18/12 A3001",
+                "taf": "KPAO 101400Z 1014/1114 27012KT P6SM FEW020"
+            },
+            "notification_sent": true
+        },
+        {
+            "student_email": "student2@example.com",
+            "instructor_email": "instructor@example.com",
+            "aircraft_registration": "N54321",
+            "start_time": "2025-04-12T15:00:00Z",
+            "end_time": "2025-04-12T17:00:00Z",
+            "status": "cancelled",
+            "cancellation_reason": "weather",
+            "cancellation_notes": "IFR conditions below minimums",
+            "weather_briefing": {
+                "metar": "KPAO 121400Z 27005KT 2SM BR OVC004 16/14 A3002",
+                "taf": "KPAO 121400Z 1214/1314 27005KT 2SM BR OVC004"
+            },
+            "notification_sent": true
+        }
+    ],
+    "weather_minima": [
+        {
+            "category": "VFR",
+            "ceiling_min": 3000,
+            "visibility_min": 5.0,
+            "wind_max": 25,
+            "crosswind_max": 15
+        },
+        {
+            "category": "IFR",
+            "ceiling_min": 500,
+            "visibility_min": 1.0,
+            "wind_max": 30,
+            "crosswind_max": 20
+        }
+    ],
+    "flight_logs": [
+        {
+            "booking_id": 2,
+            "pic_email": "instructor@example.com",
+            "sic_email": "student@example.com",
+            "flight_date": "2025-04-10T14:00:00Z",
+            "route": "KPAO KHWD KPAO",
+            "remarks": "Pattern work and landings",
+            "weather_conditions": "VFR",
+            "ground_instruction": 0.5,
+            "dual_received": 2.0,
+            "pic_time": 2.0,
+            "sic_time": 0.0,
+            "cross_country": 0.0,
+            "night": 0.0,
+            "actual_instrument": 0.0,
+            "simulated_instrument": 0.0,
+            "landings_day": 8,
+            "landings_night": 0
+        }
+    ],
+    "endorsements": [
+        {
+            "student_email": "student@example.com",
+            "instructor_email": "instructor@example.com",
+            "type": "solo",
+            "description": "Solo endorsement for pattern work at KPAO in C172S N12345",
+            "expiration": "2025-05-10T00:00:00Z",
+            "document_url": "https://example.com/endorsements/12345.pdf"
+        }
+    ],
+    "documents": [
+        {
+            "user_email": "student@example.com",
+            "type": "medical",
+            "filename": "medical_certificate.pdf",
+            "url": "https://example.com/documents/medical_12345.pdf",
+            "expiration": "2026-04-01T00:00:00Z"
+        }
+    ],
+    "waitlist_entries": [
+        {
+            "student_email": "student2@example.com",
+            "instructor_email": "instructor@example.com",
+            "aircraft_registration": "N12345",
+            "requested_date": "2025-04-16T00:00:00Z",
+            "time_preference": "afternoon",
+            "duration_hours": 2.0,
+            "status": "active"
+        }
+    ],
+    "recurring_bookings": [
+        {
+            "student_email": "student@example.com",
+            "instructor_email": "instructor@example.com",
+            "aircraft_registration": "N12345",
+            "day_of_week": 2,
+            "start_time": "14:00:00",
+            "duration_hours": 2.0,
+            "start_date": "2025-04-01T00:00:00Z",
+            "end_date": "2025-06-30T00:00:00Z",
+            "status": "active"
+        }
+    ],
+    "audit_logs": [
+        {
+            "user_email": "admin@example.com",
+            "action": "update",
+            "table_name": "aircraft",
+            "record_id": 1,
+            "changes": {
+                "status": ["available", "maintenance"],
+                "maintenance_status": ["airworthy", "maintenance_due"]
+            },
+            "created_at": "2025-04-10T12:00:00Z"
         }
     ]
-} 
+}
