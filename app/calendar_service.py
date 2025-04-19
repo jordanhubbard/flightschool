@@ -2,14 +2,14 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
-import os
 import json
-from datetime import datetime, timezone
 from flask import current_app, session
-from app.models import User, Booking
+from app.models import Booking
 from app import db
 
+
 SCOPES = ['https://www.googleapis.com/auth/calendar']
+
 
 class GoogleCalendarService:
     def __init__(self):
@@ -18,18 +18,19 @@ class GoogleCalendarService:
 
     def get_authorization_url(self):
         """Generate the authorization URL for Google Calendar."""
-        flow = Flow.from_client_config(
-            {
-                "web": {
-                    "client_id": current_app.config['GOOGLE_CLIENT_ID'],
-                    "client_secret": current_app.config['GOOGLE_CLIENT_SECRET'],
-                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                    "token_uri": "https://oauth2.googleapis.com/token",
-                    "redirect_uris": [current_app.config['GOOGLE_REDIRECT_URI']],
-                    "scopes": SCOPES
-                }
+        config = {
+            "web": {
+                "client_id": current_app.config['GOOGLE_CLIENT_ID'],
+                "client_secret": current_app.config['GOOGLE_CLIENT_SECRET'],
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "redirect_uris": [
+                    current_app.config['GOOGLE_REDIRECT_URI']
+                ],
+                "scopes": SCOPES
             }
-        )
+        }
+        flow = Flow.from_client_config(config)
         flow.redirect_uri = current_app.config['GOOGLE_REDIRECT_URI']
         authorization_url, state = flow.authorization_url(
             access_type='offline',
@@ -41,19 +42,19 @@ class GoogleCalendarService:
     def handle_callback(self, code):
         """Handle the OAuth2 callback and store credentials."""
         state = session['state']
-        flow = Flow.from_client_config(
-            {
-                "web": {
-                    "client_id": current_app.config['GOOGLE_CLIENT_ID'],
-                    "client_secret": current_app.config['GOOGLE_CLIENT_SECRET'],
-                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                    "token_uri": "https://oauth2.googleapis.com/token",
-                    "redirect_uris": [current_app.config['GOOGLE_REDIRECT_URI']],
-                    "scopes": SCOPES
-                }
-            },
-            state=state
-        )
+        config = {
+            "web": {
+                "client_id": current_app.config['GOOGLE_CLIENT_ID'],
+                "client_secret": current_app.config['GOOGLE_CLIENT_SECRET'],
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "redirect_uris": [
+                    current_app.config['GOOGLE_REDIRECT_URI']
+                ],
+                "scopes": SCOPES
+            }
+        }
+        flow = Flow.from_client_config(config, state=state)
         flow.redirect_uri = current_app.config['GOOGLE_REDIRECT_URI']
         flow.fetch_token(code=code)
         credentials = flow.credentials
@@ -76,11 +77,16 @@ class GoogleCalendarService:
         if not self.service:
             self._initialize_service(user)
 
+        instructor_name = (
+            booking.instructor.full_name if booking.instructor else "Solo"
+        )
         event = {
             'summary': f'Flight Training - {booking.aircraft.tail_number}',
-            'description': f'Student: {booking.student.full_name}\n'
-                         f'Instructor: {booking.instructor.full_name if booking.instructor else "Solo"}\n'
-                         f'Status: {booking.status}',
+            'description': (
+                f'Student: {booking.student.full_name}\n'
+                f'Instructor: {instructor_name}\n'
+                f'Status: {booking.status}'
+            ),
             'start': {
                 'dateTime': booking.start_time.isoformat(),
                 'timeZone': 'UTC',
@@ -92,10 +98,15 @@ class GoogleCalendarService:
         }
 
         try:
-            event = self.service.events().insert(calendarId='primary', body=event).execute()
+            event = self.service.events().insert(
+                calendarId='primary',
+                body=event
+            ).execute()
             return event.get('id')
         except Exception as e:
-            current_app.logger.error(f"Error creating Google Calendar event: {str(e)}")
+            current_app.logger.error(
+                f"Error creating Google Calendar event: {str(e)}"
+            )
             return None
 
     def update_event(self, event_id, booking, user):
@@ -103,11 +114,16 @@ class GoogleCalendarService:
         if not self.service:
             self._initialize_service(user)
 
+        instructor_name = (
+            booking.instructor.full_name if booking.instructor else "Solo"
+        )
         event = {
             'summary': f'Flight Training - {booking.aircraft.tail_number}',
-            'description': f'Student: {booking.student.full_name}\n'
-                         f'Instructor: {booking.instructor.full_name if booking.instructor else "Solo"}\n'
-                         f'Status: {booking.status}',
+            'description': (
+                f'Student: {booking.student.full_name}\n'
+                f'Instructor: {instructor_name}\n'
+                f'Status: {booking.status}'
+            ),
             'start': {
                 'dateTime': booking.start_time.isoformat(),
                 'timeZone': 'UTC',
@@ -126,7 +142,9 @@ class GoogleCalendarService:
             ).execute()
             return event.get('id')
         except Exception as e:
-            current_app.logger.error(f"Error updating Google Calendar event: {str(e)}")
+            current_app.logger.error(
+                f"Error updating Google Calendar event: {str(e)}"
+            )
             return None
 
     def delete_event(self, event_id, user):
@@ -141,12 +159,15 @@ class GoogleCalendarService:
             ).execute()
             return True
         except Exception as e:
-            current_app.logger.error(f"Error deleting Google Calendar event: {str(e)}")
+            current_app.logger.error(
+                f"Error deleting Google Calendar event: {str(e)}"
+            )
             return False
 
     def sync_all_bookings(self, user):
         """Sync all relevant bookings for a user based on their role."""
-        if not user.google_calendar_enabled or not user.google_calendar_credentials:
+        if not (user.google_calendar_enabled and
+                user.google_calendar_credentials):
             return
 
         bookings = self.get_bookings_for_user(user)
@@ -156,7 +177,11 @@ class GoogleCalendarService:
                 if event_id:
                     booking.google_calendar_event_id = event_id
             else:
-                self.update_event(booking.google_calendar_event_id, booking, user)
+                self.update_event(
+                    booking.google_calendar_event_id,
+                    booking,
+                    user
+                )
 
     def _initialize_service(self, user):
         """Initialize the Google Calendar service with user's credentials."""
@@ -169,7 +194,8 @@ class GoogleCalendarService:
         )
 
         if not self.credentials or not self.credentials.valid:
-            if self.credentials and self.credentials.expired and self.credentials.refresh_token:
+            if (self.credentials and self.credentials.expired and
+                    self.credentials.refresh_token):
                 self.credentials.refresh(Request())
                 # Update stored credentials
                 user.google_calendar_credentials = self.credentials.to_json()
@@ -177,4 +203,4 @@ class GoogleCalendarService:
             else:
                 raise Exception("No valid credentials available")
 
-        self.service = build('calendar', 'v3', credentials=self.credentials) 
+        self.service = build('calendar', 'v3', credentials=self.credentials)

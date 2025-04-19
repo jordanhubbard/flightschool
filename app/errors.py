@@ -1,6 +1,7 @@
 from flask import render_template
 from app import db
 
+
 def init_error_handlers(app):
     @app.errorhandler(404)
     def not_found_error(error):
@@ -13,4 +14,7 @@ def init_error_handlers(app):
 
     @app.errorhandler(403)
     def forbidden_error(error):
-        return render_template('errors/404.html', error_message='You do not have permission to access this resource.'), 403 
+        return render_template(
+            'errors/404.html',
+            error_message='You do not have permission to access this resource.'
+        ), 403

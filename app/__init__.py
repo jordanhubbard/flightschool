@@ -7,6 +7,8 @@ from flask_wtf.csrf import CSRFProtect
 from config import config
 from datetime import datetime
 import os
+from app.models import User
+
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -15,6 +17,7 @@ login_manager.login_message_category = 'info'
 migrate = Migrate()
 mail = Mail()
 csrf = CSRFProtect()
+
 
 def create_app(config_name='default'):
     """Application factory."""
@@ -63,7 +66,6 @@ def create_app(config_name='default'):
 
     return app
 
-from app.models import User, Aircraft, Booking, CheckIn, CheckOut, Invoice
 
 @login_manager.user_loader
 def load_user(id):
@@ -71,7 +73,12 @@ def load_user(id):
     current_app.logger.debug(f"Loading user with ID: {id}")
     user = User.query.get(int(id))
     if user:
-        current_app.logger.debug(f"Loaded user: {user}, Role: {user.role}, Is Admin: {user.is_admin}")
+        msg = (
+            f"Loaded user: {user}, "
+            f"Role: {user.role}, "
+            f"Is Admin: {user.is_admin}"
+        )
+        current_app.logger.debug(msg)
     else:
         current_app.logger.debug("User not found")
-    return user 
+    return user
