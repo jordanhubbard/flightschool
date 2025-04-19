@@ -42,10 +42,10 @@ admin_bp = Blueprint('admin', __name__)
 def admin_required(f):
     """
     Decorator to check if the user is an admin.
-    
+
     Args:
         f (function): The function to be decorated.
-    
+
     Returns:
         function: The decorated function.
     """
@@ -77,7 +77,7 @@ def admin_required(f):
 def dashboard():
     """
     Admin dashboard view.
-    
+
     Returns:
         render_template: The admin dashboard template.
     """
@@ -119,7 +119,7 @@ def dashboard():
 def calendar_oauth():
     """
     Handle Google Calendar OAuth flow.
-    
+
     Returns:
         redirect: The Google Calendar OAuth authorization URL.
     """
@@ -145,7 +145,7 @@ def calendar_oauth():
 def calendar_callback():
     """
     Handle Google Calendar OAuth callback.
-    
+
     Returns:
         redirect: The admin dashboard URL.
     """
@@ -185,7 +185,7 @@ def calendar_callback():
 def schedule():
     """
     View all bookings.
-    
+
     Returns:
         render_template: The schedule template.
     """
@@ -203,7 +203,7 @@ def schedule():
 def reports():
     """
     View reports.
-    
+
     Returns:
         render_template: The reports template.
     """
@@ -216,7 +216,7 @@ def reports():
 def settings():
     """
     View settings.
-    
+
     Returns:
         render_template: The settings template.
     """
@@ -229,7 +229,7 @@ def settings():
 def create_user():
     """
     Create a new user.
-    
+
     Returns:
         render_template: The user create template.
     """
@@ -295,58 +295,54 @@ def create_user():
 def edit_user(id):
     """
     Edit a user.
-    
+
     Args:
         id (int): The user ID.
-    
+
     Returns:
         render_template: The user edit template.
     """
     user = User.query.get_or_404(id)
     
     if request.method == 'POST':
-        email = request.form.get('email')
-        if email != user.email and User.query.filter_by(email=email).first():
-            flash('Email already registered', 'error')
-            return render_template('admin/user_edit.html', user=user), 400
-
-        status = request.form.get('status')
-        if status not in ['active', 'inactive', 'pending']:
-            flash('Invalid status value', 'error')
-            return render_template('admin/user_edit.html', user=user), 400
-
+        data = request.get_json()
         try:
-            user.email = email
-            user.first_name = request.form.get('first_name')
-            user.last_name = request.form.get('last_name')
-            user.phone = request.form.get('phone')
-            user.status = status
-            
-            if user.role == 'instructor':
-                user.certificates = request.form.get('certificates', '')
-                rate = request.form.get('instructor_rate_per_hour')
-                if rate:
-                    try:
-                        user.instructor_rate_per_hour = float(rate)
-                    except ValueError:
-                        flash(
-                            'Invalid instructor rate. '
-                            'Please enter a valid number.',
-                            'error'
-                        )
-                        return render_template('admin/user_edit.html', user=user), 400
+            if 'status' in data:
+                user.status = data['status']
+            if 'role' in data:
+                user.role = data['role']
+            if 'instructor_rate' in data:
+                try:
+                    rate = float(data['instructor_rate'])
+                    user.instructor_rate_per_hour = rate
+                except ValueError:
+                    flash(
+                        'Invalid instructor rate. '
+                        'Please enter a valid number.',
+                        'error'
+                    )
+                    return render_template(
+                        'admin/user_edit.html',
+                        user=user
+                    ), 400
 
             db.session.commit()
             flash('User updated successfully', 'success')
             return redirect(url_for('admin.dashboard'))
         except Exception as e:
             db.session.rollback()
+            current_app.logger.error(
+                f"Error updating user: {str(e)}"
+            )
             flash(
                 'Failed to update user. '
                 'Please try again.',
                 'error'
             )
-            return render_template('admin/user_edit.html', user=user), 400
+            return render_template(
+                'admin/user_edit.html',
+                user=user
+            ), 400
 
     return render_template('admin/user_edit.html', user=user)
 
@@ -357,10 +353,10 @@ def edit_user(id):
 def delete_user(id):
     """
     Delete a user.
-    
+
     Args:
         id (int): The user ID.
-    
+
     Returns:
         jsonify: A JSON response indicating the result of the deletion.
     """
@@ -369,13 +365,20 @@ def delete_user(id):
         db.session.delete(user)
         db.session.commit()
         if request.is_json:
-            return jsonify({'message': 'User deleted successfully'}), 200
+            return jsonify(
+                {'message': 'User deleted successfully'}
+            ), 200
         flash('User deleted successfully', 'success')
         return redirect(url_for('admin.dashboard'))
     except Exception as e:
         db.session.rollback()
+        current_app.logger.error(
+            f"Error deleting user: {str(e)}"
+        )
         if request.is_json:
-            return jsonify({'error': 'Failed to delete user'}), 400
+            return jsonify(
+                {'error': 'Failed to delete user'}
+            ), 400
         flash(
             'Failed to delete user. '
             'Please try again.',
@@ -390,32 +393,16 @@ def delete_user(id):
 def create_aircraft():
     """
     Create a new aircraft.
-    
+
     Returns:
         render_template: The aircraft create template.
     """
     form = AircraftForm()
-    
+
     if request.method == 'POST':
         if form.validate_on_submit():
-            aircraft = Aircraft(
-                registration=form.registration.data,
-                make=form.make.data,
-                model=form.model.data,
-                year=form.year.data,
-                status=form.status.data,
-                category=form.category.data,
-                engine_type=form.engine_type.data,
-                num_engines=form.num_engines.data,
-                ifr_equipped=form.ifr_equipped.data,
-                gps=form.gps.data,
-                autopilot=form.autopilot.data,
-                rate_per_hour=form.rate_per_hour.data,
-                hobbs_time=form.hobbs_time.data,
-                tach_time=form.tach_time.data,
-                last_maintenance=form.last_maintenance.data,
-                description=form.description.data
-            )
+            aircraft = Aircraft()
+            form.populate_obj(aircraft)
             try:
                 db.session.add(aircraft)
                 db.session.commit()
@@ -423,8 +410,11 @@ def create_aircraft():
                 return redirect(url_for('admin.dashboard'))
             except Exception as e:
                 db.session.rollback()
+                current_app.logger.error(
+                    f"Error creating aircraft: {str(e)}"
+                )
                 flash(
-                    'Error adding aircraft. '
+                    'Error creating aircraft. '
                     'Please try again.',
                     'error'
                 )
@@ -433,9 +423,9 @@ def create_aircraft():
                 'Please correct the errors below',
                 'error'
             )
-    
+
     return render_template(
-        'admin/aircraft_form.html', 
+        'admin/aircraft_form.html',
         form=form,
         title='Create New Aircraft',
         current_year=datetime.now().year
@@ -448,10 +438,10 @@ def create_aircraft():
 def edit_aircraft(id):
     """
     Edit an aircraft.
-    
+
     Args:
         id (int): The aircraft ID.
-    
+
     Returns:
         render_template: The aircraft edit template.
     """
@@ -490,10 +480,10 @@ def edit_aircraft(id):
 def delete_aircraft(id):
     """
     Delete an aircraft.
-    
+
     Args:
         id (int): The aircraft ID.
-    
+
     Returns:
         jsonify: A JSON response indicating the result of the deletion.
     """
@@ -509,10 +499,10 @@ def delete_aircraft(id):
 def update_user_status(id):
     """
     Update a user's status.
-    
+
     Args:
         id (int): The user ID.
-    
+
     Returns:
         jsonify: A JSON response indicating the result of the update.
     """
@@ -542,7 +532,7 @@ def update_user_status(id):
 def maintenance_types():
     """
     View and manage maintenance types.
-    
+
     Returns:
         render_template: The maintenance types template.
     """
@@ -576,7 +566,7 @@ def maintenance_types():
 def maintenance_records():
     """
     View and manage maintenance records.
-    
+
     Returns:
         render_template: The maintenance records template.
     """
@@ -627,7 +617,7 @@ def maintenance_records():
 def squawks():
     """
     View and manage squawks.
-    
+
     Returns:
         render_template: The squawks template.
     """
@@ -669,10 +659,10 @@ def squawks():
 def edit_booking(booking_id):
     """
     Edit a booking.
-    
+
     Args:
         booking_id (int): The booking ID.
-    
+
     Returns:
         render_template: The booking edit template.
     """
@@ -709,7 +699,7 @@ def edit_booking(booking_id):
 def aircraft_list():
     """
     List all aircraft.
-    
+
     Returns:
         render_template: The aircraft list template.
     """
@@ -726,7 +716,7 @@ def aircraft_list():
 def aircraft_add():
     """
     Add a new aircraft.
-    
+
     Returns:
         render_template: The aircraft add template.
     """
@@ -758,7 +748,7 @@ def aircraft_add():
 def instructor_list():
     """
     List all instructors.
-    
+
     Returns:
         render_template: The instructor list template.
     """
@@ -776,7 +766,7 @@ def instructor_list():
 def user_list():
     """
     List all users.
-    
+
     Returns:
         render_template: The user list template.
     """
@@ -793,7 +783,7 @@ def user_list():
 def create_instructor():
     """
     Create a new instructor.
-    
+
     Returns:
         redirect: The create user URL.
     """
@@ -806,10 +796,10 @@ def create_instructor():
 def edit_instructor(id):
     """
     Edit an instructor.
-    
+
     Args:
         id (int): The instructor ID.
-    
+
     Returns:
         redirect: The edit user URL.
     """
@@ -822,10 +812,10 @@ def edit_instructor(id):
 def update_aircraft_status(id):
     """
     Update an aircraft's status.
-    
+
     Args:
         id (int): The aircraft ID.
-    
+
     Returns:
         jsonify: A JSON response indicating the result of the update.
     """
@@ -853,7 +843,7 @@ def update_aircraft_status(id):
 def endorsements():
     """
     List all endorsements.
-    
+
     Returns:
         render_template: The endorsements template.
     """
@@ -870,10 +860,10 @@ def endorsements():
 def manage_endorsement(id):
     """
     Manage an endorsement.
-    
+
     Args:
         id (int): The endorsement ID.
-    
+
     Returns:
         render_template: The endorsement detail template.
     """
@@ -926,7 +916,7 @@ def manage_endorsement(id):
 def documents():
     """
     List all documents.
-    
+
     Returns:
         render_template: The documents template.
     """
@@ -943,10 +933,10 @@ def documents():
 def manage_document(id):
     """
     Manage a document.
-    
+
     Args:
         id (int): The document ID.
-    
+
     Returns:
         render_template: The document detail template.
     """
@@ -996,7 +986,7 @@ def manage_document(id):
 def weather_minima():
     """
     Manage weather minima.
-    
+
     Returns:
         render_template: The weather minima template.
     """
@@ -1037,10 +1027,10 @@ def weather_minima():
 def manage_weather_minima(id):
     """
     Manage a weather minima.
-    
+
     Args:
         id (int): The weather minima ID.
-    
+
     Returns:
         jsonify: A JSON response indicating the result of the update or deletion.
     """
@@ -1085,7 +1075,7 @@ def manage_weather_minima(id):
 def audit_logs():
     """
     View audit logs.
-    
+
     Returns:
         render_template: The audit logs template.
     """
@@ -1103,7 +1093,7 @@ def audit_logs():
 def waitlist():
     """
     View and manage waitlist entries.
-    
+
     Returns:
         render_template: The waitlist template.
     """
@@ -1121,10 +1111,10 @@ def waitlist():
 def update_waitlist_entry(id):
     """
     Update a waitlist entry.
-    
+
     Args:
         id (int): The waitlist entry ID.
-    
+
     Returns:
         jsonify: A JSON response indicating the result of the update.
     """
@@ -1150,7 +1140,7 @@ def update_waitlist_entry(id):
 def recurring_bookings():
     """
     View and manage recurring bookings.
-    
+
     Returns:
         render_template: The recurring bookings template.
     """
@@ -1167,10 +1157,10 @@ def recurring_bookings():
 def manage_recurring_booking(id):
     """
     Manage a recurring booking.
-    
+
     Args:
         id (int): The recurring booking ID.
-    
+
     Returns:
         jsonify: A JSON response indicating the result of the update or deletion.
     """
@@ -1219,7 +1209,7 @@ def manage_recurring_booking(id):
 def flight_logs():
     """
     View flight logs.
-    
+
     Returns:
         render_template: The flight logs template.
     """
@@ -1237,10 +1227,10 @@ def flight_logs():
 def manage_flight_log(id):
     """
     Manage a flight log.
-    
+
     Args:
         id (int): The flight log ID.
-    
+
     Returns:
         render_template: The flight log detail template.
     """
