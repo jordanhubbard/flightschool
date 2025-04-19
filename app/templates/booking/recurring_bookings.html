@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}Recurring Bookings - {{ config.SCHOOL_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('booking.dashboard') }}">Schedule</a></li>
+                    <li class="breadcrumb-item active">Recurring Bookings</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-4 text-primary">
+                <i class="fas fa-redo me-3"></i>Recurring Bookings
+            </h1>
+            <p class="lead">Manage your recurring flight reservations.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Your Recurring Bookings</h5>
+                        <button class="btn btn-accent" data-bs-toggle="modal" data-bs-target="#createRecurringModal">
+                            <i class="fas fa-plus me-2"></i>New Recurring Booking
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if bookings %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Aircraft</th>
+                                    <th>Instructor</th>
+                                    <th>Schedule</th>
+                                    <th>Duration</th>
+                                    <th>Period</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for booking in bookings %}
+                                <tr>
+                                    <td>{{ booking.aircraft.registration }}</td>
+                                    <td>
+                                        {% if booking.instructor %}
+                                        {{ booking.instructor.full_name }}
+                                        {% else %}
+                                        <span class="text-muted">No Instructor</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% set days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
+                                        {{ days[booking.day_of_week - 1] }}s at {{ booking.start_time.strftime('%H:%M') }}
+                                    </td>
+                                    <td>{{ booking.duration_hours }} hours</td>
+                                    <td>
+                                        {{ booking.start_date.strftime('%Y-%m-%d') }}
+                                        {% if booking.end_date %}
+                                        to {{ booking.end_date.strftime('%Y-%m-%d') }}
+                                        {% else %}
+                                        (ongoing)
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if booking.status == 'active' else 'secondary' }}">
+                                            {{ booking.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="editRecurringBooking({{ booking.id }})">
+                                                <i class="fas fa-edit me-1"></i>Edit
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="cancelRecurringBooking({{ booking.id }})">
+                                                <i class="fas fa-times me-1"></i>Cancel
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
+                        <p class="lead text-muted">No recurring bookings found</p>
+                        <button class="btn btn-accent" data-bs-toggle="modal" data-bs-target="#createRecurringModal">
+                            <i class="fas fa-plus me-2"></i>Create Your First Recurring Booking
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Recurring Booking Modal -->
+<div class="modal fade" id="createRecurringModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create Recurring Booking</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('booking.create_recurring_booking') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="aircraft" class="form-label">Aircraft</label>
+                        <select class="form-select" id="aircraft" name="aircraft_id" required>
+                            <option value="">Select aircraft</option>
+                            {% for aircraft in aircraft_list %}
+                            <option value="{{ aircraft.id }}">{{ aircraft.registration }} - {{ aircraft.make }} {{ aircraft.model }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="instructor" class="form-label">Instructor (optional)</label>
+                        <select class="form-select" id="instructor" name="instructor_id">
+                            <option value="">No instructor</option>
+                            {% for instructor in instructor_list %}
+                            <option value="{{ instructor.id }}">{{ instructor.full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="dayOfWeek" class="form-label">Day of Week</label>
+                        <select class="form-select" id="dayOfWeek" name="day_of_week" required>
+                            <option value="">Select day</option>
+                            <option value="1">Monday</option>
+                            <option value="2">Tuesday</option>
+                            <option value="3">Wednesday</option>
+                            <option value="4">Thursday</option>
+                            <option value="5">Friday</option>
+                            <option value="6">Saturday</option>
+                            <option value="7">Sunday</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="startTime" class="form-label">Start Time</label>
+                        <input type="time" class="form-control" id="startTime" name="start_time" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="duration" class="form-label">Duration (hours)</label>
+                        <input type="number" class="form-control" id="duration" name="duration_hours" step="0.5" min="0.5" max="8" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="startDate" class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="startDate" name="start_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="endDate" class="form-label">End Date (optional)</label>
+                        <input type="date" class="form-control" id="endDate" name="end_date">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-accent">
+                        <i class="fas fa-plus me-2"></i>Create
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+function editRecurringBooking(bookingId) {
+    fetch(`/booking/recurring-bookings/${bookingId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Populate edit modal with booking data
+                document.getElementById('aircraft').value = data.booking.aircraft_id;
+                document.getElementById('instructor').value = data.booking.instructor_id || '';
+                document.getElementById('dayOfWeek').value = data.booking.day_of_week;
+                document.getElementById('startTime').value = data.booking.start_time;
+                document.getElementById('duration').value = data.booking.duration_hours;
+                document.getElementById('startDate').value = data.booking.start_date;
+                document.getElementById('endDate').value = data.booking.end_date || '';
+                
+                // Show edit modal
+                new bootstrap.Modal(document.getElementById('editRecurringModal')).show();
+            } else {
+                alert('Failed to load booking details: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while loading booking details');
+        });
+}
+
+function cancelRecurringBooking(bookingId) {
+    if (confirm('Are you sure you want to cancel this recurring booking?')) {
+        fetch(`/booking/recurring-bookings/${bookingId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert('Failed to cancel booking: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while canceling the booking');
+        });
+    }
+}
+</script>
+{% endblock %}
+{% endblock %}

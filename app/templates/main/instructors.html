@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Our Instructors - {{ config.SCHOOL_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+                    <li class="breadcrumb-item active">Our Instructors</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-4 text-primary">
+                <i class="fas fa-chalkboard-teacher me-3"></i>Our Instructors
+            </h1>
+            <p class="lead">Meet our experienced flight instructors who will guide you through your aviation journey.</p>
+        </div>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for instructor in instructors %}
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-user-tie me-2"></i>{{ instructor.full_name }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if instructor.certificates %}
+                    <div class="mb-3">
+                        <h6 class="text-muted">Certificates & Ratings</h6>
+                        <p class="card-text">
+                            {% for cert in instructor.certificates.split(',') %}
+                            <span class="badge bg-secondary me-1">{{ cert.strip() }}</span>
+                            {% endfor %}
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <h6 class="text-muted">Contact</h6>
+                        {% if instructor.email %}
+                        <p class="card-text">
+                            <i class="fas fa-envelope me-2"></i>
+                            <a href="mailto:{{ instructor.email }}" class="text-decoration-none">{{ instructor.email }}</a>
+                        </p>
+                        {% endif %}
+                        {% if instructor.phone %}
+                        <p class="card-text">
+                            <i class="fas fa-phone me-2"></i>
+                            <a href="tel:{{ instructor.phone }}" class="text-decoration-none">{{ instructor.phone }}</a>
+                        </p>
+                        {% endif %}
+                    </div>
+
+                    {% if current_user.is_authenticated %}
+                    <div class="text-center">
+                        <a href="{{ url_for('booking.create', instructor_id=instructor.id) }}" class="btn btn-accent">
+                            <i class="fas fa-calendar-plus me-2"></i>Book with {{ instructor.first_name }}
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>No instructors are currently available.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not current_user.is_authenticated %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="alert alert-primary">
+                <i class="fas fa-info-circle me-2"></i>
+                <a href="{{ url_for('auth.login') }}" class="alert-link">Log in</a> or 
+                <a href="{{ url_for('auth.register') }}" class="alert-link">register</a> 
+                to book lessons with our instructors.
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

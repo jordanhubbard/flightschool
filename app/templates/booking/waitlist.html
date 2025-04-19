@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Waitlist - {{ config.SCHOOL_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('booking.dashboard') }}">Schedule</a></li>
+                    <li class="breadcrumb-item active">Waitlist</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-4 text-primary">
+                <i class="fas fa-clock me-3"></i>Waitlist
+            </h1>
+            <p class="lead">Join the waitlist for your preferred aircraft and time slot.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Your Waitlist Entries</h5>
+                        <button class="btn btn-accent" data-bs-toggle="modal" data-bs-target="#joinWaitlistModal">
+                            <i class="fas fa-plus me-2"></i>Join Waitlist
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if entries %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Aircraft</th>
+                                    <th>Instructor</th>
+                                    <th>Requested Date</th>
+                                    <th>Time Preference</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in entries %}
+                                <tr>
+                                    <td>{{ entry.aircraft.registration }}</td>
+                                    <td>
+                                        {% if entry.instructor %}
+                                        {{ entry.instructor.full_name }}
+                                        {% else %}
+                                        <span class="text-muted">No Instructor</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ entry.requested_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ entry.time_preference }}</span>
+                                    </td>
+                                    <td>{{ entry.duration_hours }} hours</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if entry.status == 'active' else 'secondary' }}">
+                                            {{ entry.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="editWaitlistEntry({{ entry.id }})">
+                                                <i class="fas fa-edit me-1"></i>Edit
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="leaveWaitlist({{ entry.id }})">
+                                                <i class="fas fa-times me-1"></i>Leave
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                        <p class="lead text-muted">No waitlist entries found</p>
+                        <button class="btn btn-accent" data-bs-toggle="modal" data-bs-target="#joinWaitlistModal">
+                            <i class="fas fa-plus me-2"></i>Join the Waitlist
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Join Waitlist Modal -->
+<div class="modal fade" id="joinWaitlistModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Join Waitlist</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('booking.join_waitlist') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="aircraft" class="form-label">Aircraft</label>
+                        <select class="form-select" id="aircraft" name="aircraft_id" required>
+                            <option value="">Select aircraft</option>
+                            {% for aircraft in aircraft_list %}
+                            <option value="{{ aircraft.id }}">{{ aircraft.registration }} - {{ aircraft.make }} {{ aircraft.model }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="instructor" class="form-label">Instructor (optional)</label>
+                        <select class="form-select" id="instructor" name="instructor_id">
+                            <option value="">No instructor</option>
+                            {% for instructor in instructor_list %}
+                            <option value="{{ instructor.id }}">{{ instructor.full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="requestedDate" class="form-label">Requested Date</label>
+                        <input type="date" class="form-control" id="requestedDate" name="requested_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="timePreference" class="form-label">Time Preference</label>
+                        <select class="form-select" id="timePreference" name="time_preference" required>
+                            <option value="">Select time preference</option>
+                            <option value="morning">Morning (8:00 AM - 12:00 PM)</option>
+                            <option value="afternoon">Afternoon (12:00 PM - 4:00 PM)</option>
+                            <option value="evening">Evening (4:00 PM - 8:00 PM)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="duration" class="form-label">Duration (hours)</label>
+                        <input type="number" class="form-control" id="duration" name="duration_hours" step="0.5" min="0.5" max="8" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-accent">
+                        <i class="fas fa-plus me-2"></i>Join Waitlist
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+function editWaitlistEntry(entryId) {
+    fetch(`/booking/waitlist/${entryId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Populate edit modal with entry data
+                document.getElementById('aircraft').value = data.entry.aircraft_id;
+                document.getElementById('instructor').value = data.entry.instructor_id || '';
+                document.getElementById('requestedDate').value = data.entry.requested_date;
+                document.getElementById('timePreference').value = data.entry.time_preference;
+                document.getElementById('duration').value = data.entry.duration_hours;
+                
+                // Show edit modal
+                new bootstrap.Modal(document.getElementById('editWaitlistModal')).show();
+            } else {
+                alert('Failed to load waitlist entry details: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while loading waitlist entry details');
+        });
+}
+
+function leaveWaitlist(entryId) {
+    if (confirm('Are you sure you want to leave the waitlist?')) {
+        fetch(`/booking/waitlist/${entryId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert('Failed to leave waitlist: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while leaving the waitlist');
+        });
+    }
+}
+</script>
+{% endblock %}
+{% endblock %}
