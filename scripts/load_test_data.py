@@ -11,7 +11,7 @@ from app import create_app, db
 from app.models import (
     Aircraft, User, Booking, MaintenanceType, MaintenanceRecord, Squawk,
     WeatherMinima, FlightLog, Endorsement, Document, AuditLog, WaitlistEntry,
-    RecurringBooking
+    RecurringBooking, EquipmentStatus
 )
 
 def load_test_data():
@@ -26,10 +26,11 @@ def load_test_data():
         Endorsement.query.delete()
         FlightLog.query.delete()
         WeatherMinima.query.delete()
-        Booking.query.delete()
         MaintenanceRecord.query.delete()
+        EquipmentStatus.query.delete()
         Squawk.query.delete()
         MaintenanceType.query.delete()
+        Booking.query.delete()
         Aircraft.query.delete()
         User.query.delete()
         
@@ -62,27 +63,76 @@ def load_test_data():
         # Create aircraft
         aircraft_map = {}  # To store registration -> Aircraft object mapping
         for aircraft_data in data['aircraft']:
+            # Convert dates from ISO format
+            date_fields = [
+                'last_maintenance', 'last_annual', 'last_100hr', 'last_pitot_static',
+                'last_vor_check', 'last_altimeter', 'last_transponder', 'last_elt_check',
+                'next_maintenance_date', 'insurance_expiry', 'registration_expiry',
+                'airworthiness_date'
+            ]
+            for field in date_fields:
+                if field in aircraft_data and aircraft_data[field]:
+                    aircraft_data[field] = datetime.fromisoformat(aircraft_data[field].replace('Z', '+00:00'))
+            
+            # Create aircraft object
             aircraft = Aircraft(
                 registration=aircraft_data['registration'],
                 make=aircraft_data['make'],
                 model=aircraft_data['model'],
                 year=aircraft_data['year'],
+                serial_number=aircraft_data['serial_number'],
                 status=aircraft_data['status'],
                 category=aircraft_data['category'],
                 engine_type=aircraft_data['engine_type'],
                 num_engines=aircraft_data['num_engines'],
+                description=aircraft_data['description'],
+                
+                # Equipment
                 ifr_equipped=aircraft_data['ifr_equipped'],
-                gps=aircraft_data['gps'],
+                gps_equipped=aircraft_data['gps_equipped'],
+                gps_model=aircraft_data.get('gps_model'),
                 autopilot=aircraft_data['autopilot'],
+                autopilot_model=aircraft_data.get('autopilot_model'),
+                adsb_out=aircraft_data['adsb_out'],
+                adsb_in=aircraft_data['adsb_in'],
+                dme_equipped=aircraft_data['dme_equipped'],
+                tcas_equipped=aircraft_data['tcas_equipped'],
+                
+                # Performance
                 rate_per_hour=aircraft_data['rate_per_hour'],
+                fuel_capacity=aircraft_data['fuel_capacity'],
+                fuel_type=aircraft_data['fuel_type'],
+                oil_capacity=aircraft_data['oil_capacity'],
+                max_weight=aircraft_data['max_weight'],
+                empty_weight=aircraft_data['empty_weight'],
+                useful_load=aircraft_data['useful_load'],
+                
+                # Times
                 hobbs_time=aircraft_data['hobbs_time'],
                 tach_time=aircraft_data['tach_time'],
-                description=aircraft_data['description'],
+                total_time=aircraft_data['total_time'],
+                engine_time=aircraft_data['engine_time'],
+                prop_time=aircraft_data['prop_time'],
+                
+                # Maintenance
+                last_maintenance=aircraft_data['last_maintenance'],
+                last_annual=aircraft_data['last_annual'],
+                last_100hr=aircraft_data['last_100hr'],
+                last_pitot_static=aircraft_data['last_pitot_static'],
+                last_vor_check=aircraft_data['last_vor_check'],
+                last_altimeter=aircraft_data['last_altimeter'],
+                last_transponder=aircraft_data['last_transponder'],
+                last_elt_check=aircraft_data['last_elt_check'],
                 maintenance_status=aircraft_data['maintenance_status'],
-                next_maintenance_date=datetime.fromisoformat(aircraft_data['next_maintenance_date']),
+                next_maintenance_date=aircraft_data['next_maintenance_date'],
                 next_maintenance_hours=aircraft_data['next_maintenance_hours'],
-                insurance_expiry=datetime.fromisoformat(aircraft_data['insurance_expiry']),
-                registration_expiry=datetime.fromisoformat(aircraft_data['registration_expiry'])
+                maintenance_notes=aircraft_data['maintenance_notes'],
+                
+                # Documentation
+                insurance_expiry=aircraft_data['insurance_expiry'],
+                registration_expiry=aircraft_data['registration_expiry'],
+                airworthiness_cert=aircraft_data['airworthiness_cert'],
+                airworthiness_date=aircraft_data['airworthiness_date']
             )
             db.session.add(aircraft)
             db.session.flush()
@@ -119,14 +169,26 @@ def load_test_data():
             aircraft = aircraft_map[record_data['aircraft_registration']]
             mtype = maint_type_map[record_data['maintenance_type']]
             performed_by = user_map[record_data['performed_by_email']]
+            
+            # Convert dates from ISO format
+            performed_at = datetime.fromisoformat(record_data['performed_at'].replace('Z', '+00:00'))
+            next_due_date = None
+            if record_data.get('next_due_date'):
+                next_due_date = datetime.fromisoformat(record_data['next_due_date'].replace('Z', '+00:00'))
+            
             record = MaintenanceRecord(
                 aircraft=aircraft,
                 maintenance_type=mtype,
-                performed_at=datetime.fromisoformat(record_data['performed_at']),
+                performed_at=performed_at,
                 performed_by=performed_by,
                 notes=record_data['notes'],
                 hobbs_hours=record_data['hobbs_hours'],
-                tach_hours=record_data['tach_hours']
+                tach_hours=record_data['tach_hours'],
+                parts_replaced=record_data.get('parts_replaced'),
+                labor_hours=record_data.get('labor_hours'),
+                cost=record_data.get('cost'),
+                next_due_date=next_due_date,
+                next_due_hours=record_data.get('next_due_hours')
             )
             db.session.add(record)
         
@@ -134,12 +196,14 @@ def load_test_data():
         for squawk_data in data['squawks']:
             aircraft = aircraft_map[squawk_data['aircraft_registration']]
             reported_by = user_map[squawk_data['reported_by_email']]
+            created_at = datetime.fromisoformat(squawk_data['created_at'].replace('Z', '+00:00'))
+            
             squawk = Squawk(
                 aircraft=aircraft,
                 description=squawk_data['description'],
                 reported_by=reported_by,
                 status=squawk_data['status'],
-                created_at=datetime.fromisoformat(squawk_data['created_at'])
+                created_at=created_at
             )
             db.session.add(squawk)
         
@@ -149,17 +213,26 @@ def load_test_data():
             student = user_map[booking_data['student_email']]
             instructor = user_map[booking_data['instructor_email']] if booking_data.get('instructor_email') else None
             aircraft = aircraft_map[booking_data['aircraft_registration']]
+            
+            # Convert dates from ISO format
+            start_time = datetime.fromisoformat(booking_data['start_time'].replace('Z', '+00:00'))
+            end_time = datetime.fromisoformat(booking_data['end_time'].replace('Z', '+00:00'))
+            
             booking = Booking(
                 student=student,
                 instructor=instructor,
                 aircraft=aircraft,
-                start_time=datetime.fromisoformat(booking_data['start_time']),
-                end_time=datetime.fromisoformat(booking_data['end_time']),
+                start_time=start_time,
+                end_time=end_time,
                 status=booking_data['status'],
+                booking_type=booking_data['booking_type'],
+                lesson_type=booking_data['lesson_type'],
                 cancellation_reason=booking_data.get('cancellation_reason'),
                 cancellation_notes=booking_data.get('cancellation_notes'),
                 weather_briefing=booking_data.get('weather_briefing'),
-                notification_sent=booking_data.get('notification_sent', False)
+                weather_conditions=booking_data.get('weather_conditions'),
+                notification_sent=booking_data.get('notification_sent', False),
+                notes=booking_data.get('notes')
             )
             db.session.add(booking)
             db.session.flush()
@@ -167,17 +240,27 @@ def load_test_data():
         
         # Create flight logs
         for log_data in data['flight_logs']:
+            booking = booking_map[log_data['booking_id']]
+            aircraft = aircraft_map[booking.aircraft.registration]
             pic = user_map[log_data['pic_email']]
             sic = user_map[log_data['sic_email']] if log_data.get('sic_email') else None
-            booking = booking_map[log_data['booking_id']]
+            
+            # Convert date from ISO format
+            flight_date = datetime.fromisoformat(log_data['flight_date'].replace('Z', '+00:00'))
+            
             log = FlightLog(
                 booking=booking,
-                pic=pic,
-                sic=sic,
-                flight_date=datetime.fromisoformat(log_data['flight_date']),
+                aircraft=aircraft,
+                pic_id=pic.id,
+                sic_id=sic.id if sic else None,
+                flight_date=flight_date,
                 route=log_data['route'],
+                departure_airport=log_data['departure_airport'],
+                arrival_airport=log_data['arrival_airport'],
+                alternate_airport=log_data.get('alternate_airport'),
                 remarks=log_data['remarks'],
                 weather_conditions=log_data['weather_conditions'],
+                flight_conditions=log_data['flight_conditions'],
                 ground_instruction=log_data['ground_instruction'],
                 dual_received=log_data['dual_received'],
                 pic_time=log_data['pic_time'],
@@ -186,8 +269,12 @@ def load_test_data():
                 night=log_data['night'],
                 actual_instrument=log_data['actual_instrument'],
                 simulated_instrument=log_data['simulated_instrument'],
+                hood_time=log_data['hood_time'],
                 landings_day=log_data['landings_day'],
-                landings_night=log_data['landings_night']
+                landings_night=log_data['landings_night'],
+                approaches=log_data['approaches'],
+                approach_types=log_data['approach_types'],
+                holds=log_data['holds']
             )
             db.session.add(log)
         
@@ -195,25 +282,37 @@ def load_test_data():
         for endorsement_data in data['endorsements']:
             student = user_map[endorsement_data['student_email']]
             instructor = user_map[endorsement_data['instructor_email']]
+            
+            # Convert date from ISO format
+            expiration = None
+            if endorsement_data.get('expiration'):
+                expiration = datetime.fromisoformat(endorsement_data['expiration'].replace('Z', '+00:00'))
+            
             endorsement = Endorsement(
                 student=student,
                 instructor=instructor,
                 type=endorsement_data['type'],
                 description=endorsement_data['description'],
-                expiration=datetime.fromisoformat(endorsement_data['expiration']) if endorsement_data.get('expiration') else None,
+                expiration=expiration,
                 document_url=endorsement_data.get('document_url')
             )
             db.session.add(endorsement)
         
         # Create documents
-        for doc_data in data['documents']:
-            user = user_map[doc_data['user_email']]
+        for document_data in data['documents']:
+            user = user_map[document_data['user_email']]
+            
+            # Convert date from ISO format
+            expiration = None
+            if document_data.get('expiration'):
+                expiration = datetime.fromisoformat(document_data['expiration'].replace('Z', '+00:00'))
+            
             document = Document(
                 user=user,
-                type=doc_data['type'],
-                filename=doc_data['filename'],
-                url=doc_data['url'],
-                expiration=datetime.fromisoformat(doc_data['expiration']) if doc_data.get('expiration') else None
+                type=document_data['type'],
+                filename=document_data['filename'],
+                url=document_data['url'],
+                expiration=expiration
             )
             db.session.add(document)
         
@@ -222,11 +321,15 @@ def load_test_data():
             student = user_map[entry_data['student_email']]
             instructor = user_map[entry_data['instructor_email']] if entry_data.get('instructor_email') else None
             aircraft = aircraft_map[entry_data['aircraft_registration']]
+            
+            # Convert date from ISO format
+            requested_date = datetime.fromisoformat(entry_data['requested_date'].replace('Z', '+00:00'))
+            
             entry = WaitlistEntry(
-                student=student,
-                instructor=instructor,
-                aircraft=aircraft,
-                requested_date=datetime.fromisoformat(entry_data['requested_date']),
+                student_id=student.id,
+                instructor_id=instructor.id if instructor else None,
+                aircraft_id=aircraft.id,
+                requested_date=requested_date,
                 time_preference=entry_data['time_preference'],
                 duration_hours=entry_data['duration_hours'],
                 status=entry_data['status']
@@ -238,15 +341,25 @@ def load_test_data():
             student = user_map[recurring_data['student_email']]
             instructor = user_map[recurring_data['instructor_email']] if recurring_data.get('instructor_email') else None
             aircraft = aircraft_map[recurring_data['aircraft_registration']]
+            
+            # Convert dates from ISO format
+            start_date = datetime.fromisoformat(recurring_data['start_date'].replace('Z', '+00:00'))
+            end_date = None
+            if recurring_data.get('end_date'):
+                end_date = datetime.fromisoformat(recurring_data['end_date'].replace('Z', '+00:00'))
+            
+            # Convert time string to time object
+            start_time = datetime.strptime(recurring_data['start_time'], '%H:%M:%S').time()
+            
             recurring = RecurringBooking(
-                student=student,
-                instructor=instructor,
-                aircraft=aircraft,
+                student_id=student.id,
+                instructor_id=instructor.id if instructor else None,
+                aircraft_id=aircraft.id,
                 day_of_week=recurring_data['day_of_week'],
-                start_time=time.fromisoformat(recurring_data['start_time']),
+                start_time=start_time,
                 duration_hours=recurring_data['duration_hours'],
-                start_date=datetime.fromisoformat(recurring_data['start_date']),
-                end_date=datetime.fromisoformat(recurring_data['end_date']) if recurring_data.get('end_date') else None,
+                start_date=start_date,
+                end_date=end_date,
                 status=recurring_data['status']
             )
             db.session.add(recurring)
@@ -254,21 +367,18 @@ def load_test_data():
         # Create audit logs
         for log_data in data['audit_logs']:
             user = user_map[log_data['user_email']]
+            
             log = AuditLog(
                 user=user,
                 action=log_data['action'],
                 table_name=log_data['table_name'],
                 record_id=log_data['record_id'],
-                changes=log_data['changes'],
-                created_at=datetime.fromisoformat(log_data['created_at'])
+                changes=log_data['changes']
             )
             db.session.add(log)
-
+        
+        # Commit all changes
         db.session.commit()
-        print("Test data loaded successfully!")
-        print("\nLogin credentials from test_data.json:")
-        for user_data in data['users']:
-            print(f"{user_data['role'].title()}: {user_data['email']} / {user_data['password']}")
 
 if __name__ == '__main__':
     load_test_data()

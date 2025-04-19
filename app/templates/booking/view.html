@@ -1,97 +1,309 @@
 {% extends "base.html" %}
 
-{% block title %}Booking Details{% endblock %}
+{% block title %}Flight Details - {{ config.SCHOOL_NAME }}{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
     <div class="row">
-        <div class="col-md-12">
-            <h1 class="mb-4">Booking Details</h1>
-            
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('booking.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Flight Details</li>
+                </ol>
+            </nav>
+
+            <!-- Flight Overview -->
             <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Booking Information</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0">{{ booking.aircraft.make }} {{ booking.aircraft.model }} ({{ booking.aircraft.registration }})</h5>
+                        <p class="text-muted mb-0">{{ booking.start_time.strftime('%A, %B %d, %Y') }}</p>
+                    </div>
+                    <span class="badge bg-{{ 
+                        'success' if booking.status == 'confirmed' 
+                        else 'warning' if booking.status == 'pending'
+                        else 'danger' if booking.status == 'cancelled'
+                        else 'info' if booking.status == 'completed'
+                        else 'secondary'
+                    }}">
+                        {{ booking.status|title }}
+                    </span>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p><strong>Date:</strong> {{ booking.start_time.strftime('%Y-%m-%d') }}</p>
-                            <p><strong>Time:</strong> {{ booking.start_time.strftime('%H:%M') }} - {{ booking.end_time.strftime('%H:%M') }}</p>
-                            <p><strong>Status:</strong> 
-                                <span class="badge bg-{{ 
-                                    'success' if booking.status == 'confirmed' 
-                                    else 'warning' if booking.status == 'pending'
-                                    else 'danger' if booking.status == 'cancelled'
-                                    else 'info' if booking.status == 'completed'
-                                    else 'secondary'
-                                }}">
-                                    {{ booking.status }}
-                                </span>
-                            </p>
+                    <div class="row g-4">
+                        <!-- Time Information -->
+                        <div class="col-md-4">
+                            <div class="p-3 bg-light rounded-3">
+                                <h6 class="text-muted mb-3">Time</h6>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-clock me-2 text-primary"></i>
+                                    <div>
+                                        <div class="fw-bold">{{ booking.start_time.strftime('%H:%M') }}</div>
+                                        <small class="text-muted">Start Time</small>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-hourglass-end me-2 text-primary"></i>
+                                    <div>
+                                        <div class="fw-bold">{{ booking.end_time.strftime('%H:%M') }}</div>
+                                        <small class="text-muted">End Time</small>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <p><strong>Aircraft:</strong> {{ booking.aircraft.registration }} ({{ booking.aircraft.make }} {{ booking.aircraft.model }})</p>
-                            <p><strong>Instructor:</strong> {{ booking.instructor.full_name if booking.instructor else 'No Instructor' }}</p>
-                            <p><strong>Student:</strong> {{ booking.student.full_name }}</p>
+
+                        <!-- People Information -->
+                        <div class="col-md-4">
+                            <div class="p-3 bg-light rounded-3">
+                                <h6 class="text-muted mb-3">People</h6>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-user-graduate me-2 text-primary"></i>
+                                    <div>
+                                        <div class="fw-bold">{{ booking.student.full_name }}</div>
+                                        <small class="text-muted">Student</small>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-chalkboard-teacher me-2 text-primary"></i>
+                                    <div>
+                                        <div class="fw-bold">{{ booking.instructor.full_name if booking.instructor else 'Solo Flight' }}</div>
+                                        <small class="text-muted">{{ 'Instructor' if booking.instructor else 'No Instructor' }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Aircraft Information -->
+                        <div class="col-md-4">
+                            <div class="p-3 bg-light rounded-3">
+                                <h6 class="text-muted mb-3">Aircraft</h6>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-plane me-2 text-primary"></i>
+                                    <div>
+                                        <div class="fw-bold">{{ booking.aircraft.make }} {{ booking.aircraft.model }}</div>
+                                        <small class="text-muted">{{ booking.aircraft.category|replace('_', ' ')|title }}</small>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-dollar-sign me-2 text-primary"></i>
+                                    <div>
+                                        <div class="fw-bold">${{ "%.2f"|format(booking.aircraft.rate_per_hour) }}/hour</div>
+                                        <small class="text-muted">Rate</small>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    
+
                     {% if booking.notes %}
-                        <div class="mt-3">
-                            <h6>Notes:</h6>
-                            <p>{{ booking.notes }}</p>
+                        <div class="mt-4">
+                            <h6 class="text-muted mb-2">Notes</h6>
+                            <div class="p-3 bg-light rounded-3">
+                                {{ booking.notes }}
+                            </div>
                         </div>
                     {% endif %}
                 </div>
             </div>
-            
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Flight Details</h5>
+
+            <!-- Flight Details -->
+            <div class="row g-4">
+                <!-- Weather Information -->
+                <div class="col-md-6">
+                    <div class="weather-card mb-4">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h5 class="mb-1">Weather Conditions</h5>
+                                <p class="mb-0">KPAO - Palo Alto Airport</p>
+                            </div>
+                            <i class="fas fa-cloud-sun fa-2x"></i>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="weather-info">
+                                    <small>Temperature</small>
+                                    <h4 class="mb-0">72°F</h4>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="weather-info">
+                                    <small>Wind</small>
+                                    <h4 class="mb-0">8kt 270°</h4>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="weather-info">
+                                    <small>Visibility</small>
+                                    <h4 class="mb-0">10SM</h4>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="weather-info">
+                                    <small>Ceiling</small>
+                                    <h4 class="mb-0">CLR</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    {% if booking.check_in %}
+
+                <!-- Flight Log -->
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Flight Log</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if booking.check_in and booking.check_out %}
+                                <div class="row g-3">
+                                    <div class="col-6">
+                                        <div class="time-entry">
+                                            <div class="time-entry-label">Hobbs Time</div>
+                                            <div class="time-entry-value">{{ "%.1f"|format(booking.check_out.hobbs_end - booking.check_in.hobbs_start) }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="time-entry">
+                                            <div class="time-entry-label">Tach Time</div>
+                                            <div class="time-entry-value">{{ "%.1f"|format(booking.check_out.tach_end - booking.check_in.tach_start) }}</div>
+                                        </div>
+                                    </div>
+                                    {% if booking.instructor %}
+                                        <div class="col-6">
+                                            <div class="time-entry">
+                                                <div class="time-entry-label">Dual Received</div>
+                                                <div class="time-entry-value">{{ "%.1f"|format(booking.check_out.total_aircraft_time) }}</div>
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <div class="col-6">
+                                            <div class="time-entry">
+                                                <div class="time-entry-label">PIC Time</div>
+                                                <div class="time-entry-value">{{ "%.1f"|format(booking.check_out.total_aircraft_time) }}</div>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                                    <p class="mb-0">Flight log will be available after check-out.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Check-In/Out Details -->
+            {% if booking.check_in or booking.check_out %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Flight Operations</h5>
+                    </div>
+                    <div class="card-body">
                         <div class="row">
-                            <div class="col-md-6">
-                                <h6>Check-In Information</h6>
-                                <p><strong>Time:</strong> {{ booking.check_in.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
-                                <p><strong>Hobbs Start:</strong> {{ booking.check_in.hobbs_start }}</p>
-                                <p><strong>Tach Start:</strong> {{ booking.check_in.tach_start }}</p>
-                                {% if booking.check_in.notes %}
-                                    <p><strong>Notes:</strong> {{ booking.check_in.notes }}</p>
-                                {% endif %}
-                            </div>
+                            {% if booking.check_in %}
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-light rounded-3 mb-3">
+                                        <h6 class="text-muted mb-3">Check-In</h6>
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="fas fa-clock me-2 text-primary"></i>
+                                            <div>
+                                                <div class="fw-bold">{{ booking.check_in.created_at.strftime('%H:%M') }}</div>
+                                                <small class="text-muted">{{ booking.check_in.created_at.strftime('%Y-%m-%d') }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="fas fa-tachometer-alt me-2 text-primary"></i>
+                                            <div>
+                                                <div class="fw-bold">{{ booking.check_in.hobbs_start }}</div>
+                                                <small class="text-muted">Hobbs Start</small>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-gauge me-2 text-primary"></i>
+                                            <div>
+                                                <div class="fw-bold">{{ booking.check_in.tach_start }}</div>
+                                                <small class="text-muted">Tach Start</small>
+                                            </div>
+                                        </div>
+                                        {% if booking.check_in.notes %}
+                                            <div class="mt-3">
+                                                <small class="text-muted">Notes:</small>
+                                                <p class="mb-0">{{ booking.check_in.notes }}</p>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            {% if booking.check_out %}
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-light rounded-3 mb-3">
+                                        <h6 class="text-muted mb-3">Check-Out</h6>
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="fas fa-clock me-2 text-primary"></i>
+                                            <div>
+                                                <div class="fw-bold">{{ booking.check_out.created_at.strftime('%H:%M') }}</div>
+                                                <small class="text-muted">{{ booking.check_out.created_at.strftime('%Y-%m-%d') }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="fas fa-tachometer-alt me-2 text-primary"></i>
+                                            <div>
+                                                <div class="fw-bold">{{ booking.check_out.hobbs_end }}</div>
+                                                <small class="text-muted">Hobbs End</small>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-gauge me-2 text-primary"></i>
+                                            <div>
+                                                <div class="fw-bold">{{ booking.check_out.tach_end }}</div>
+                                                <small class="text-muted">Tach End</small>
+                                            </div>
+                                        </div>
+                                        {% if booking.check_out.notes %}
+                                            <div class="mt-3">
+                                                <small class="text-muted">Notes:</small>
+                                                <p class="mb-0">{{ booking.check_out.notes }}</p>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
                         </div>
-                    {% endif %}
-                    
-                    {% if booking.check_out %}
-                        <div class="row mt-3">
-                            <div class="col-md-6">
-                                <h6>Check-Out Information</h6>
-                                <p><strong>Time:</strong> {{ booking.check_out.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
-                                <p><strong>Hobbs End:</strong> {{ booking.check_out.hobbs_end }}</p>
-                                <p><strong>Tach End:</strong> {{ booking.check_out.tach_end }}</p>
-                                {% if booking.check_out.notes %}
-                                    <p><strong>Notes:</strong> {{ booking.check_out.notes }}</p>
-                                {% endif %}
-                            </div>
-                        </div>
-                    {% endif %}
+                    </div>
                 </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Actions</h5>
-                </div>
-                <div class="card-body">
-                    <a href="{{ url_for('booking.list') }}" class="btn btn-secondary">Back to Bookings</a>
+            {% endif %}
+
+            <!-- Actions -->
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="{{ url_for('booking.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+                <div>
                     {% if booking.status == 'pending' %}
-                        <a href="{{ url_for('booking.cancel_booking', booking_id=booking.id) }}" class="btn btn-danger" onclick="return confirm('Are you sure you want to cancel this booking?')">Cancel Booking</a>
+                        <a href="{{ url_for('booking.cancel_booking', booking_id=booking.id) }}" 
+                           class="btn btn-outline-danger" 
+                           onclick="return confirm('Are you sure you want to cancel this booking?')">
+                            <i class="fas fa-times me-2"></i>Cancel Flight
+                        </a>
+                    {% endif %}
+                    {% if booking.status == 'confirmed' and not booking.check_in %}
+                        <a href="{{ url_for('booking.check_in', booking_id=booking.id) }}" class="btn btn-accent">
+                            <i class="fas fa-plane-departure me-2"></i>Check In
+                        </a>
+                    {% endif %}
+                    {% if booking.status == 'in_progress' and booking.check_in and not booking.check_out %}
+                        <a href="{{ url_for('booking.check_out', booking_id=booking.id) }}" class="btn btn-accent">
+                            <i class="fas fa-plane-arrival me-2"></i>Check Out
+                        </a>
                     {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}

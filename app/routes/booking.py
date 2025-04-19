@@ -13,6 +13,48 @@ import os
 booking_bp = Blueprint('booking', __name__)
 calendar_service = GoogleCalendarService()
 
+def get_aircraft(aircraft_id):
+    return Aircraft.query.get(aircraft_id)
+
+def get_instructor(instructor_id):
+    if instructor_id == 0:
+        return None
+    return User.query.get(instructor_id)
+
+def get_daily_schedule(date):
+    """Get schedule for all aircraft and instructors for a given date."""
+    start_of_day = datetime.combine(date, datetime.min.time()).replace(tzinfo=UTC)
+    end_of_day = datetime.combine(date, datetime.max.time()).replace(tzinfo=UTC)
+    
+    # Get all bookings for the day
+    bookings = Booking.query.filter(
+        Booking.start_time >= start_of_day,
+        Booking.end_time <= end_of_day,
+        Booking.status != 'cancelled'
+    ).all()
+    
+    # Organize bookings by aircraft and instructor
+    schedule = {
+        'aircraft': {},
+        'instructors': {}
+    }
+    
+    # Initialize schedule for all aircraft
+    for aircraft in Aircraft.query.filter_by(status='available').all():
+        schedule['aircraft'][aircraft.id] = {
+            'aircraft': aircraft,
+            'bookings': [b for b in bookings if b.aircraft_id == aircraft.id]
+        }
+    
+    # Initialize schedule for all instructors
+    for instructor in User.query.filter_by(role='instructor', status='active').all():
+        schedule['instructors'][instructor.id] = {
+            'instructor': instructor,
+            'bookings': [b for b in bookings if b.instructor_id == instructor.id]
+        }
+    
+    return schedule
+
 @booking_bp.route('/google-auth')
 @login_required
 def google_auth():
@@ -93,90 +135,59 @@ def create_booking():
     if request.method == 'GET':
         form = BookingForm()
         # Set choices for aircraft and instructor select fields
+        aircraft_list = Aircraft.query.filter_by(status='available').all()
         form.aircraft_id.choices = [(a.id, f"{a.registration} - {a.make} {a.model}")
-                                  for a in Aircraft.query.filter_by(status='available').all()]
+                                  for a in aircraft_list]
+        instructor_list = User.query.filter_by(role='instructor', status='active').all()
         form.instructor_id.choices = [(i.id, f"{i.first_name} {i.last_name}")
-                                    for i in User.query.filter_by(role='instructor', status='active').all()]
+                                    for i in instructor_list]
         form.instructor_id.choices.insert(0, (0, 'No Instructor'))
-        return render_template('booking/create.html', form=form)
+        
+        # Get today's schedule
+        today_schedule = get_daily_schedule(datetime.now(UTC).date())
+        
+        return render_template('booking/create.html', 
+                             form=form, 
+                             aircraft_list=aircraft_list,
+                             instructor_list=instructor_list,
+                             schedule=today_schedule,
+                             get_aircraft=get_aircraft,
+                             get_instructor=get_instructor)
     
     # Handle POST request
-    if request.is_json:
-        data = request.get_json()
-        form = BookingForm(data=data)
-    else:
-        form = BookingForm()
-    
-    # Set choices for validation
+    form = BookingForm()
+    # Set choices again for validation
     form.aircraft_id.choices = [(a.id, f"{a.registration} - {a.make} {a.model}")
                               for a in Aircraft.query.filter_by(status='available').all()]
     form.instructor_id.choices = [(i.id, f"{i.first_name} {i.last_name}")
                                 for i in User.query.filter_by(role='instructor', status='active').all()]
     form.instructor_id.choices.insert(0, (0, 'No Instructor'))
-
+    
     if form.validate_on_submit():
-        start_time = form.start_time.data
-        end_time = form.end_time.data
-        
-        # Check for booking conflicts
-        conflicts = Booking.query.filter(
-            Booking.aircraft_id == form.aircraft_id.data,
-            Booking.status != 'cancelled',
-            ((Booking.start_time <= start_time) & (Booking.end_time > start_time)) |
-            ((Booking.start_time < end_time) & (Booking.end_time >= end_time))
-        ).first()
-        
-        if conflicts:
-            if request.is_json:
-                return jsonify({
-                    'status': 'error',
-                    'message': 'This time slot conflicts with another booking'
-                }), 409
-            flash('This time slot conflicts with another booking', 'error')
-            return render_template('booking/create.html', form=form)
-        
-        # Create the booking
-        booking = Booking(
-            student_id=current_user.id,
-            aircraft_id=form.aircraft_id.data,
-            instructor_id=form.instructor_id.data if form.instructor_id.data != 0 else None,
-            start_time=start_time,
-            end_time=end_time,
-            notes=form.notes.data,
-            status='pending'
-        )
-        
         try:
+            booking = Booking(
+                student_id=current_user.id,
+                aircraft_id=form.aircraft_id.data,
+                instructor_id=form.instructor_id.data if form.instructor_id.data != 0 else None,
+                start_time=form.start_time.data,
+                end_time=form.end_time.data,
+                notes=form.notes.data,
+                status='pending'
+            )
             db.session.add(booking)
             db.session.commit()
-            
-            if request.is_json:
-                return jsonify({
-                    'status': 'success',
-                    'message': 'Booking created successfully',
-                    'booking_id': booking.id
-                }), 201
-            else:
-                flash('Booking created successfully', 'success')
-                return redirect(url_for('booking.view_booking', booking_id=booking.id))
+            flash('Booking created successfully', 'success')
+            return redirect(url_for('booking.dashboard'))
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f'Error creating booking: {str(e)}')
-            if request.is_json:
-                return jsonify({
-                    'status': 'error',
-                    'message': 'Failed to create booking'
-                }), 500
             flash('Failed to create booking', 'error')
-            return render_template('booking/create.html', form=form)
-    
-    if request.is_json:
-        return jsonify({
-            'status': 'error',
-            'errors': form.errors
-        }), 400
     else:
-        return render_template('booking/create.html', form=form)
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{field}: {error}', 'error')
+    
+    return render_template('booking/create.html', form=form)
 
 @booking_bp.route('/bookings/<int:booking_id>', methods=['GET', 'PUT', 'DELETE'])
 @login_required
@@ -300,141 +311,87 @@ def cancel_booking(booking_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@booking_bp.route('/bookings/<int:booking_id>/checkin', methods=['POST'])
+@booking_bp.route('/api/bookings/<int:booking_id>/checkin', methods=['POST'])
 @login_required
-def check_in(booking_id):
-    """Handle check-in for a booking."""
+def api_checkin(booking_id):
+    """API endpoint for checking in a booking"""
     booking = Booking.query.get_or_404(booking_id)
-    
-    # Check if user has permission
-    if not (current_user.is_admin or current_user.id == booking.instructor_id):
-        return jsonify({'error': 'Permission denied'}), 403
-    
-    data = request.get_json()
-    
-    # Validate hobbs and tach times
-    try:
-        hobbs_start = float(data['hobbs_start'])
-        tach_start = float(data['tach_start'])
-    except (KeyError, ValueError):
-        return jsonify({'error': 'Invalid hobbs or tach times'}), 400
-    
-    # Create check-in record
-    check_in = CheckIn(
-        booking=booking,
-        aircraft=booking.aircraft,
-        instructor=current_user if current_user.is_instructor else None,
-        hobbs_start=hobbs_start,
-        tach_start=tach_start,
-        instructor_start_time=datetime.now(UTC) if current_user.is_instructor else None,
-        notes=data.get('notes')
-    )
-    
-    # Update aircraft times
-    booking.aircraft.hobbs_time = hobbs_start
-    booking.aircraft.tach_time = tach_start
-    
-    # Update booking status
-    booking.status = 'in_progress'
-    
-    try:
-        db.session.add(check_in)
-        db.session.commit()
-        return jsonify({
-            'message': 'Check-in recorded successfully',
-            'check_in_id': check_in.id
-        })
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+    if not booking or booking.status != 'confirmed':
+        abort(404)
 
-@booking_bp.route('/bookings/<int:booking_id>/checkout', methods=['POST'])
-@login_required
-def check_out(booking_id):
-    """Handle check-out for a booking."""
-    booking = Booking.query.get_or_404(booking_id)
-    
-    # Check if user has permission
-    if not (current_user.is_admin or current_user.id == booking.instructor_id):
-        return jsonify({'error': 'Permission denied'}), 403
-    
-    if not booking.check_in:
-        return jsonify({'error': 'No check-in record found'}), 400
-    
+    # Get check-in data from request
     data = request.get_json()
-    
-    # Validate hobbs and tach times
+    if not data:
+        abort(400)
+
     try:
-        hobbs_end = float(data['hobbs_end'])
-        tach_end = float(data['tach_end'])
-        if hobbs_end < booking.check_in.hobbs_start or tach_end < booking.check_in.tach_start:
-            return jsonify({'error': 'End times cannot be less than start times'}), 400
-    except (KeyError, ValueError):
-        return jsonify({'error': 'Invalid hobbs or tach times'}), 400
-    
-    # Calculate total times
-    total_aircraft_time = hobbs_end - booking.check_in.hobbs_start
-    total_instructor_time = None
-    instructor_end_time = None
-    
-    if current_user.is_instructor and booking.check_in.instructor_start_time:
-        instructor_end_time = datetime.now(UTC)
-        total_instructor_time = (instructor_end_time - booking.check_in.instructor_start_time).total_seconds() / 3600
-    
-    # Create check-out record
-    check_out = CheckOut(
-        booking=booking,
-        aircraft=booking.aircraft,
-        instructor=current_user if current_user.is_instructor else None,
-        hobbs_end=hobbs_end,
-        tach_end=tach_end,
-        instructor_end_time=instructor_end_time,
-        total_aircraft_time=total_aircraft_time,
-        total_instructor_time=total_instructor_time,
-        notes=data.get('notes')
-    )
-    
-    # Update aircraft times
-    booking.aircraft.hobbs_time = hobbs_end
-    booking.aircraft.tach_time = tach_end
-    
-    # Update booking status
-    booking.status = 'completed'
-    
-    # Create flight log if provided
-    if data.get('flight_log'):
-        log_data = data['flight_log']
-        flight_log = FlightLog(
-            booking=booking,
-            pic=current_user if current_user.is_instructor else booking.student,
-            sic=booking.student if current_user.is_instructor else None,
-            flight_date=datetime.now(UTC),
-            route=log_data.get('route'),
-            remarks=log_data.get('remarks'),
-            weather_conditions=log_data.get('weather_conditions'),
-            ground_instruction=log_data.get('ground_instruction', 0.0),
-            dual_received=total_aircraft_time if not current_user.is_instructor else 0.0,
-            pic_time=total_aircraft_time if current_user.is_instructor else 0.0,
-            sic_time=total_aircraft_time if not current_user.is_instructor else 0.0,
-            cross_country=log_data.get('cross_country', 0.0),
-            night=log_data.get('night', 0.0),
-            actual_instrument=log_data.get('actual_instrument', 0.0),
-            simulated_instrument=log_data.get('simulated_instrument', 0.0),
-            landings_day=log_data.get('landings_day', 0),
-            landings_night=log_data.get('landings_night', 0)
+        check_in = CheckIn(
+            booking_id=booking.id,
+            aircraft_id=booking.aircraft_id,
+            instructor_id=booking.instructor_id if booking.instructor_id else None,
+            hobbs_start=data.get('hobbs_start'),
+            tach_start=data.get('tach_start'),
+            notes=data.get('notes')
         )
-        db.session.add(flight_log)
-    
-    try:
-        db.session.add(check_out)
+        db.session.add(check_in)
+        
+        # Update booking status
+        booking.status = 'in_progress'
+        
+        # Update aircraft hobbs and tach times
+        aircraft = booking.aircraft
+        aircraft.hobbs_time = data.get('hobbs_start')
+        aircraft.tach_time = data.get('tach_start')
+        
         db.session.commit()
-        return jsonify({
-            'message': 'Check-out recorded successfully',
-            'check_out_id': check_out.id
-        })
+        return jsonify({'message': 'Check-in successful'})
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 400
+
+@booking_bp.route('/api/bookings/<int:booking_id>/checkout', methods=['POST'])
+@login_required
+def api_checkout(booking_id):
+    """API endpoint for checking out a booking"""
+    booking = Booking.query.get_or_404(booking_id)
+    if not booking or booking.status != 'in_progress':
+        abort(404)
+
+    # Get check-out data from request
+    data = request.get_json()
+    if not data:
+        abort(400)
+
+    try:
+        check_out = CheckOut(
+            booking_id=booking.id,
+            aircraft_id=booking.aircraft_id,
+            instructor_id=booking.instructor_id if booking.instructor_id else None,
+            hobbs_end=data.get('hobbs_end'),
+            tach_end=data.get('tach_end'),
+            total_aircraft_time=data.get('total_aircraft_time'),
+            total_instructor_time=data.get('total_instructor_time'),
+            notes=data.get('notes')
+        )
+        db.session.add(check_out)
+        
+        # Update booking status
+        booking.status = 'completed'
+        
+        # Update aircraft hobbs and tach times
+        aircraft = booking.aircraft
+        aircraft.hobbs_time = data.get('hobbs_end')
+        aircraft.tach_time = data.get('tach_end')
+        
+        db.session.commit()
+        
+        # Create invoice
+        create_invoice_for_booking(booking)
+        
+        return jsonify({'message': 'Check-out successful'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
 
 @booking_bp.route('/bookings/recurring', methods=['POST'])
 @login_required
@@ -832,3 +789,17 @@ def generate_invoice(id):
 def alt_cancel_booking(booking_id):
     """Alternative route for canceling a booking (to match test expectations)."""
     return cancel_booking(booking_id)
+
+@booking_bp.route('/recurring-bookings')
+@login_required
+def recurring_bookings():
+    """View recurring bookings."""
+    bookings = RecurringBooking.query.filter_by(student_id=current_user.id).all()
+    return render_template('booking/recurring_bookings.html', bookings=bookings)
+
+@booking_bp.route('/waitlist')
+@login_required
+def waitlist():
+    """View waitlist entries."""
+    entries = WaitlistEntry.query.filter_by(student_id=current_user.id).all()
+    return render_template('booking/waitlist.html', entries=entries)

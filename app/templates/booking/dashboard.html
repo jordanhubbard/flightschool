@@ -1,31 +1,123 @@
 {% extends "base.html" %}
 
-{% block title %}Booking Dashboard{% endblock %}
+{% block title %}Flight Schedule - {{ config.SCHOOL_NAME }}{% endblock %}
 
 {% block extra_css %}
 <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
 <style>
-    .booking-form {
-        background-color: #f8f9fa;
-        padding: 20px;
-        border-radius: 10px;
+    .weather-widget {
+        background: linear-gradient(135deg, var(--sky-blue), var(--night-blue));
+        color: var(--cloud-white);
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
     }
-    .calendar-container {
-        margin-top: 20px;
+    
+    .stats-widget {
+        background-color: var(--cloud-white);
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
-    .google-calendar-section {
-        background-color: #f8f9fa;
-        padding: 15px;
-        border-radius: 10px;
-        margin-bottom: 20px;
+    
+    .stats-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--sunset-orange);
     }
-    .google-calendar-section .btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
+    
+    .stats-label {
+        color: var(--storm-gray);
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
-    .google-calendar-section .btn i {
-        font-size: 1.2em;
+    
+    .aircraft-card {
+        position: relative;
+        overflow: hidden;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        background-color: var(--cloud-white);
+    }
+    
+    .aircraft-image {
+        width: 100%;
+        height: 160px;
+        object-fit: cover;
+    }
+    
+    .aircraft-info {
+        padding: 1rem;
+    }
+    
+    .aircraft-status {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 500;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+    }
+    
+    .aircraft-status.available {
+        background-color: var(--success-green);
+        color: var(--cloud-white);
+    }
+    
+    .aircraft-status.maintenance {
+        background-color: var(--warning-yellow);
+        color: var(--night-blue);
+    }
+    
+    .booking-timeline {
+        position: relative;
+        padding-left: 2rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .booking-timeline::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background-color: var(--horizon-gray);
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-bottom: 1.5rem;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -2rem;
+        top: 0.5rem;
+        width: 1rem;
+        height: 1rem;
+        border-radius: 50%;
+        background-color: var(--sunset-orange);
+        border: 2px solid var(--cloud-white);
+    }
+    
+    .timeline-date {
+        font-size: 0.9rem;
+        color: var(--storm-gray);
+        margin-bottom: 0.25rem;
+    }
+    
+    .timeline-content {
+        background-color: var(--cloud-white);
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 </style>
 {% endblock %}
@@ -33,104 +125,163 @@
 {% block content %}
 <div class="container mt-4">
     <div class="row">
-        <div class="col-md-12">
-            <h1 class="mb-4">Booking Dashboard</h1>
-            
-            <!-- Quick Actions -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Quick Actions</h5>
-                </div>
-                <div class="card-body">
-                    <a href="{{ url_for('booking.create_booking') }}" class="btn btn-primary">Book a Flight</a>
-                    <a href="{{ url_for('booking.list') }}" class="btn btn-secondary">View My Bookings</a>
-                </div>
+        <!-- Left Column -->
+        <div class="col-md-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">Flight Schedule</h2>
+                <a href="{{ url_for('booking.create_booking') }}" class="btn btn-accent">
+                    <i class="fas fa-plus me-2"></i>Book New Flight
+                </a>
             </div>
             
-            <!-- Upcoming Bookings -->
+            <!-- Upcoming Bookings Timeline -->
             <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Upcoming Bookings</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Upcoming Flights</h5>
+                    <a href="{{ url_for('booking.list') }}" class="btn btn-sm btn-outline-primary">View All</a>
                 </div>
                 <div class="card-body">
                     {% if upcoming_bookings %}
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Time</th>
-                                        <th>Aircraft</th>
-                                        <th>Instructor</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for booking in upcoming_bookings %}
-                                        <tr>
-                                            <td>{{ booking.start_time.strftime('%Y-%m-%d') }}</td>
-                                            <td>{{ booking.start_time.strftime('%H:%M') }} - {{ booking.end_time.strftime('%H:%M') }}</td>
-                                            <td>{{ booking.aircraft.registration }}</td>
-                                            <td>{{ booking.instructor.full_name if booking.instructor else 'No Instructor' }}</td>
-                                            <td>
+                        <div class="booking-timeline">
+                            {% for booking in upcoming_bookings %}
+                                <div class="timeline-item">
+                                    <div class="timeline-date">
+                                        {{ booking.start_time.strftime('%A, %B %d, %Y') }}
+                                    </div>
+                                    <div class="timeline-content">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="mb-1">{{ booking.aircraft.make }} {{ booking.aircraft.model }} ({{ booking.aircraft.registration }})</h6>
+                                                <p class="mb-1">
+                                                    <i class="fas fa-clock me-1"></i>
+                                                    {{ booking.start_time.strftime('%H:%M') }} - {{ booking.end_time.strftime('%H:%M') }}
+                                                </p>
+                                                <p class="mb-1">
+                                                    <i class="fas fa-user me-1"></i>
+                                                    {% if booking.instructor %}
+                                                        Instructor: {{ booking.instructor.full_name }}
+                                                    {% else %}
+                                                        Solo Flight
+                                                    {% endif %}
+                                                </p>
+                                            </div>
+                                            <div class="ms-3">
                                                 <span class="badge bg-{{ 'success' if booking.status == 'confirmed' else 'warning' }}">
-                                                    {{ booking.status }}
+                                                    {{ booking.status|title }}
                                                 </span>
-                                            </td>
-                                            <td>
-                                                <a href="{{ url_for('booking.view_booking', booking_id=booking.id) }}" class="btn btn-sm btn-info">View</a>
-                                                {% if booking.status == 'pending' %}
-                                                    <a href="{{ url_for('booking.cancel_booking', booking_id=booking.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to cancel this booking?')">Cancel</a>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                                                <div class="btn-group mt-2">
+                                                    <a href="{{ url_for('booking.view_booking', booking_id=booking.id) }}" 
+                                                       class="btn btn-sm btn-outline-primary"
+                                                       data-bs-toggle="tooltip"
+                                                       title="View Details">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    {% if booking.status == 'pending' %}
+                                                        <a href="{{ url_for('booking.cancel_booking', booking_id=booking.id) }}" 
+                                                           class="btn btn-sm btn-outline-danger"
+                                                           onclick="return confirm('Are you sure you want to cancel this booking?')"
+                                                           data-bs-toggle="tooltip"
+                                                           title="Cancel Booking">
+                                                            <i class="fas fa-times"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
                         </div>
                     {% else %}
-                        <p>No upcoming bookings found.</p>
+                        <div class="text-center py-4">
+                            <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
+                            <p class="mb-0">No upcoming flights scheduled.</p>
+                            <a href="{{ url_for('booking.create_booking') }}" class="btn btn-accent mt-3">Book Your First Flight</a>
+                        </div>
                     {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Column -->
+        <div class="col-md-4">
+            <!-- Weather Widget -->
+            <div class="weather-widget">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="mb-1">Current Weather</h5>
+                        <p class="mb-0">KPAO - Palo Alto Airport</p>
+                    </div>
+                    <i class="fas fa-sun fa-2x"></i>
+                </div>
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="weather-info">
+                            <small>Temperature</small>
+                            <h4 class="mb-0">72°F</h4>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="weather-info">
+                            <small>Wind</small>
+                            <h4 class="mb-0">8kt 270°</h4>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="weather-info">
+                            <small>Visibility</small>
+                            <h4 class="mb-0">10SM</h4>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="weather-info">
+                            <small>Ceiling</small>
+                            <h4 class="mb-0">CLR</h4>
+                        </div>
+                    </div>
                 </div>
             </div>
             
             <!-- Available Aircraft -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Available Aircraft</h5>
-                </div>
-                <div class="card-body">
-                    {% if available_aircraft %}
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Registration</th>
-                                        <th>Make/Model</th>
-                                        <th>Rate/Hour</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for aircraft in available_aircraft %}
-                                        <tr>
-                                            <td>{{ aircraft.registration }}</td>
-                                            <td>{{ aircraft.make }} {{ aircraft.model }}</td>
-                                            <td>${{ "%.2f"|format(aircraft.rate_per_hour) }}</td>
-                                            <td>
-                                                <span class="badge bg-{{ 'success' if aircraft.status == 'available' else 'secondary' }}">
-                                                    {{ aircraft.status }}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+            <h5 class="mb-3">Available Aircraft</h5>
+            {% if available_aircraft %}
+                {% for aircraft in available_aircraft %}
+                    <div class="aircraft-card">
+                        <img src="{{ url_for('static', filename='images/' + aircraft.image_filename) if aircraft.image_filename else url_for('static', filename='images/default-aircraft.jpg') }}"
+                             class="aircraft-image"
+                             alt="{{ aircraft.make }} {{ aircraft.model }}">
+                        <span class="aircraft-status {{ aircraft.status }}">{{ aircraft.status|title }}</span>
+                        <div class="aircraft-info">
+                            <h6 class="mb-1">{{ aircraft.make }} {{ aircraft.model }}</h6>
+                            <p class="mb-2 text-muted">{{ aircraft.registration }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-primary">${{ "%.2f"|format(aircraft.rate_per_hour) }}/hour</span>
+                                <a href="{{ url_for('booking.create_booking', aircraft_id=aircraft.id) }}" 
+                                   class="btn btn-sm btn-outline-primary">Book Now</a>
+                            </div>
                         </div>
-                    {% else %}
-                        <p>No aircraft available at this time.</p>
-                    {% endif %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-plane-slash fa-3x text-muted mb-3"></i>
+                    <p class="mb-0">No aircraft available at this time.</p>
+                </div>
+            {% endif %}
+            
+            <!-- Flight Stats -->
+            <div class="row g-3 mt-3">
+                <div class="col-6">
+                    <div class="stats-widget text-center">
+                        <div class="stats-value">24.5</div>
+                        <div class="stats-label">Hours Flown</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="stats-widget text-center">
+                        <div class="stats-value">12</div>
+                        <div class="stats-label">Flights</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -149,7 +300,10 @@
         time_24hr: true
     });
 
-    // Set default start time to current time
-    document.getElementById('start_time').value = new Date().toISOString().slice(0, 16);
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
 </script>
-{% endblock %} 
+{% endblock %}

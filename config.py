@@ -12,6 +12,12 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
     WTF_CSRF_ENABLED = True
+    WTF_CSRF_SECRET_KEY = os.environ.get('WTF_CSRF_SECRET_KEY', 'csrf-key')
+    WTF_CSRF_TIME_LIMIT = None  # No time limit for CSRF tokens
+    SESSION_COOKIE_SECURE = False  # Set to True in production
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    PREFERRED_URL_SCHEME = 'http'  # Change to 'https' in production
     SCHOOL_NAME = os.environ.get('SCHOOL_NAME', 'Next Level Tailwheel')
     CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'info@nextleveltailwheel.com')
     CONTACT_PHONE = os.environ.get('CONTACT_PHONE', '(555) 123-4567')

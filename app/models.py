@@ -3,6 +3,7 @@ from flask_login import UserMixin, AnonymousUserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 import json
+from flask import url_for
 
 @login_manager.user_loader
 def load_user(id):
@@ -121,15 +122,52 @@ class MaintenanceType(db.Model):
     def __repr__(self):
         return f'<MaintenanceType {self.name}>'
 
+class EquipmentStatus(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(db.Integer, db.ForeignKey('aircraft.id'), nullable=False)
+    equipment_type = db.Column(db.String(50), nullable=False)  # radio, nav, transponder, etc.
+    equipment_name = db.Column(db.String(100), nullable=False)  # Specific equipment name/model
+    status = db.Column(db.String(20), default='operational')  # operational, degraded, inoperative
+    last_inspection = db.Column(db.DateTime)
+    next_inspection = db.Column(db.DateTime)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    maintenance_records = db.relationship('MaintenanceRecord', 
+                                       backref='equipment',
+                                       primaryjoin="and_(MaintenanceRecord.aircraft_id==EquipmentStatus.aircraft_id, "
+                                                 "MaintenanceRecord.equipment_id==EquipmentStatus.id)")
+    
+    def __repr__(self):
+        return f'<EquipmentStatus {self.equipment_type} - {self.equipment_name}>'
+
+    @property
+    def is_operational(self):
+        return self.status == 'operational'
+
+    @property
+    def requires_inspection(self):
+        if self.next_inspection:
+            return datetime.utcnow() >= self.next_inspection
+        return False
+
 class MaintenanceRecord(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     aircraft_id = db.Column(db.Integer, db.ForeignKey('aircraft.id'), nullable=False)
     maintenance_type_id = db.Column(db.Integer, db.ForeignKey('maintenance_type.id'), nullable=False)
+    equipment_id = db.Column(db.Integer, db.ForeignKey('equipment_status.id'), nullable=True)
     performed_at = db.Column(db.DateTime, nullable=False)
     performed_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     notes = db.Column(db.Text)
     hobbs_hours = db.Column(db.Float)
     tach_hours = db.Column(db.Float)
+    parts_replaced = db.Column(db.JSON)  # List of parts replaced
+    labor_hours = db.Column(db.Float)  # Hours spent on maintenance
+    cost = db.Column(db.Float)  # Total cost of maintenance
+    next_due_date = db.Column(db.DateTime)  # When this maintenance is due again
+    next_due_hours = db.Column(db.Float)  # Hours until this maintenance is due again
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def __repr__(self):
@@ -151,41 +189,57 @@ class Squawk(db.Model):
         return f'<Squawk {self.id}>'
 
 class Aircraft(db.Model):
+    """Aircraft model."""
     id = db.Column(db.Integer, primary_key=True)
     registration = db.Column(db.String(10), unique=True, nullable=False)
-    tail_number = db.Column(db.String(10), unique=True)  # For backward compatibility
-    make = db.Column(db.String(50))
-    model = db.Column(db.String(50))
-    type = db.Column(db.String(50))  # Optional now
-    make_model = db.Column(db.String(100))  # For backward compatibility
+    make = db.Column(db.String(50), nullable=False)
+    model = db.Column(db.String(50), nullable=False)
+    year = db.Column(db.Integer)
     description = db.Column(db.Text)
-    year = db.Column(db.Integer)  # Year of manufacture
-    status = db.Column(db.String(20), nullable=False, default='available')  # available, maintenance, retired
+    status = db.Column(db.String(20), default='available')  # available, maintenance, retired
     category = db.Column(db.String(50))  # single_engine_land, multi_engine_land, etc.
     engine_type = db.Column(db.String(20))  # piston, turboprop, jet
     num_engines = db.Column(db.Integer, default=1)
     ifr_equipped = db.Column(db.Boolean, default=False)
     gps = db.Column(db.Boolean, default=False)
     autopilot = db.Column(db.Boolean, default=False)
-    rate_per_hour = db.Column(db.Float, nullable=False)  # Aircraft rental rate per hour
-    hobbs_time = db.Column(db.Float)  # Current hobbs time
-    tach_time = db.Column(db.Float)  # Current tach time
-    last_maintenance = db.Column(db.DateTime)  # Last maintenance date
-    image_filename = db.Column(db.String(100))  # Filename for aircraft image
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-    maintenance_status = db.Column(db.String(50), default='airworthy')  # airworthy, maintenance_due, grounded
-    next_maintenance_date = db.Column(db.DateTime)
-    next_maintenance_hours = db.Column(db.Float)
-    insurance_expiry = db.Column(db.DateTime)
-    registration_expiry = db.Column(db.DateTime)
+    rate_per_hour = db.Column(db.Float, nullable=False)
+    hobbs_time = db.Column(db.Float)
+    tach_time = db.Column(db.Float)
+    last_maintenance = db.Column(db.DateTime)
+    image_filename = db.Column(db.String(255))
+    
+    @property
+    def image_url(self):
+        """Get the URL for the aircraft's image."""
+        if self.image_filename:
+            return url_for('static', filename=f'images/aircraft/{self.image_filename}')
+        
+        # Default images based on category and engine type
+        if self.category == 'single_engine_land':
+            if self.engine_type == 'piston':
+                return url_for('static', filename='images/aircraft/cessna172.jpg')
+            elif self.engine_type == 'turboprop':
+                return url_for('static', filename='images/aircraft/tbm930.jpg')
+        elif self.category == 'multi_engine_land':
+            if self.engine_type == 'piston':
+                return url_for('static', filename='images/aircraft/baron58.jpg')
+            elif self.engine_type == 'turboprop':
+                return url_for('static', filename='images/aircraft/kingair350.jpg')
+            elif self.engine_type == 'jet':
+                return url_for('static', filename='images/aircraft/citation.jpg')
+        
+        return url_for('static', filename='images/aircraft/default.jpg')
+    
+    # Relationships
     recurring_bookings = db.relationship('RecurringBooking', backref='aircraft')
     waitlist_entries = db.relationship('WaitlistEntry', backref='aircraft')
-    # Relationships
     maintenance_records = db.relationship('MaintenanceRecord', backref='aircraft', lazy=True)
     squawks = db.relationship('Squawk', backref='aircraft', lazy=True)
     bookings = db.relationship('Booking', backref='aircraft', lazy='dynamic')
     check_ins = db.relationship('CheckIn', backref='aircraft', lazy='dynamic')
+    equipment_items = db.relationship('EquipmentStatus', backref=db.backref('parent_aircraft', lazy=True))
+    flight_logs = db.relationship('FlightLog', backref='aircraft', lazy='dynamic')
 
     def __init__(self, **kwargs):
         # Handle backward compatibility
@@ -198,73 +252,63 @@ class Aircraft(db.Model):
         elif 'make_model' in kwargs and 'make' not in kwargs and 'model' not in kwargs:
             # Try to split make_model into make and model
             parts = kwargs['make_model'].split(' ', 1)
-            if len(parts) > 1:
+            if len(parts) == 2:
                 kwargs['make'] = parts[0]
                 kwargs['model'] = parts[1]
-            else:
-                kwargs['make'] = kwargs['make_model']
-                kwargs['model'] = ''
         
-        # Handle type field for backward compatibility
-        if 'make_model' in kwargs and 'type' not in kwargs:
-            kwargs['type'] = kwargs['make_model']
-            
-        super().__init__(**kwargs)
-
+        super(Aircraft, self).__init__(**kwargs)
+    
     @property
-    def tail_number(self):
-        return self.registration
-
-    @tail_number.setter
-    def tail_number(self, value):
-        self.registration = value
-
+    def display_name(self):
+        """Return a display name for the aircraft"""
+        return f"{self.make} {self.model} ({self.registration})"
+    
+    @property
+    def time_to_maintenance(self):
+        """Return hours until next maintenance is due"""
+        if self.next_maintenance_hours:
+            return self.next_maintenance_hours - self.hobbs_time
+        return None
+    
+    @property
+    def days_to_maintenance(self):
+        """Return days until next maintenance is due"""
+        if self.next_maintenance_date:
+            return (self.next_maintenance_date - datetime.utcnow()).days
+        return None
+    
+    @property
+    def is_available(self):
+        """Check if aircraft is available for booking"""
+        return (self.status == 'available' and 
+                self.maintenance_status == 'airworthy' and
+                datetime.utcnow() < self.insurance_expiry and
+                datetime.utcnow() < self.registration_expiry)
+    
     def __repr__(self):
         return f'<Aircraft {self.registration}>'
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'registration': self.registration,
-            'tail_number': self.registration,  # For backward compatibility
-            'make': self.make,
-            'model': self.model,
-            'make_model': self.make_model,
-            'type': self.type,
-            'description': self.description,
-            'year': self.year,
-            'status': self.status,
-            'category': self.category,
-            'engine_type': self.engine_type,
-            'num_engines': self.num_engines,
-            'ifr_equipped': self.ifr_equipped,
-            'gps': self.gps,
-            'autopilot': self.autopilot,
-            'rate_per_hour': self.rate_per_hour,
-            'hobbs_time': self.hobbs_time,
-            'tach_time': self.tach_time,
-            'last_maintenance': self.last_maintenance.isoformat() if self.last_maintenance else None,
-            'image_filename': self.image_filename,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
-        }
 
 class Booking(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    instructor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Optional instructor
+    instructor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     aircraft_id = db.Column(db.Integer, db.ForeignKey('aircraft.id'), nullable=False)
     start_time = db.Column(db.DateTime, nullable=False)
     end_time = db.Column(db.DateTime, nullable=False)
-    status = db.Column(db.String(20), default='pending')  # pending, confirmed, completed, cancelled
+    status = db.Column(db.String(20), default='pending')  # pending, confirmed, in_progress, completed, cancelled
+    booking_type = db.Column(db.String(50), default='training')  # training, rental, maintenance, checkride
+    lesson_type = db.Column(db.String(50))  # ground, flight, simulator
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    google_calendar_event_id = db.Column(db.String(255), nullable=True)  # Store Google Calendar event ID
-    cancellation_reason = db.Column(db.String(50))  # weather, mechanical, personal, other
+    google_calendar_event_id = db.Column(db.String(255), nullable=True)
+    cancellation_reason = db.Column(db.String(50))
     cancellation_notes = db.Column(db.Text)
-    weather_briefing = db.Column(db.JSON)  # Store weather briefing data
+    weather_briefing = db.Column(db.JSON)  # Store full weather briefing data
+    weather_conditions = db.Column(db.JSON)  # Store actual weather during flight
     notification_sent = db.Column(db.Boolean, default=False)
     recurring_booking_id = db.Column(db.Integer, db.ForeignKey('recurring_booking.id'), nullable=True)
+    notes = db.Column(db.Text)  # General booking notes
+    
     # Relationships
     check_in = db.relationship('CheckIn', backref='booking', uselist=False)
     check_out = db.relationship('CheckOut', backref='booking', uselist=False)
@@ -283,8 +327,13 @@ class CheckIn(db.Model):
     hobbs_start = db.Column(db.Float, nullable=False)
     tach_start = db.Column(db.Float, nullable=False)
     instructor_start_time = db.Column(db.DateTime, nullable=True)
+    fuel_level = db.Column(db.String(20), nullable=False)  # full, 3/4, 1/2, 1/4, empty
+    oil_level = db.Column(db.Float, nullable=False)  # Oil quantity in quarts
+    preflight_checklist_completed = db.Column(db.Boolean, default=False)
+    weather_conditions_acceptable = db.Column(db.Boolean, default=False)
+    equipment_status = db.Column(db.JSON)  # Status of various equipment/instruments
     notes = db.Column(db.Text)
-    
+
     @property
     def timestamp(self):
         return self.check_in_time
@@ -301,12 +350,52 @@ class CheckOut(db.Model):
     hobbs_end = db.Column(db.Float, nullable=False)
     tach_end = db.Column(db.Float, nullable=False)
     instructor_end_time = db.Column(db.DateTime, nullable=True)
-    total_aircraft_time = db.Column(db.Float, nullable=False)  # Calculated from hobbs_end - hobbs_start
-    total_instructor_time = db.Column(db.Float, nullable=True)  # Calculated from instructor_end_time - instructor_start_time
+    total_aircraft_time = db.Column(db.Float, nullable=False)
+    total_instructor_time = db.Column(db.Float, nullable=True)
+    fuel_level_end = db.Column(db.String(20), nullable=False)  # full, 3/4, 1/2, 1/4, empty
+    fuel_added = db.Column(db.Float)  # Gallons of fuel added
+    oil_added = db.Column(db.Float)  # Quarts of oil added
+    number_landings = db.Column(db.Integer, default=0)
+    post_flight_checklist_completed = db.Column(db.Boolean, default=False)
+    equipment_issues = db.Column(db.JSON)  # Any issues with equipment/instruments
     notes = db.Column(db.Text)
-    
+
     def __repr__(self):
         return f'<CheckOut {self.id}>'
+
+class FlightLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    booking_id = db.Column(db.Integer, db.ForeignKey('booking.id'), nullable=False)
+    aircraft_id = db.Column(db.Integer, db.ForeignKey('aircraft.id'), nullable=False)
+    pic_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    sic_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    flight_date = db.Column(db.DateTime, nullable=False)
+    route = db.Column(db.String(200))
+    departure_airport = db.Column(db.String(10))
+    arrival_airport = db.Column(db.String(10))
+    alternate_airport = db.Column(db.String(10))
+    remarks = db.Column(db.Text)
+    weather_conditions = db.Column(db.String(50))  # VFR, MVFR, IFR, LIFR
+    flight_conditions = db.Column(db.String(50))  # Day VFR, Night VFR, IFR
+    ground_instruction = db.Column(db.Float)
+    dual_received = db.Column(db.Float)
+    pic_time = db.Column(db.Float)
+    sic_time = db.Column(db.Float)
+    cross_country = db.Column(db.Float)
+    night = db.Column(db.Float)
+    actual_instrument = db.Column(db.Float)
+    simulated_instrument = db.Column(db.Float)
+    hood_time = db.Column(db.Float)
+    landings_day = db.Column(db.Integer)
+    landings_night = db.Column(db.Integer)
+    approaches = db.Column(db.Integer)  # Number of approaches performed
+    approach_types = db.Column(db.JSON)  # Types of approaches performed
+    holds = db.Column(db.Integer)  # Number of holds performed
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<FlightLog {self.id}>'
 
 class Invoice(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -338,28 +427,6 @@ class WeatherMinima(db.Model):
     visibility_min = db.Column(db.Float)  # Minimum visibility in statute miles
     wind_max = db.Column(db.Integer)     # Maximum wind in knots
     crosswind_max = db.Column(db.Integer) # Maximum crosswind component
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-class FlightLog(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    booking_id = db.Column(db.Integer, db.ForeignKey('booking.id'), nullable=False)
-    pic_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    sic_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    flight_date = db.Column(db.DateTime, nullable=False)
-    route = db.Column(db.String(200))
-    remarks = db.Column(db.Text)
-    weather_conditions = db.Column(db.String(50))  # VFR, MVFR, IFR, LIFR
-    ground_instruction = db.Column(db.Float)
-    dual_received = db.Column(db.Float)
-    pic_time = db.Column(db.Float)
-    sic_time = db.Column(db.Float)
-    cross_country = db.Column(db.Float)
-    night = db.Column(db.Float)
-    actual_instrument = db.Column(db.Float)
-    simulated_instrument = db.Column(db.Float)
-    landings_day = db.Column(db.Integer)
-    landings_night = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

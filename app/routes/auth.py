@@ -1,22 +1,27 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, session
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, session, g
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField
 from wtforms.validators import DataRequired, Email
-from app.models import User
+from app.models import User, Document, FlightLog
 from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.forms import LoginForm, RegistrationForm, AccountSettingsForm
 from app.calendar_service import GoogleCalendarService
 from datetime import datetime, UTC
 from urllib.parse import urlparse
+from flask_wtf.csrf import CSRFProtect
 
+csrf = CSRFProtect()
 auth_bp = Blueprint('auth', __name__)
 calendar_service = GoogleCalendarService()
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     """Handle user login."""
+    current_app.logger.debug(f"Session: {dict(session)}")
+    current_app.logger.debug(f"Session ID: {session.get('_id')}")
+    
     if current_user.is_authenticated:
         if current_user.is_admin:
             return redirect(url_for('admin.dashboard'))
@@ -232,3 +237,17 @@ def register():
             flash('An error occurred during registration. Please try again.', 'danger')
     
     return render_template('auth/register.html', title='Register', form=form)
+
+@auth_bp.route('/documents')
+@login_required
+def documents():
+    """View user's documents."""
+    documents = Document.query.filter_by(user_id=current_user.id).all()
+    return render_template('auth/documents.html', documents=documents)
+
+@auth_bp.route('/flight-logs')
+@login_required
+def flight_logs():
+    """View user's flight logs."""
+    logs = FlightLog.query.filter_by(pic_id=current_user.id).all()
+    return render_template('auth/flight_logs.html', logs=logs)

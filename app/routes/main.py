@@ -48,6 +48,11 @@ def aircraft():
     aircraft_list = Aircraft.query.all()
     return render_template('main/aircraft.html', aircraft=aircraft_list)
 
+@main_bp.route('/instructors')
+def instructors():
+    instructors = User.query.filter_by(is_instructor=True, status='active').all()
+    return render_template('main/instructors.html', instructors=instructors)
+
 @main_bp.route('/faq')
 def faq():
     return render_template('main/faq.html')

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, current_app
+from flask import Flask, render_template, current_app, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
@@ -6,6 +6,7 @@ from flask_mail import Mail
 from flask_wtf.csrf import CSRFProtect
 from config import config
 from datetime import datetime
+import os
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -20,6 +21,7 @@ def create_app(config_name='default'):
     app = Flask(__name__)
     app.config.from_object(config[config_name])
 
+    # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
@@ -30,6 +32,19 @@ def create_app(config_name='default'):
     def inject_datetime():
         return dict(datetime=datetime)
 
+    @app.before_request
+    def before_request():
+        if '_id' not in session:
+            session['_id'] = os.urandom(16).hex()
+            session.modified = True
+
+    @app.after_request
+    def after_request(response):
+        # Ensure session is saved
+        session.modified = True
+        return response
+
+    # Register blueprints
     from app.routes import auth, booking, admin, main, maintenance
     app.register_blueprint(auth.auth_bp)
     app.register_blueprint(booking.booking_bp)
