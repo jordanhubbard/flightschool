@@ -81,28 +81,19 @@ def dashboard():
     Returns:
         render_template: The admin dashboard template.
     """
-    instructor_count = (
-        User.query
-        .filter_by(role='instructor', status='active')
-        .count()
-    )
-    student_count = (
-        User.query
-        .filter_by(role='student', status='active')
-        .count()
-    )
-    aircraft_count = (
-        Aircraft.query
-        .filter_by(status='available')
-        .count()
-    )
+    instructor_count = User.query.filter_by(
+        role='instructor',
+        status='active'
+    ).count()
+    student_count = User.query.filter_by(
+        role='student',
+        status='active'
+    ).count()
+    aircraft_count = Aircraft.query.filter_by(status='available').count()
 
-    recent_bookings = (
-        Booking.query
-        .order_by(Booking.start_time.desc())
-        .limit(5)
-        .all()
-    )
+    recent_bookings = Booking.query.order_by(
+        Booking.start_time.desc()
+    ).limit(5).all()
 
     return render_template(
         'admin/dashboard.html',
@@ -242,12 +233,18 @@ def create_user():
         email = request.form.get('email')
         if User.query.filter_by(email=email).first():
             flash('Email already registered', 'error')
-            return render_template('admin/user_create.html', user_type=user_type), 400
+            return render_template(
+                'admin/user_create.html',
+                user_type=user_type
+            ), 400
 
         status = request.form.get('status')
         if status not in ['active', 'inactive', 'pending']:
             flash('Invalid status value', 'error')
-            return render_template('admin/user_create.html', user_type=user_type), 400
+            return render_template(
+                'admin/user_create.html',
+                user_type=user_type
+            ), 400
 
         try:
             user = User(
@@ -258,7 +255,7 @@ def create_user():
                 role=user_type,
                 status=status
             )
-            
+
             if user_type == 'instructor':
                 user.certificates = request.form.get('certificates', '')
                 rate = request.form.get('instructor_rate_per_hour')
@@ -271,7 +268,10 @@ def create_user():
                             'Please enter a valid number.',
                             'error'
                         )
-                        return render_template('admin/user_create.html', user_type=user_type), 400
+                        return render_template(
+                            'admin/user_create.html',
+                            user_type=user_type
+                        ), 400
 
             db.session.add(user)
             db.session.commit()
@@ -279,14 +279,22 @@ def create_user():
             return redirect(url_for('admin.dashboard'))
         except Exception as e:
             db.session.rollback()
+            current_app.logger.error(
+                f"Error creating user: {str(e)}"
+            )
             flash(
-                'Failed to create user. '
-                'Please try again.',
+                'Failed to create user. Please try again.',
                 'error'
             )
-            return render_template('admin/user_create.html', user_type=user_type), 400
+            return render_template(
+                'admin/user_create.html',
+                user_type=user_type
+            ), 400
 
-    return render_template('admin/user_create.html', user_type=user_type)
+    return render_template(
+        'admin/user_create.html',
+        user_type=user_type
+    )
 
 
 @admin_bp.route('/user/<int:id>/edit', methods=['GET', 'POST'])
@@ -335,8 +343,7 @@ def edit_user(id):
                 f"Error updating user: {str(e)}"
             )
             flash(
-                'Failed to update user. '
-                'Please try again.',
+                'Failed to update user. Please try again.',
                 'error'
             )
             return render_template(
@@ -380,8 +387,7 @@ def delete_user(id):
                 {'error': 'Failed to delete user'}
             ), 400
         flash(
-            'Failed to delete user. '
-            'Please try again.',
+            'Failed to delete user. Please try again.',
             'error'
         )
         return redirect(url_for('admin.dashboard'))
@@ -414,8 +420,7 @@ def create_aircraft():
                     f"Error creating aircraft: {str(e)}"
                 )
                 flash(
-                    'Error creating aircraft. '
-                    'Please try again.',
+                    'Error creating aircraft. Please try again.',
                     'error'
                 )
         else:
@@ -486,13 +491,17 @@ def delete_aircraft(id):
     try:
         db.session.delete(aircraft)
         db.session.commit()
-        return jsonify({'message': 'Aircraft deleted successfully'}), 200
+        return jsonify(
+            {'message': 'Aircraft deleted successfully'}
+        ), 200
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(
             f"Error deleting aircraft: {str(e)}"
         )
-        return jsonify({'error': 'Failed to delete aircraft'}), 500
+        return jsonify(
+            {'error': 'Failed to delete aircraft'}
+        ), 500
 
 
 @admin_bp.route('/user/<int:id>/status', methods=['PUT'])
@@ -512,18 +521,24 @@ def update_user_status(id):
     data = request.get_json()
 
     if not data or 'status' not in data:
-        return jsonify({'error': 'Status is required'}), 400
+        return jsonify(
+            {'error': 'Status is required'}
+        ), 400
 
     try:
         user.status = data['status']
         db.session.commit()
-        return jsonify({'message': 'Status updated successfully'}), 200
+        return jsonify(
+            {'message': 'Status updated successfully'}
+        ), 200
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(
             f"Error updating user status: {str(e)}"
         )
-        return jsonify({'error': 'Failed to update status'}), 500
+        return jsonify(
+            {'error': 'Failed to update status'}
+        ), 500
 
 
 @admin_bp.route('/maintenance/types', methods=['GET', 'POST'])
@@ -838,18 +853,24 @@ def update_aircraft_status(id):
     data = request.get_json()
     
     if 'status' not in data:
-        return jsonify({'error': 'Status is required'}), 400
+        return jsonify(
+            {'error': 'Status is required'}
+        ), 400
     
     try:
         aircraft.status = data['status']
         db.session.commit()
-        return jsonify({'message': 'Status updated successfully'}), 200
+        return jsonify(
+            {'message': 'Status updated successfully'}
+        ), 200
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(
             f"Error updating aircraft status: {str(e)}"
         )
-        return jsonify({'error': 'Failed to update status'}), 500
+        return jsonify(
+            {'error': 'Failed to update status'}
+        ), 500
 
 
 @admin_bp.route('/endorsements', methods=['GET'])
@@ -904,25 +925,33 @@ def manage_endorsement(id):
                 )
             
             db.session.commit()
-            return jsonify({'message': 'Endorsement updated'}), 200
+            return jsonify(
+                {'message': 'Endorsement updated'}
+            ), 200
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(
                 f"Error updating endorsement: {str(e)}"
             )
-            return jsonify({'error': str(e)}), 500
+            return jsonify(
+                {'error': str(e)}
+            ), 500
     
     elif request.method == 'DELETE':
         try:
             db.session.delete(endorsement)
             db.session.commit()
-            return jsonify({'message': 'Endorsement deleted'}), 200
+            return jsonify(
+                {'message': 'Endorsement deleted'}
+            ), 200
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(
                 f"Error deleting endorsement: {str(e)}"
             )
-            return jsonify({'error': str(e)}), 500
+            return jsonify(
+                {'error': str(e)}
+            ), 500
 
 
 @admin_bp.route('/documents', methods=['GET'])
@@ -974,25 +1003,33 @@ def manage_document(id):
         
         try:
             db.session.commit()
-            return jsonify({'message': 'Document updated successfully'})
+            return jsonify(
+                {'message': 'Document updated successfully'}
+            )
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(
                 f"Error updating document: {str(e)}"
             )
-            return jsonify({'error': str(e)}), 500
+            return jsonify(
+                {'error': str(e)}
+            ), 500
     
     elif request.method == 'DELETE':
         try:
             db.session.delete(document)
             db.session.commit()
-            return jsonify({'message': 'Document deleted successfully'})
+            return jsonify(
+                {'message': 'Document deleted successfully'}
+            )
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(
                 f"Error deleting document: {str(e)}"
             )
-            return jsonify({'error': str(e)}), 500
+            return jsonify(
+                {'error': str(e)}
+            ), 500
 
 
 @admin_bp.route('/weather-minima', methods=['GET', 'POST'])
@@ -1027,13 +1064,17 @@ def weather_minima():
         try:
             db.session.add(minima)
             db.session.commit()
-            return jsonify({'message': 'Weather minima created successfully'})
+            return jsonify(
+                {'message': 'Weather minima created successfully'}
+            )
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(
                 f"Error creating weather minima: {str(e)}"
             )
-            return jsonify({'error': str(e)}), 500
+            return jsonify(
+                {'error': str(e)}
+            ), 500
 
 
 @admin_bp.route('/weather-minima/<int:id>', methods=['PUT', 'DELETE'])
@@ -1063,25 +1104,33 @@ def manage_weather_minima(id):
         
         try:
             db.session.commit()
-            return jsonify({'message': 'Weather minima updated successfully'})
+            return jsonify(
+                {'message': 'Weather minima updated successfully'}
+            )
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(
                 f"Error updating weather minima: {str(e)}"
             )
-            return jsonify({'error': str(e)}), 500
+            return jsonify(
+                {'error': str(e)}
+            ), 500
     
     elif request.method == 'DELETE':
         try:
             db.session.delete(minima)
             db.session.commit()
-            return jsonify({'message': 'Weather minima deleted successfully'})
+            return jsonify(
+                {'message': 'Weather minima deleted successfully'}
+            )
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(
                 f"Error deleting weather minima: {str(e)}"
             )
-            return jsonify({'error': str(e)}), 500
+            return jsonify(
+                {'error': str(e)}
+            ), 500
 
 
 @admin_bp.route('/audit-logs', methods=['GET'])
@@ -1140,13 +1189,17 @@ def update_waitlist_entry(id):
     
     try:
         db.session.commit()
-        return jsonify({'message': 'Waitlist entry updated successfully'})
+        return jsonify(
+            {'message': 'Waitlist entry updated successfully'}
+        )
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(
             f"Error updating waitlist entry: {str(e)}"
         )
-        return jsonify({'error': str(e)}), 500
+        return jsonify(
+            {'error': str(e)}
+        ), 500
 
 
 @admin_bp.route('/recurring-bookings', methods=['GET'])
@@ -1180,42 +1233,60 @@ def manage_recurring_booking(id):
         jsonify: A JSON response indicating the result of the update or deletion.
     """
     booking = RecurringBooking.query.get_or_404(id)
-    
+
     if request.method == 'PUT':
         data = request.get_json()
-        
-        # Update recurring booking
-        booking.instructor_id = data.get('instructor_id', booking.instructor_id)
-        booking.aircraft_id = data.get('aircraft_id', booking.aircraft_id)
-        booking.day_of_week = data.get('day_of_week', booking.day_of_week)
+        if 'day_of_week' in data:
+            booking.day_of_week = data['day_of_week']
         if 'start_time' in data:
-            booking.start_time = datetime.strptime(data['start_time'], '%H:%M').time()
-        booking.duration_hours = data.get('duration_hours', booking.duration_hours)
+            booking.start_time = datetime.strptime(
+                data['start_time'],
+                '%H:%M'
+            ).time()
+        if 'duration_hours' in data:
+            booking.duration_hours = data['duration_hours']
+        if 'start_date' in data:
+            booking.start_date = datetime.strptime(
+                data['start_date'],
+                '%Y-%m-%d'
+            )
         if 'end_date' in data:
-            booking.end_date = datetime.fromisoformat(data['end_date'])
-        booking.status = data.get('status', booking.status)
-        
+            booking.end_date = datetime.strptime(
+                data['end_date'],
+                '%Y-%m-%d'
+            ) if data['end_date'] else None
+        if 'status' in data:
+            booking.status = data['status']
+
         try:
             db.session.commit()
-            return jsonify({'message': 'Recurring booking updated successfully'})
+            return jsonify(
+                {'message': 'Recurring booking updated successfully'}
+            )
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(
                 f"Error updating recurring booking: {str(e)}"
             )
-            return jsonify({'error': str(e)}), 500
-    
+            return jsonify(
+                {'error': str(e)}
+            ), 500
+
     elif request.method == 'DELETE':
         try:
             db.session.delete(booking)
             db.session.commit()
-            return jsonify({'message': 'Recurring booking deleted successfully'})
+            return jsonify(
+                {'message': 'Recurring booking deleted successfully'}
+            )
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(
                 f"Error deleting recurring booking: {str(e)}"
             )
-            return jsonify({'error': str(e)}), 500
+            return jsonify(
+                {'error': str(e)}
+            ), 500
 
 
 @admin_bp.route('/flight-logs', methods=['GET'])
@@ -1252,15 +1323,19 @@ def manage_flight_log(id):
     log = FlightLog.query.get_or_404(id)
     
     if request.method == 'GET':
-        return render_template('admin/flight_log_form.html', log=log)
+        return render_template('admin/flight_log_detail.html', log=log)
     
     elif request.method == 'PUT':
         data = request.get_json()
         
         # Update flight log
         log.route = data.get('route', log.route)
+        log.departure_airport = data.get('departure_airport', log.departure_airport)
+        log.arrival_airport = data.get('arrival_airport', log.arrival_airport)
+        log.alternate_airport = data.get('alternate_airport', log.alternate_airport)
         log.remarks = data.get('remarks', log.remarks)
         log.weather_conditions = data.get('weather_conditions', log.weather_conditions)
+        log.flight_conditions = data.get('flight_conditions', log.flight_conditions)
         log.ground_instruction = data.get('ground_instruction', log.ground_instruction)
         log.dual_received = data.get('dual_received', log.dual_received)
         log.pic_time = data.get('pic_time', log.pic_time)
@@ -1269,27 +1344,39 @@ def manage_flight_log(id):
         log.night = data.get('night', log.night)
         log.actual_instrument = data.get('actual_instrument', log.actual_instrument)
         log.simulated_instrument = data.get('simulated_instrument', log.simulated_instrument)
+        log.hood_time = data.get('hood_time', log.hood_time)
         log.landings_day = data.get('landings_day', log.landings_day)
         log.landings_night = data.get('landings_night', log.landings_night)
+        log.approaches = data.get('approaches', log.approaches)
+        log.approach_types = data.get('approach_types', log.approach_types)
+        log.holds = data.get('holds', log.holds)
         
         try:
             db.session.commit()
-            return jsonify({'message': 'Flight log updated successfully'})
+            return jsonify(
+                {'message': 'Flight log updated successfully'}
+            )
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(
                 f"Error updating flight log: {str(e)}"
             )
-            return jsonify({'error': str(e)}), 500
+            return jsonify(
+                {'error': str(e)}
+            ), 500
     
     elif request.method == 'DELETE':
         try:
             db.session.delete(log)
             db.session.commit()
-            return jsonify({'message': 'Flight log deleted successfully'})
+            return jsonify(
+                {'message': 'Flight log deleted successfully'}
+            )
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(
                 f"Error deleting flight log: {str(e)}"
             )
-            return jsonify({'error': str(e)}), 500
+            return jsonify(
+                {'error': str(e)}
+            ), 500

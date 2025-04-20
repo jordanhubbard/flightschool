@@ -9,6 +9,7 @@ from app.models import (
     WaitlistEntry, RecurringBooking, MaintenanceType, MaintenanceRecord, Squawk
 )
 
+
 @pytest.fixture
 def app():
     """Create and configure a new app instance for each test."""
@@ -16,17 +17,19 @@ def app():
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
     app.config['TESTING'] = True
     app.config['WTF_CSRF_ENABLED'] = False
-    
+
     with app.app_context():
         db.create_all()
         yield app
         db.session.remove()
         db.drop_all()
 
+
 @pytest.fixture
 def client(app):
     """A test client for the app."""
     return app.test_client()
+
 
 @pytest.fixture
 def session(app):
@@ -41,6 +44,7 @@ def session(app):
         transaction.rollback()
         connection.close()
         session.remove()
+
 
 @pytest.fixture
 def test_user(session):
@@ -59,6 +63,7 @@ def test_user(session):
     session.add(user)
     session.commit()
     return user
+
 
 @pytest.fixture
 def test_instructor(session):
@@ -79,6 +84,7 @@ def test_instructor(session):
     session.commit()
     return instructor
 
+
 @pytest.fixture
 def admin_user(session):
     """Create an admin user."""
@@ -94,6 +100,7 @@ def admin_user(session):
     session.add(admin)
     session.commit()
     return admin
+
 
 @pytest.fixture
 def test_aircraft(session):
@@ -124,6 +131,7 @@ def test_aircraft(session):
     session.commit()
     return aircraft
 
+
 @pytest.fixture
 def test_booking(session, test_user, test_aircraft):
     """Create a test booking."""
@@ -139,6 +147,7 @@ def test_booking(session, test_user, test_aircraft):
     session.commit()
     return booking
 
+
 @pytest.fixture
 def test_check_in(session, test_booking, test_aircraft):
     """Create a test check-in."""
@@ -153,6 +162,7 @@ def test_check_in(session, test_booking, test_aircraft):
     session.add(check_in)
     session.commit()
     return check_in
+
 
 @pytest.fixture
 def test_check_out(session, test_booking, test_aircraft, test_check_in):
@@ -170,6 +180,7 @@ def test_check_out(session, test_booking, test_aircraft, test_check_in):
     session.commit()
     return check_out
 
+
 @pytest.fixture
 def test_weather_minima(session):
     """Create test weather minima."""
@@ -183,6 +194,7 @@ def test_weather_minima(session):
     session.add(minima)
     session.commit()
     return minima
+
 
 @pytest.fixture
 def test_flight_log(session, test_booking, test_instructor, test_user):
@@ -210,6 +222,7 @@ def test_flight_log(session, test_booking, test_instructor, test_user):
     session.commit()
     return log
 
+
 @pytest.fixture
 def test_endorsement(session, test_user, test_instructor):
     """Create a test endorsement."""
@@ -224,6 +237,7 @@ def test_endorsement(session, test_user, test_instructor):
     session.commit()
     return endorsement
 
+
 @pytest.fixture
 def test_document(session, test_user):
     """Create a test document."""
@@ -237,6 +251,7 @@ def test_document(session, test_user):
     session.add(document)
     session.commit()
     return document
+
 
 @pytest.fixture
 def test_waitlist_entry(session, test_user, test_aircraft, test_instructor):
@@ -253,6 +268,7 @@ def test_waitlist_entry(session, test_user, test_aircraft, test_instructor):
     session.add(entry)
     session.commit()
     return entry
+
 
 @pytest.fixture
 def test_recurring_booking(session, test_user, test_aircraft, test_instructor):
@@ -272,6 +288,7 @@ def test_recurring_booking(session, test_user, test_aircraft, test_instructor):
     session.commit()
     return booking
 
+
 @pytest.fixture
 def test_audit_log(session, admin_user):
     """Create a test audit log."""
@@ -289,6 +306,7 @@ def test_audit_log(session, admin_user):
     session.commit()
     return log
 
+
 @pytest.fixture
 def auth_client(client, test_user):
     """Create a test client with a logged-in user."""
@@ -297,6 +315,7 @@ def auth_client(client, test_user):
         sess['_fresh'] = True
     return client
 
+
 @pytest.fixture
 def admin_client(client, admin_user):
     """Create a test client with a logged-in admin."""
@@ -304,6 +323,7 @@ def admin_client(client, admin_user):
         sess['_user_id'] = admin_user.id
         sess['_fresh'] = True
     return client
+
 
 @pytest.fixture
 def logged_in_user(app, client, test_user):
@@ -314,6 +334,7 @@ def logged_in_user(app, client, test_user):
             sess['_fresh'] = True
     return client
 
+
 @pytest.fixture
 def logged_in_admin(app, client, admin_user):
     """A test client with a logged-in admin user."""
@@ -323,6 +344,7 @@ def logged_in_admin(app, client, admin_user):
             sess['_fresh'] = True
     return client
 
+
 @pytest.fixture
 def logged_in_instructor(app, client, test_instructor):
     """A test client with a logged-in instructor."""
@@ -331,6 +353,7 @@ def logged_in_instructor(app, client, test_instructor):
             sess['_user_id'] = test_instructor.id
             sess['_fresh'] = True
     return client
+
 
 @pytest.fixture
 def test_maintenance_type(session):
@@ -342,6 +365,7 @@ def test_maintenance_type(session):
     session.add(maintenance_type)
     session.commit()
     return maintenance_type
+
 
 @pytest.fixture
 def test_maintenance_record(session, test_aircraft, test_maintenance_type):
@@ -355,6 +379,7 @@ def test_maintenance_record(session, test_aircraft, test_maintenance_type):
     session.add(record)
     session.commit()
     return record
+
 
 @pytest.fixture
 def test_squawk(session, test_aircraft):
