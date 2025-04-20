@@ -4,7 +4,7 @@ from wtforms import (
     DateTimeField, FloatField, TextAreaField, IntegerField, FileField
 )
 from wtforms.validators import (
-    DataRequired, Email, EqualTo, ValidationError, Optional, Length
+    DataRequired, Email, Optional, EqualTo
 )
 from app.models import User
 import re
@@ -16,23 +16,73 @@ csrf = CSRFProtect()
 
 class LoginForm(FlaskForm):
     """Login form."""
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    password = PasswordField('Password', validators=[DataRequired()])
+    email = StringField(
+        'Email',
+        validators=[
+            DataRequired(),
+            Email()
+        ]
+    )
+    password = PasswordField(
+        'Password',
+        validators=[
+            DataRequired()
+        ]
+    )
     remember_me = BooleanField('Remember Me')
     submit = SubmitField('Sign In')
 
 
 class RegistrationForm(FlaskForm):
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    first_name = StringField('First Name', validators=[DataRequired()])
-    last_name = StringField('Last Name', validators=[DataRequired()])
-    phone = StringField('Phone', validators=[Optional()])
-    student_id = StringField('Student ID', validators=[Optional()])
-    certificates = StringField('Certificates', validators=[Optional()])
-    password = PasswordField('Password', validators=[DataRequired()])
+    email = StringField(
+        'Email',
+        validators=[
+            DataRequired(),
+            Email()
+        ]
+    )
+    first_name = StringField(
+        'First Name',
+        validators=[
+            DataRequired()
+        ]
+    )
+    last_name = StringField(
+        'Last Name',
+        validators=[
+            DataRequired()
+        ]
+    )
+    phone = StringField(
+        'Phone',
+        validators=[
+            Optional()
+        ]
+    )
+    student_id = StringField(
+        'Student ID',
+        validators=[
+            Optional()
+        ]
+    )
+    certificates = StringField(
+        'Certificates',
+        validators=[
+            Optional()
+        ]
+    )
+    password = PasswordField(
+        'Password',
+        validators=[
+            DataRequired()
+        ]
+    )
     password2 = PasswordField(
         'Repeat Password',
-        validators=[DataRequired(), EqualTo('password')]
+        validators=[
+            DataRequired(),
+            EqualTo('password')
+        ]
     )
     submit = SubmitField('Register')
 
@@ -46,57 +96,133 @@ class BookingForm(FlaskForm):
     start_time = DateTimeField(
         'Start Time',
         format='%Y-%m-%dT%H:%M',
-        validators=[DataRequired()]
+        validators=[
+            DataRequired()
+        ]
     )
     end_time = DateTimeField(
         'End Time',
         format='%Y-%m-%dT%H:%M',
-        validators=[DataRequired()]
+        validators=[
+            DataRequired()
+        ]
     )
     aircraft_id = SelectField(
         'Aircraft',
         coerce=int,
-        validators=[DataRequired()]
+        validators=[
+            DataRequired()
+        ]
     )
     instructor_id = SelectField(
         'Instructor',
         coerce=int,
-        validators=[Optional()]
+        validators=[
+            Optional()
+        ]
     )
-    notes = TextAreaField('Notes', validators=[Optional()])
+    notes = TextAreaField(
+        'Notes',
+        validators=[
+            Optional()
+        ]
+    )
     submit = SubmitField('Create Booking')
 
 
 class GoogleCalendarSettingsForm(FlaskForm):
     enabled = BooleanField('Enable Google Calendar Integration')
-    calendar_id = StringField('Calendar ID', validators=[Optional()])
+    calendar_id = StringField(
+        'Calendar ID',
+        validators=[
+            Optional()
+        ]
+    )
     submit = SubmitField('Save Settings')
 
 
 class FlightCheckoutForm(FlaskForm):
-    hobbs = FloatField('Hobbs Time', validators=[DataRequired()])
-    tach = FloatField('Tach Time', validators=[DataRequired()])
-    squawks = TextAreaField('Squawks', validators=[Optional()])
-    comments = TextAreaField('Comments', validators=[Optional()])
+    hobbs = FloatField(
+        'Hobbs Time',
+        validators=[
+            DataRequired()
+        ]
+    )
+    tach = FloatField(
+        'Tach Time',
+        validators=[
+            DataRequired()
+        ]
+    )
+    squawks = TextAreaField(
+        'Squawks',
+        validators=[
+            Optional()
+        ]
+    )
+    comments = TextAreaField(
+        'Comments',
+        validators=[
+            Optional()
+        ]
+    )
     agree_to_fly = BooleanField(
         'I agree to fly this aircraft',
-        validators=[DataRequired()]
+        validators=[
+            DataRequired()
+        ]
     )
     submit = SubmitField('Check Out')
 
 
 class FlightCheckinForm(FlaskForm):
-    hobbs = FloatField('Hobbs Time', validators=[DataRequired()])
-    tach = FloatField('Tach Time', validators=[DataRequired()])
-    squawks = TextAreaField('Squawks', validators=[Optional()])
-    comments = TextAreaField('Comments', validators=[Optional()])
+    hobbs = FloatField(
+        'Hobbs Time',
+        validators=[
+            DataRequired()
+        ]
+    )
+    tach = FloatField(
+        'Tach Time',
+        validators=[
+            DataRequired()
+        ]
+    )
+    squawks = TextAreaField(
+        'Squawks',
+        validators=[
+            Optional()
+        ]
+    )
+    comments = TextAreaField(
+        'Comments',
+        validators=[
+            Optional()
+        ]
+    )
     submit = SubmitField('Check In')
 
 
 class UserForm(FlaskForm):
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    first_name = StringField('First Name', validators=[DataRequired()])
-    last_name = StringField('Last Name', validators=[DataRequired()])
+    email = StringField(
+        'Email',
+        validators=[
+            DataRequired(),
+            Email()
+        ]
+    )
+    first_name = StringField(
+        'First Name',
+        validators=[
+            DataRequired()
+        ]
+    )
+    last_name = StringField(
+        'Last Name',
+        validators=[
+            DataRequired()
+        ]
+    )
     phone = StringField('Phone')
     status = SelectField(
         'Status',
@@ -120,11 +246,36 @@ class UserForm(FlaskForm):
 
 
 class AircraftForm(FlaskForm):
-    registration = StringField('Tail Number', validators=[DataRequired()])
-    make = StringField('Make', validators=[DataRequired()])
-    model = StringField('Model', validators=[DataRequired()])
-    year = IntegerField('Year', validators=[Optional()])
-    description = TextAreaField('Description', validators=[Optional()])
+    registration = StringField(
+        'Tail Number',
+        validators=[
+            DataRequired()
+        ]
+    )
+    make = StringField(
+        'Make',
+        validators=[
+            DataRequired()
+        ]
+    )
+    model = StringField(
+        'Model',
+        validators=[
+            DataRequired()
+        ]
+    )
+    year = IntegerField(
+        'Year',
+        validators=[
+            Optional()
+        ]
+    )
+    description = TextAreaField(
+        'Description',
+        validators=[
+            Optional()
+        ]
+    )
     status = SelectField(
         'Status',
         choices=[
@@ -132,7 +283,9 @@ class AircraftForm(FlaskForm):
             ('maintenance', 'In Maintenance'),
             ('retired', 'Retired')
         ],
-        validators=[DataRequired()]
+        validators=[
+            DataRequired()
+        ]
     )
     category = SelectField(
         'Category',
@@ -143,7 +296,9 @@ class AircraftForm(FlaskForm):
             ('multi_engine_sea', 'Multi Engine Sea'),
             ('helicopter', 'Helicopter')
         ],
-        validators=[Optional()]
+        validators=[
+            Optional()
+        ]
     )
     engine_type = SelectField(
         'Engine Type',
@@ -152,25 +307,51 @@ class AircraftForm(FlaskForm):
             ('turboprop', 'Turboprop'),
             ('jet', 'Jet')
         ],
-        validators=[Optional()]
+        validators=[
+            Optional()
+        ]
     )
     num_engines = IntegerField(
         'Number of Engines',
         default=1,
-        validators=[Optional()]
+        validators=[
+            Optional()
+        ]
     )
     ifr_equipped = BooleanField('IFR Equipped')
     gps = BooleanField('GPS')
     autopilot = BooleanField('Autopilot')
-    rate_per_hour = FloatField('Hourly Rate', validators=[DataRequired()])
-    hobbs_time = FloatField('Current Hobbs Time', validators=[Optional()])
-    tach_time = FloatField('Current Tach Time', validators=[Optional()])
+    rate_per_hour = FloatField(
+        'Hourly Rate',
+        validators=[
+            DataRequired()
+        ]
+    )
+    hobbs_time = FloatField(
+        'Current Hobbs Time',
+        validators=[
+            Optional()
+        ]
+    )
+    tach_time = FloatField(
+        'Current Tach Time',
+        validators=[
+            Optional()
+        ]
+    )
     last_maintenance = DateTimeField(
         'Last Maintenance Date',
-        validators=[Optional()],
+        validators=[
+            Optional()
+        ],
         format='%Y-%m-%d'
     )
-    image = FileField('Aircraft Image', validators=[Optional()])
+    image = FileField(
+        'Aircraft Image',
+        validators=[
+            Optional()
+        ]
+    )
     submit = SubmitField('Submit')
 
     def validate_registration(self, field):
@@ -181,14 +362,42 @@ class AircraftForm(FlaskForm):
 
 
 class InstructorForm(FlaskForm):
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    first_name = StringField('First Name', validators=[DataRequired()])
-    last_name = StringField('Last Name', validators=[DataRequired()])
-    phone = StringField('Phone', validators=[Optional()])
-    password = PasswordField('Password', validators=[Optional()])
+    email = StringField(
+        'Email',
+        validators=[
+            DataRequired(),
+            Email()
+        ]
+    )
+    first_name = StringField(
+        'First Name',
+        validators=[
+            DataRequired()
+        ]
+    )
+    last_name = StringField(
+        'Last Name',
+        validators=[
+            DataRequired()
+        ]
+    )
+    phone = StringField(
+        'Phone',
+        validators=[
+            Optional()
+        ]
+    )
+    password = PasswordField(
+        'Password',
+        validators=[
+            Optional()
+        ]
+    )
     certificates = StringField(
         'Certificates',
-        validators=[Optional()],
+        validators=[
+            Optional()
+        ],
         description='Comma-separated list of certificates (e.g., CFI, CFII)'
     )
     status = SelectField(
@@ -197,7 +406,9 @@ class InstructorForm(FlaskForm):
             ('active', 'Active'),
             ('inactive', 'Inactive')
         ],
-        validators=[DataRequired()]
+        validators=[
+            DataRequired()
+        ]
     )
     submit = SubmitField('Submit')
 
@@ -208,15 +419,29 @@ class InstructorForm(FlaskForm):
 
 
 class MaintenanceTypeForm(FlaskForm):
-    name = StringField('Name', validators=[DataRequired()])
-    description = TextAreaField('Description', validators=[Optional()])
+    name = StringField(
+        'Name',
+        validators=[
+            DataRequired()
+        ]
+    )
+    description = TextAreaField(
+        'Description',
+        validators=[
+            Optional()
+        ]
+    )
     interval_days = FloatField(
         'Calendar Interval (days)',
-        validators=[Optional()]
+        validators=[
+            Optional()
+        ]
     )
     interval_hours = FloatField(
         'Operating Hours Interval',
-        validators=[Optional()]
+        validators=[
+            Optional()
+        ]
     )
     submit = SubmitField('Submit')
 
@@ -225,16 +450,38 @@ class MaintenanceRecordForm(FlaskForm):
     maintenance_type = SelectField(
         'Maintenance Type',
         coerce=int,
-        validators=[DataRequired()]
+        validators=[
+            DataRequired()
+        ]
     )
-    notes = TextAreaField('Notes', validators=[Optional()])
-    hobbs_hours = FloatField('Hobbs Hours', validators=[Optional()])
-    tach_hours = FloatField('Tach Hours', validators=[Optional()])
+    notes = TextAreaField(
+        'Notes',
+        validators=[
+            Optional()
+        ]
+    )
+    hobbs_hours = FloatField(
+        'Hobbs Hours',
+        validators=[
+            Optional()
+        ]
+    )
+    tach_hours = FloatField(
+        'Tach Hours',
+        validators=[
+            Optional()
+        ]
+    )
     submit = SubmitField('Submit')
 
 
 class SquawkForm(FlaskForm):
-    description = TextAreaField('Description', validators=[DataRequired()])
+    description = TextAreaField(
+        'Description',
+        validators=[
+            DataRequired()
+        ]
+    )
     status = SelectField(
         'Status',
         choices=[
@@ -242,47 +489,83 @@ class SquawkForm(FlaskForm):
             ('in_progress', 'In Progress'),
             ('resolved', 'Resolved')
         ],
-        validators=[DataRequired()]
+        validators=[
+            DataRequired()
+        ]
     )
     resolution_notes = TextAreaField(
         'Resolution Notes',
-        validators=[Optional()]
+        validators=[
+            Optional()
+        ]
     )
     submit = SubmitField('Submit')
 
 
 class ChangePasswordForm(FlaskForm):
-    current_password = PasswordField(
+    old_password = PasswordField(
         'Current Password',
-        validators=[DataRequired()]
+        validators=[
+            DataRequired()
+        ]
     )
-    new_password = PasswordField(
+    password = PasswordField(
         'New Password',
-        validators=[DataRequired(), Length(min=8)]
+        validators=[
+            DataRequired()
+        ]
     )
-    confirm_password = PasswordField(
-        'Confirm Password',
-        validators=[DataRequired(), EqualTo('new_password')]
+    password2 = PasswordField(
+        'Repeat New Password',
+        validators=[
+            DataRequired(),
+            EqualTo('password', message='Passwords must match')
+        ]
     )
+    submit = SubmitField('Change Password')
 
 
 class CheckInForm(FlaskForm):
-    hobbs_start = FloatField('Hobbs Start Time', validators=[DataRequired()])
-    tach_start = FloatField('Tach Start Time', validators=[DataRequired()])
+    hobbs_start = FloatField(
+        'Hobbs Start Time',
+        validators=[
+            DataRequired()
+        ]
+    )
+    tach_start = FloatField(
+        'Tach Start Time',
+        validators=[
+            DataRequired()
+        ]
+    )
     instructor_start_time = DateTimeField(
         'Instructor Start Time',
-        validators=[Optional()]
+        validators=[
+            Optional()
+        ]
     )
     notes = TextAreaField('Notes')
     submit = SubmitField('Check In')
 
 
 class CheckOutForm(FlaskForm):
-    hobbs_end = FloatField('Hobbs End Time', validators=[DataRequired()])
-    tach_end = FloatField('Tach End Time', validators=[DataRequired()])
+    hobbs_end = FloatField(
+        'Hobbs End Time',
+        validators=[
+            DataRequired()
+        ]
+    )
+    tach_end = FloatField(
+        'Tach End Time',
+        validators=[
+            DataRequired()
+        ]
+    )
     instructor_end_time = DateTimeField(
         'Instructor End Time',
-        validators=[Optional()]
+        validators=[
+            Optional()
+        ]
     )
     notes = TextAreaField('Notes')
     submit = SubmitField('Check Out')
@@ -291,36 +574,73 @@ class CheckOutForm(FlaskForm):
 class InvoiceForm(FlaskForm):
     invoice_number = StringField(
         'Invoice Number',
-        validators=[DataRequired()]
+        validators=[
+            DataRequired()
+        ]
     )
     aircraft_rate = FloatField(
         'Aircraft Rate per Hour',
-        validators=[DataRequired()]
+        validators=[
+            DataRequired()
+        ]
     )
     instructor_rate = FloatField(
         'Instructor Rate per Hour',
-        validators=[Optional()]
+        validators=[
+            Optional()
+        ]
     )
     aircraft_time = FloatField(
         'Total Aircraft Time',
-        validators=[DataRequired()]
+        validators=[
+            DataRequired()
+        ]
     )
     instructor_time = FloatField(
         'Total Instructor Time',
-        validators=[Optional()]
+        validators=[
+            Optional()
+        ]
     )
     notes = TextAreaField('Notes')
     submit = SubmitField('Generate Invoice')
 
 
 class AccountSettingsForm(FlaskForm):
-    first_name = StringField('First Name', validators=[DataRequired()])
-    last_name = StringField('Last Name', validators=[DataRequired()])
-    phone = StringField('Phone', validators=[Optional()])
-    address = StringField('Address', validators=[Optional()])
-    password = PasswordField('New Password', validators=[Optional()])
+    first_name = StringField(
+        'First Name',
+        validators=[
+            DataRequired()
+        ]
+    )
+    last_name = StringField(
+        'Last Name',
+        validators=[
+            DataRequired()
+        ]
+    )
+    phone = StringField(
+        'Phone',
+        validators=[
+            Optional()
+        ]
+    )
+    address = StringField(
+        'Address',
+        validators=[
+            Optional()
+        ]
+    )
+    password = PasswordField(
+        'New Password',
+        validators=[
+            Optional()
+        ]
+    )
     password2 = PasswordField(
         'Repeat New Password',
-        validators=[EqualTo('password')]
+        validators=[
+            EqualTo('password')
+        ]
     )
     submit = SubmitField('Update Settings')

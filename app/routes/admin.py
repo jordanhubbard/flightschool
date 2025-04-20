@@ -448,28 +448,23 @@ def edit_aircraft(id):
     aircraft = Aircraft.query.get_or_404(id)
     form = AircraftForm(obj=aircraft)
     if form.validate_on_submit():
-        aircraft.registration = form.registration.data
-        aircraft.make = form.make.data
-        aircraft.model = form.model.data
-        aircraft.year = form.year.data
-        aircraft.status = form.status.data
-        aircraft.category = form.category.data
-        aircraft.engine_type = form.engine_type.data
-        aircraft.num_engines = form.num_engines.data
-        aircraft.ifr_equipped = form.ifr_equipped.data
-        aircraft.gps = form.gps.data
-        aircraft.autopilot = form.autopilot.data
-        aircraft.rate_per_hour = form.rate_per_hour.data
-        aircraft.hobbs_time = form.hobbs_time.data
-        aircraft.tach_time = form.tach_time.data
-        aircraft.last_maintenance = form.last_maintenance.data
-        aircraft.description = form.description.data
-        db.session.commit()
-        flash('Aircraft updated successfully', 'success')
-        return redirect(url_for('admin.aircraft_list'))
+        form.populate_obj(aircraft)
+        try:
+            db.session.commit()
+            flash('Aircraft updated successfully', 'success')
+            return redirect(url_for('admin.aircraft_list'))
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(
+                f"Error updating aircraft: {str(e)}"
+            )
+            flash(
+                'Error updating aircraft. Please try again.',
+                'error'
+            )
     return render_template(
-        'admin/aircraft_form.html', 
-        form=form, 
+        'admin/aircraft_form.html',
+        form=form,
         title='Edit Aircraft'
     )
 
@@ -488,9 +483,16 @@ def delete_aircraft(id):
         jsonify: A JSON response indicating the result of the deletion.
     """
     aircraft = Aircraft.query.get_or_404(id)
-    db.session.delete(aircraft)
-    db.session.commit()
-    return jsonify({'message': 'Aircraft deleted successfully'}), 200
+    try:
+        db.session.delete(aircraft)
+        db.session.commit()
+        return jsonify({'message': 'Aircraft deleted successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(
+            f"Error deleting aircraft: {str(e)}"
+        )
+        return jsonify({'error': 'Failed to delete aircraft'}), 500
 
 
 @admin_bp.route('/user/<int:id>/status', methods=['PUT'])
@@ -508,22 +510,20 @@ def update_user_status(id):
     """
     user = User.query.get_or_404(id)
     data = request.get_json()
-    
+
     if not data or 'status' not in data:
         return jsonify({'error': 'Status is required'}), 400
-        
-    status = data['status']
-    if status not in ['active', 'inactive']:
-        return jsonify({'error': 'Invalid status value'}), 400
-        
+
     try:
-        user.status = status
+        user.status = data['status']
         db.session.commit()
-        flash('User status updated successfully', 'success')
         return jsonify({'message': 'Status updated successfully'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        current_app.logger.error(
+            f"Error updating user status: {str(e)}"
+        )
+        return jsonify({'error': 'Failed to update status'}), 500
 
 
 @admin_bp.route('/maintenance/types', methods=['GET', 'POST'])
@@ -542,20 +542,31 @@ def maintenance_types():
             name=form.name.data,
             description=form.description.data,
             interval_days=form.interval_days.data,
-            interval_hours=form.interval_hours.data
+            interval_hours=form.interval_hours.data,
+            created_by_id=current_user.id
         )
-        db.session.add(maintenance_type)
-        db.session.commit()
-        flash('Maintenance type added successfully', 'success')
-        return redirect(url_for('admin.maintenance_types'))
-    
+        try:
+            db.session.add(maintenance_type)
+            db.session.commit()
+            flash('Maintenance type created successfully', 'success')
+            return redirect(url_for('admin.maintenance_types'))
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(
+                f"Error creating maintenance type: {str(e)}"
+            )
+            flash(
+                'Error creating maintenance type. Please try again.',
+                'error'
+            )
+
     maintenance_types = (
         MaintenanceType.query
         .all()
     )
     return render_template(
-        'admin/maintenance_types.html', 
-        form=form, 
+        'admin/maintenance_types.html',
+        form=form,
         maintenance_types=maintenance_types
     )
 
@@ -571,22 +582,22 @@ def maintenance_records():
         render_template: The maintenance records template.
     """
     form = MaintenanceRecordForm()
-    form.maintenance_type.choices = (
-        (mt.id, mt.name) 
+    form.maintenance_type.choices = [
+        (mt.id, mt.name)
         for mt in MaintenanceType.query.all()
-    )
-    form.performed_by.choices = (
-        (u.id, f"{u.first_name} {u.last_name}") 
+    ]
+    form.performed_by.choices = [
+        (u.id, f"{u.first_name} {u.last_name}")
         for u in User.query.filter_by(role='mechanic').all()
-    )
-    
+    ]
+
     if form.validate_on_submit():
         record = MaintenanceRecord()
         form.populate_obj(record)
         try:
             db.session.add(record)
             db.session.commit()
-            flash('Maintenance record created successfully.', 'success')
+            flash('Maintenance record created successfully', 'success')
             return redirect(url_for('admin.maintenance_records'))
         except Exception as e:
             db.session.rollback()
@@ -594,8 +605,7 @@ def maintenance_records():
                 f"Error creating maintenance record: {str(e)}"
             )
             flash(
-                'Error creating maintenance record. '
-                'Please try again.',
+                'Error creating maintenance record. Please try again.',
                 'error'
             )
 
@@ -605,8 +615,8 @@ def maintenance_records():
         .all()
     )
     return render_template(
-        'admin/maintenance_records.html', 
-        form=form, 
+        'admin/maintenance_records.html',
+        form=form,
         records=records
     )
 
@@ -625,10 +635,11 @@ def squawks():
     if form.validate_on_submit():
         squawk = Squawk()
         form.populate_obj(squawk)
+        squawk.reported_by_id = current_user.id
         try:
             db.session.add(squawk)
             db.session.commit()
-            flash('Squawk created successfully.', 'success')
+            flash('Squawk created successfully', 'success')
             return redirect(url_for('admin.squawks'))
         except Exception as e:
             db.session.rollback()
@@ -636,8 +647,7 @@ def squawks():
                 f"Error creating squawk: {str(e)}"
             )
             flash(
-                'Error creating squawk. '
-                'Please try again.',
+                'Error creating squawk. Please try again.',
                 'error'
             )
 
@@ -667,30 +677,35 @@ def edit_booking(booking_id):
         render_template: The booking edit template.
     """
     booking = Booking.query.get_or_404(booking_id)
-    
+
     if request.method == 'POST':
+        data = request.get_json()
         try:
-            start_time = datetime.strptime(request.form.get('start_time'), '%Y-%m-%dT%H:%M')
-            end_time = datetime.strptime(request.form.get('end_time'), '%Y-%m-%dT%H:%M')
-            status = request.form.get('status')
-            
-            booking.start_time = start_time
-            booking.end_time = end_time
-            booking.status = status
-            
+            if 'status' in data:
+                booking.status = data['status']
+            if 'instructor_id' in data:
+                booking.instructor_id = data['instructor_id']
+            if 'notes' in data:
+                booking.notes = data['notes']
+
             db.session.commit()
-            flash('Booking updated successfully.', 'success')
+            flash('Booking updated successfully', 'success')
             return redirect(url_for('admin.dashboard'))
-            
         except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(
+                f"Error updating booking: {str(e)}"
+            )
             flash(
-                'Error updating booking. '
-                'Please check the form data.',
+                'Error updating booking. Please try again.',
                 'error'
             )
             return redirect(url_for('admin.dashboard'))
-    
-    return render_template('admin/edit_booking.html', booking=booking)
+
+    return render_template(
+        'admin/edit_booking.html',
+        booking=booking
+    )
 
 
 @admin_bp.route('/aircraft')
