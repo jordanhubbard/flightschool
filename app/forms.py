@@ -4,7 +4,7 @@ from wtforms import (
     DateTimeField, FloatField, TextAreaField, IntegerField, FileField
 )
 from wtforms.validators import (
-    DataRequired, Email, Optional, EqualTo
+    DataRequired, Email, Optional, EqualTo, ValidationError
 )
 from app.models import User
 import re
