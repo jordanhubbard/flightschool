@@ -78,6 +78,11 @@ def load_test_data():
             aircraft_data = dict(aircraft_data)  # make a copy to mutate
             aircraft_data.pop('serial_number', None)  # Remove invalid field
             aircraft_data.pop('gps_equipped', None)  # Remove invalid field
+            aircraft_data.pop('gps_model', None)  # Remove invalid field
+            aircraft_data.pop('autopilot_model', None)  # Remove invalid field
+            aircraft_data.pop('adsb_out', None)  # Remove invalid field
+            aircraft_data.pop('adsb_in', None)  # Remove invalid field
+            aircraft_data.pop('dme_equipped', None)  # Remove invalid field
             aircraft = Aircraft(
                 registration=aircraft_data['registration'],
                 make=aircraft_data['make'],
@@ -92,12 +97,7 @@ def load_test_data():
                 # Equipment
                 ifr_equipped=aircraft_data['ifr_equipped'],
                 gps=aircraft_data.get('gps'),
-                gps_model=aircraft_data.get('gps_model'),
                 autopilot=aircraft_data['autopilot'],
-                autopilot_model=aircraft_data.get('autopilot_model'),
-                adsb_out=aircraft_data['adsb_out'],
-                adsb_in=aircraft_data['adsb_in'],
-                dme_equipped=aircraft_data['dme_equipped'],
                 tcas_equipped=aircraft_data['tcas_equipped'],
                 
                 # Performance
