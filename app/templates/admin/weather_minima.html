@@ -60,21 +60,25 @@
                             <th>Visibility Min (sm)</th>
                             <th>Wind Max (kt)</th>
                             <th>Crosswind Max (kt)</th>
+                            <th>Created At</th>
+                            <th>Updated At</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for m in minima %}
+                        {% for minima in minima %}
                         <tr>
-                            <td>{{ m.category }}</td>
-                            <td>{{ m.ceiling_min }}</td>
-                            <td>{{ m.visibility_min }}</td>
-                            <td>{{ m.wind_max }}</td>
-                            <td>{{ m.crosswind_max }}</td>
+                            <td>{{ minima.category }}</td>
+                            <td>{{ minima.ceiling_min }}</td>
+                            <td>{{ minima.visibility_min }}</td>
+                            <td>{{ minima.wind_max }}</td>
+                            <td>{{ minima.crosswind_max }}</td>
+                            <td>{{ minima.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ minima.updated_at.strftime('%Y-%m-%d') if minima.updated_at else 'N/A' }}</td>
                             <td>
                                 <div class="btn-group">
-                                    <button class="btn btn-sm btn-outline-primary" onclick="editMinima({{ m.id }})">Edit</button>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteMinima({{ m.id }})">Delete</button>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="editMinima({{ minima.id }})">Edit</button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteMinima({{ minima.id }})">Delete</button>
                                 </div>
                             </td>
                         </tr>

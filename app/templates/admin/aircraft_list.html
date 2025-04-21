@@ -41,8 +41,8 @@
                     <h5 class="mb-0">Quick Actions</h5>
                 </div>
                 <div class="card-body">
-                    <a href="{{ url_for('admin.aircraft_add') }}" class="btn btn-success d-block mb-2">
-                        <i class="fas fa-plus-circle me-2"></i> Add New Aircraft
+                    <a href="{{ url_for('admin.create_aircraft') }}" class="btn btn-primary mb-3">
+                        <i class="fas fa-plus"></i> Add Aircraft
                     </a>
                     <a href="{{ url_for('admin.maintenance_list') }}" class="btn btn-info d-block mb-2">
                         <i class="fas fa-tools me-2"></i> View Maintenance Records
@@ -75,83 +75,39 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover mb-0">
                             <thead>
                                 <tr>
-                                    <th>Tail Number</th>
-                                    <th>Type</th>
-                                    <th>Model</th>
+                                    <th>Registration</th>
+                                    <th>Make/Model</th>
                                     <th>Year</th>
                                     <th>Status</th>
-                                    <th>Last Maint.</th>
+                                    <th>Rate/hr</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for aircraft in aircraft_list %}
+                                {% for aircraft in aircraft %}
                                 <tr>
-                                    <td>{{ aircraft.tail_number }}</td>
-                                    <td>{{ aircraft.make }}</td>
-                                    <td>{{ aircraft.model }}</td>
+                                    <td>{{ aircraft.registration }}</td>
+                                    <td>{{ aircraft.display_name }}</td>
                                     <td>{{ aircraft.year }}</td>
                                     <td>
-                                        {% if aircraft.status == 'available' %}
-                                        <span class="badge bg-success">Available</span>
-                                        {% elif aircraft.status == 'maintenance' %}
-                                        <span class="badge bg-warning">Maintenance</span>
-                                        {% elif aircraft.status == 'unavailable' %}
-                                        <span class="badge bg-danger">Unavailable</span>
-                                        {% else %}
-                                        <span class="badge bg-secondary">{{ aircraft.status }}</span>
-                                        {% endif %}
+                                        <span class="badge {% if aircraft.status == 'available' %}bg-success{% else %}bg-secondary{% endif %}">
+                                            {{ aircraft.status|title }}
+                                        </span>
                                     </td>
-                                    <td>
-                                        {% if aircraft.last_maintenance %}
-                                        {{ aircraft.last_maintenance.strftime('%Y-%m-%d') }}
-                                        {% else %}
-                                        No records
-                                        {% endif %}
-                                    </td>
+                                    <td>${{ aircraft.rate_per_hour }}</td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            <a href="{{ url_for('admin.aircraft_edit', id=aircraft.id) }}" class="btn btn-primary">
+                                            <a href="{{ url_for('admin.edit_aircraft', id=aircraft.id) }}" class="btn btn-primary">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <a href="{{ url_for('admin.aircraft_view', id=aircraft.id) }}" class="btn btn-info">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ aircraft.id }}">
+                                            <button class="btn btn-danger delete-aircraft" data-id="{{ aircraft.id }}">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </div>
-                                        
-                                        <!-- Delete Modal -->
-                                        <div class="modal fade" id="deleteModal{{ aircraft.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ aircraft.id }}" aria-hidden="true">
-                                            <div class="modal-dialog">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title" id="deleteModalLabel{{ aircraft.id }}">Confirm Deletion</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        Are you sure you want to delete aircraft {{ aircraft.tail_number }} ({{ aircraft.make }} {{ aircraft.model }})?
-                                                        <p class="text-danger mt-2">This action cannot be undone and will remove all associated maintenance records.</p>
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                        <form action="{{ url_for('admin.aircraft_delete', id=aircraft.id) }}" method="POST">
-                                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                                                            <button type="submit" class="btn btn-danger">Delete Aircraft</button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
                                     </td>
-                                </tr>
-                                {% else %}
-                                <tr>
-                                    <td colspan="7" class="text-center">No aircraft found. <a href="{{ url_for('admin.aircraft_add') }}">Add one now</a>.</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>

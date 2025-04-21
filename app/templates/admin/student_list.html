@@ -6,13 +6,13 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Student List</h2>
-        <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary">Add New Student</a>
+        <a href="{{ url_for('admin.create_user', type='student') }}" class="btn btn-primary">Add New Student</a>
     </div>
     
     <div class="card">
-        <div class="card-body">
+        <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-hover mb-0">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -26,32 +26,24 @@
                     <tbody>
                         {% for student in students %}
                         <tr>
-                            <td>{{ student.first_name }} {{ student.last_name }}</td>
+                            <td>{{ student.full_name }}</td>
                             <td>{{ student.email }}</td>
                             <td>{{ student.phone }}</td>
                             <td>{{ student.student_id }}</td>
                             <td>
-                                <div class="btn-group" role="group">
-                                    <button type="button" 
-                                            class="btn btn-sm {% if student.status == 'active' %}btn-success active{% else %}btn-outline-success{% endif %}"
-                                            onclick="updateUserStatus({{ student.id }}, 'active')"
-                                            {% if student.status == 'active' %}disabled{% endif %}>
-                                        Active
-                                    </button>
-                                    <button type="button" 
-                                            class="btn btn-sm {% if student.status == 'inactive' %}btn-danger active{% else %}btn-outline-danger{% endif %}"
-                                            onclick="updateUserStatus({{ student.id }}, 'inactive')"
-                                            {% if student.status == 'inactive' %}disabled{% endif %}>
-                                        Inactive
-                                    </button>
-                                </div>
+                                <span class="badge {% if student.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {{ student.status|title }}
+                                </span>
                             </td>
                             <td>
-                                <a href="{{ url_for('admin.manage_user', id=student.id) }}" class="btn btn-sm btn-primary">Edit</a>
-                                <form method="POST" action="{{ url_for('admin.manage_user', id=student.id) }}" class="d-inline">
-                                    <input type="hidden" name="_method" value="DELETE">
-                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this student?')">Delete</button>
-                                </form>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('admin.edit_user', id=student.id) }}" class="btn btn-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button class="btn btn-danger delete-student" data-id="{{ student.id }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}

@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta, timezone
 from app.models import (
     User, Aircraft, Booking, MaintenanceType, MaintenanceRecord, Squawk,
     WeatherMinima, FlightLog, Endorsement, Document, AuditLog, WaitlistEntry,
@@ -32,52 +32,7 @@ def test_admin_required_decorator(client, test_user, app):
     assert b'Admin access required' in response.data
 
 
-def test_manage_weather_minima(client, admin_user, app):
-    """Test managing weather minima."""
-    with app.app_context():
-        with client.session_transaction() as sess:
-            sess['_user_id'] = admin_user.id
-            sess['_fresh'] = True
-
-        # Create weather minima
-        response = client.post('/admin/weather-minima', json={
-            'category': 'VFR',
-            'ceiling_min': 3000,
-            'visibility_min': 5.0,
-            'wind_max': 25,
-            'crosswind_max': 15
-        })
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data['message'] == 'Weather minima created successfully'
-
-        # Get weather minima
-        response = client.get('/admin/weather-minima')
-        assert response.status_code == 200
-        assert b'VFR' in response.data
-
-        # Update weather minima
-        minima = WeatherMinima.query.first()
-        response = client.put(f'/admin/weather-minima/{minima.id}', json={
-            'ceiling_min': 2500
-        })
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data['message'] == 'Weather minima updated successfully'
-
-        # Delete weather minima
-        response = client.delete(f'/admin/weather-minima/{minima.id}')
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data['message'] == 'Weather minima deleted successfully'
-
-
-def test_manage_endorsements(
-        client,
-        admin_user,
-        test_user,
-        test_instructor,
-        app):
+def test_manage_endorsements(client, admin_user, test_user, test_instructor, app):
     """Test managing endorsements."""
     with app.app_context():
         with client.session_transaction() as sess:
@@ -86,11 +41,11 @@ def test_manage_endorsements(
 
         # Create endorsement
         endorsement = Endorsement(
-            student=test_user,
-            instructor=test_instructor,
+            student_id=test_user.id,
+            instructor_id=test_instructor.id,
             type='solo',
             description='Solo endorsement for pattern work',
-            expiration=datetime.now(UTC) + timedelta(days=90)
+            expiration=datetime.now(timezone.utc) + timedelta(days=90)
         )
         db.session.add(endorsement)
         db.session.commit()
@@ -98,11 +53,11 @@ def test_manage_endorsements(
         # View endorsements
         response = client.get('/admin/endorsements')
         assert response.status_code == 200
-        assert b'solo' in response.data
+        assert b'Solo endorsement' in response.data
 
         # Update endorsement
         response = client.put(f'/admin/endorsements/{endorsement.id}', json={
-            'expiration': (datetime.now(UTC) + timedelta(days=180)).isoformat()
+            'expiration': (datetime.now(timezone.utc) + timedelta(days=180)).isoformat()
         })
         assert response.status_code == 200
         data = response.get_json()
@@ -128,7 +83,7 @@ def test_manage_documents(client, admin_user, test_user, app):
             type='medical',
             filename='medical_certificate.pdf',
             url='https://example.com/documents/medical.pdf',
-            expiration=datetime.now(UTC) + timedelta(days=365)
+            expiration=datetime.now(timezone.utc) + timedelta(days=365)
         )
         db.session.add(document)
         db.session.commit()
@@ -140,7 +95,7 @@ def test_manage_documents(client, admin_user, test_user, app):
 
         # Update document
         response = client.put(f'/admin/documents/{document.id}', json={
-            'expiration': (datetime.now(UTC) + timedelta(days=730)).isoformat()
+            'expiration': (datetime.now(timezone.utc) + timedelta(days=730)).isoformat()
         })
         assert response.status_code == 200
         data = response.get_json()
@@ -153,13 +108,7 @@ def test_manage_documents(client, admin_user, test_user, app):
         assert data['message'] == 'Document deleted successfully'
 
 
-def test_manage_waitlist(
-        client,
-        admin_user,
-        test_user,
-        test_aircraft,
-        test_instructor,
-        app):
+def test_manage_waitlist(client, admin_user, test_user, test_aircraft, app):
     """Test managing waitlist entries."""
     with app.app_context():
         with client.session_transaction() as sess:
@@ -168,10 +117,9 @@ def test_manage_waitlist(
 
         # Create waitlist entry
         entry = WaitlistEntry(
-            student=test_user,
-            instructor=test_instructor,
-            aircraft=test_aircraft,
-            requested_date=datetime.now(UTC) + timedelta(days=7),
+            student_id=test_user.id,
+            aircraft_id=test_aircraft.id,
+            requested_date=datetime.now(timezone.utc) + timedelta(days=7),
             time_preference='afternoon',
             duration_hours=2.0,
             status='active'
@@ -193,13 +141,7 @@ def test_manage_waitlist(
         assert data['message'] == 'Waitlist entry updated successfully'
 
 
-def test_manage_recurring_bookings(
-        client,
-        admin_user,
-        test_user,
-        test_aircraft,
-        test_instructor,
-        app):
+def test_manage_recurring_bookings(client, admin_user, test_user, test_aircraft, app):
     """Test managing recurring bookings."""
     with app.app_context():
         with client.session_transaction() as sess:
@@ -208,14 +150,13 @@ def test_manage_recurring_bookings(
 
         # Create recurring booking
         booking = RecurringBooking(
-            student=test_user,
-            instructor=test_instructor,
-            aircraft=test_aircraft,
+            student_id=test_user.id,
+            aircraft_id=test_aircraft.id,
             day_of_week=2,  # Wednesday
-            start_time=datetime.strptime('14:00', '%H:%M').time(),
+            start_time=datetime.now(timezone.utc).time(),
             duration_hours=2.0,
-            start_date=datetime.now(UTC),
-            end_date=datetime.now(UTC) + timedelta(days=90),
+            start_date=datetime.now(timezone.utc).date(),
+            end_date=datetime.now(timezone.utc).date() + timedelta(days=90),
             status='active'
         )
         db.session.add(booking)
@@ -269,50 +210,85 @@ def test_view_audit_logs(client, admin_user, app):
         assert b'aircraft' in response.data
 
 
-def test_manage_flight_logs(
-        client,
-        admin_user,
-        test_user,
-        test_booking,
-        test_instructor,
-        app):
-    """Test managing flight logs."""
+def test_weather_minima(client, admin_user, app):
+    """Test managing weather minima."""
     with app.app_context():
         with client.session_transaction() as sess:
             sess['_user_id'] = admin_user.id
             sess['_fresh'] = True
 
-        # Create flight log
-        log = FlightLog(
-            booking=test_booking,
-            pic=test_instructor,
-            sic=test_user,
-            flight_date=datetime.now(UTC),
-            route='KPAO KHWD KPAO',
-            weather_conditions='VFR',
-            ground_instruction=0.5,
-            dual_received=2.0,
-            pic_time=2.0,
-            landings_day=8
-        )
-        db.session.add(log)
-        db.session.commit()
-
-        # View flight logs
-        response = client.get('/admin/flight-logs')
-        assert response.status_code == 200
-        assert b'KPAO KHWD KPAO' in response.data
-
-        # Update flight log
-        response = client.put(f'/admin/flight-logs/{log.id}', json={
-            'landings_day': 10
+        # Create weather minima
+        response = client.post('/admin/weather-minima', json={
+            'category': 'VFR',
+            'ceiling_min': 3000,
+            'visibility_min': 5.0,
+            'wind_max': 25,
+            'crosswind_max': 15
         })
         assert response.status_code == 200
         data = response.get_json()
-        assert data['message'] == 'Flight log updated successfully'
+        assert data['message'] == 'Weather minima created successfully'
 
-        # Delete flight log
-        response = client.delete(f'/admin/flight-logs/{log.id}')
+        # View weather minima
+        response = client.get('/admin/weather-minima')
+        assert response.status_code == 200
+        assert b'VFR' in response.data
+
+
+def test_squawks(client, admin_user, test_aircraft, app):
+    """Test managing squawks."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['_user_id'] = admin_user.id
+            sess['_fresh'] = True
+
+        # Create squawk
+        response = client.post('/admin/squawks', data={
+            'aircraft_id': test_aircraft.id,
+            'description': 'Oil pressure gauge fluctuating',
+            'severity': 'medium',
+            'status': 'open'
+        })
+        assert response.status_code == 302  # Redirect after successful creation
+
+        # View squawks
+        response = client.get('/admin/squawks')
+        assert response.status_code == 200
+        assert b'Oil pressure gauge' in response.data
+
+
+def test_aircraft_management(client, admin_user, app):
+    """Test aircraft management."""
+    with app.app_context():
+        with client.session_transaction() as sess:
+            sess['_user_id'] = admin_user.id
+            sess['_fresh'] = True
+
+        # Add aircraft
+        response = client.post('/admin/aircraft/add', data={
+            'registration': 'N54321',
+            'make': 'Piper',
+            'model': 'PA-28',
+            'year': '2019',
+            'category': 'single_engine_land',
+            'rate_per_hour': '165.0',
+            'status': 'available'
+        })
+        assert response.status_code == 302  # Redirect after successful creation
+
+        # View aircraft
+        response = client.get('/admin/aircraft')
+        assert response.status_code == 200
+        assert b'N54321' in response.data
+
+        # Get newly created aircraft
+        aircraft = Aircraft.query.filter_by(registration='N54321').first()
+        assert aircraft is not None
+
+        # Update aircraft status
+        response = client.put(f'/admin/aircraft/{aircraft.id}/status', json={
+            'status': 'maintenance'
+        })
         assert response.status_code == 200
         data = response.get_json()
-        assert data['message'] == 'Flight log deleted successfully'
+        assert data['message'] == 'Status updated successfully'

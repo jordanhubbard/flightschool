@@ -31,7 +31,7 @@
                             <td>{{ document.expiration.strftime('%Y-%m-%d') if document.expiration else 'N/A' }}</td>
                             <td>
                                 <div class="btn-group">
-                                    <a href="{{ url_for('admin.manage_document', id=document.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                    <a href="{{ url_for('admin.document_update', id=document.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
                                     <button class="btn btn-sm btn-outline-danger" onclick="deleteDocument({{ document.id }})">Delete</button>
                                 </div>
                             </td>

@@ -9,44 +9,40 @@
                 <table class="table table-hover">
                     <thead>
                         <tr>
-                            <th>Date</th>
+                            <th>Booking ID</th>
+                            <th>Aircraft</th>
                             <th>PIC</th>
                             <th>SIC</th>
+                            <th>Date</th>
                             <th>Route</th>
-                            <th>Weather</th>
-                            <th>Times</th>
-                            <th>Landings</th>
+                            <th>Departure</th>
+                            <th>Arrival</th>
+                            <th>Night</th>
+                            <th>Cross Country</th>
+                            <th>Actual Instrument</th>
+                            <th>Landings Day</th>
+                            <th>Landings Night</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for log in logs %}
                         <tr>
-                            <td>{{ log.flight_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ log.booking.id }}</td>
+                            <td>{{ log.aircraft.display_name }}</td>
                             <td>{{ log.pic.full_name }}</td>
                             <td>{{ log.sic.full_name if log.sic else 'N/A' }}</td>
+                            <td>{{ log.flight_date.strftime('%Y-%m-%d') }}</td>
                             <td>{{ log.route }}</td>
-                            <td>{{ log.weather_conditions }}</td>
+                            <td>{{ log.departure_airport }}</td>
+                            <td>{{ log.arrival_airport }}</td>
+                            <td>{{ log.night }}</td>
+                            <td>{{ log.cross_country }}</td>
+                            <td>{{ log.actual_instrument }}</td>
+                            <td>{{ log.landings_day }}</td>
+                            <td>{{ log.landings_night }}</td>
                             <td>
-                                <small>
-                                    Ground: {{ log.ground_instruction }}hr<br>
-                                    Dual: {{ log.dual_received }}hr<br>
-                                    PIC: {{ log.pic_time }}hr<br>
-                                    XC: {{ log.cross_country }}hr<br>
-                                    Night: {{ log.night }}hr<br>
-                                    IMC: {{ log.actual_instrument }}hr<br>
-                                    Sim Inst: {{ log.simulated_instrument }}hr
-                                </small>
-                            </td>
-                            <td>
-                                Day: {{ log.landings_day }}<br>
-                                Night: {{ log.landings_night }}
-                            </td>
-                            <td>
-                                <div class="btn-group">
-                                    <button class="btn btn-sm btn-outline-primary" onclick="editLog({{ log.id }})">Edit</button>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteLog({{ log.id }})">Delete</button>
-                                </div>
+                                <a href="{{ url_for('admin.manage_flight_log', id=log.id) }}" class="btn btn-sm btn-outline-primary">View</a>
                             </td>
                         </tr>
                         {% endfor %}

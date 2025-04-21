@@ -1,25 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}403 Forbidden{% endblock %}
+{% block title %}403 - Forbidden{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
+<div class="container">
     <div class="row justify-content-center">
-        <div class="col-md-8 text-center">
-            <h1 class="display-4">403 Forbidden</h1>
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-            <p class="lead">You do not have permission to access this resource.</p>
+        <div class="col-md-6 text-center mt-5">
+            <h1 class="display-4 text-danger">403</h1>
+            <h2>Access Denied</h2>
+            <p class="lead">Admin access required</p>
             <a href="{{ url_for('main.index') }}" class="btn btn-primary">Return to Home</a>
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}

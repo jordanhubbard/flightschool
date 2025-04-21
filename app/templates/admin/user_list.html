@@ -83,7 +83,7 @@
                             <tbody>
                                 {% for user in users %}
                                 <tr>
-                                    <td>{{ user.first_name }} {{ user.last_name }}</td>
+                                    <td>{{ user.full_name }}</td>
                                     <td>{{ user.email }}</td>
                                     <td>
                                         {% if user.role == 'instructor' %}
@@ -123,7 +123,7 @@
                                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                     </div>
                                                     <div class="modal-body">
-                                                        Are you sure you want to delete user {{ user.first_name }} {{ user.last_name }}?
+                                                        Are you sure you want to delete user {{ user.full_name }}?
                                                         <p class="text-danger mt-2">This action cannot be undone.</p>
                                                     </div>
                                                     <div class="modal-footer">

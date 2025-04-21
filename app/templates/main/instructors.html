@@ -50,13 +50,13 @@
                         {% if instructor.email %}
                         <p class="card-text">
                             <i class="fas fa-envelope me-2"></i>
-                            <a href="mailto:{{ instructor.email }}" class="text-decoration-none">{{ instructor.email }}</a>
+                            <a href="mailto:{{ instructor.email }}" class="text-decoration-none btn btn-sm btn-outline-primary">Email</a>
                         </p>
                         {% endif %}
                         {% if instructor.phone %}
                         <p class="card-text">
                             <i class="fas fa-phone me-2"></i>
-                            <a href="tel:{{ instructor.phone }}" class="text-decoration-none">{{ instructor.phone }}</a>
+                            <a href="tel:{{ instructor.phone }}" class="text-decoration-none btn btn-sm btn-outline-primary">Call</a>
                         </p>
                         {% endif %}
                     </div>
@@ -64,7 +64,7 @@
                     {% if current_user.is_authenticated %}
                     <div class="text-center">
                         <a href="{{ url_for('booking.create', instructor_id=instructor.id) }}" class="btn btn-accent">
-                            <i class="fas fa-calendar-plus me-2"></i>Book with {{ instructor.first_name }}
+                            <i class="fas fa-calendar-plus me-2"></i>Book with {{ instructor.full_name }}
                         </a>
                     </div>
                     {% endif %}

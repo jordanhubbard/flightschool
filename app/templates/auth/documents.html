@@ -48,37 +48,23 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for doc in documents %}
+                                {% for document in documents %}
                                 <tr>
                                     <td>
-                                        <span class="badge bg-secondary">{{ doc.type }}</span>
+                                        <span class="badge bg-secondary">{{ document.type }}</span>
                                     </td>
-                                    <td>{{ doc.filename }}</td>
                                     <td>
-                                        {% if doc.expiration %}
-                                            {% if doc.expiration < now %}
-                                            <span class="text-danger">
-                                                <i class="fas fa-exclamation-triangle me-1"></i>
-                                                Expired: {{ doc.expiration.strftime('%Y-%m-%d') }}
-                                            </span>
-                                            {% else %}
-                                            <span class="text-success">
-                                                <i class="fas fa-check-circle me-1"></i>
-                                                {{ doc.expiration.strftime('%Y-%m-%d') }}
-                                            </span>
-                                            {% endif %}
+                                        {% if document.url %}
+                                            <a href="{{ document.url }}" target="_blank">{{ document.filename }}</a>
                                         {% else %}
-                                        <span class="text-muted">No expiration</span>
+                                            {{ document.filename }}
                                         {% endif %}
                                     </td>
+                                    <td>{{ document.expiration.strftime('%Y-%m-%d') if document.expiration else 'N/A' }}</td>
                                     <td>
                                         <div class="btn-group">
-                                            <a href="{{ doc.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
-                                                <i class="fas fa-eye me-1"></i>View
-                                            </a>
-                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteDocument({{ doc.id }})">
-                                                <i class="fas fa-trash me-1"></i>Delete
-                                            </button>
+                                            <a href="{{ url_for('auth.edit_document', id=document.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteDocument({{ document.id }})">Delete</button>
                                         </div>
                                     </td>
                                 </tr>

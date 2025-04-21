@@ -42,8 +42,9 @@
                         <table class="table table-hover">
                             <thead>
                                 <tr>
-                                    <th>Aircraft</th>
+                                    <th>Student</th>
                                     <th>Instructor</th>
+                                    <th>Aircraft</th>
                                     <th>Requested Date</th>
                                     <th>Time Preference</th>
                                     <th>Duration</th>
@@ -54,32 +55,17 @@
                             <tbody>
                                 {% for entry in entries %}
                                 <tr>
-                                    <td>{{ entry.aircraft.registration }}</td>
-                                    <td>
-                                        {% if entry.instructor %}
-                                        {{ entry.instructor.full_name }}
-                                        {% else %}
-                                        <span class="text-muted">No Instructor</span>
-                                        {% endif %}
-                                    </td>
+                                    <td>{{ entry.student.full_name }}</td>
+                                    <td>{{ entry.instructor.full_name if entry.instructor else 'N/A' }}</td>
+                                    <td>{{ entry.aircraft.display_name }}</td>
                                     <td>{{ entry.requested_date.strftime('%Y-%m-%d') }}</td>
-                                    <td>
-                                        <span class="badge bg-secondary">{{ entry.time_preference }}</span>
-                                    </td>
-                                    <td>{{ entry.duration_hours }} hours</td>
-                                    <td>
-                                        <span class="badge bg-{{ 'success' if entry.status == 'active' else 'secondary' }}">
-                                            {{ entry.status }}
-                                        </span>
-                                    </td>
+                                    <td>{{ entry.time_preference }}</td>
+                                    <td>{{ entry.duration_hours }}</td>
+                                    <td>{{ entry.status|title }}</td>
                                     <td>
                                         <div class="btn-group">
-                                            <button class="btn btn-sm btn-outline-primary" onclick="editWaitlistEntry({{ entry.id }})">
-                                                <i class="fas fa-edit me-1"></i>Edit
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-danger" onclick="leaveWaitlist({{ entry.id }})">
-                                                <i class="fas fa-times me-1"></i>Leave
-                                            </button>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="editWaitlistEntry({{ entry.id }})">Edit</button>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteWaitlistEntry({{ entry.id }})">Delete</button>
                                         </div>
                                     </td>
                                 </tr>
@@ -186,8 +172,8 @@ function editWaitlistEntry(entryId) {
         });
 }
 
-function leaveWaitlist(entryId) {
-    if (confirm('Are you sure you want to leave the waitlist?')) {
+function deleteWaitlistEntry(entryId) {
+    if (confirm('Are you sure you want to delete this waitlist entry?')) {
         fetch(`/booking/waitlist/${entryId}`, {
             method: 'DELETE',
             headers: {
@@ -199,12 +185,12 @@ function leaveWaitlist(entryId) {
             if (data.status === 'success') {
                 location.reload();
             } else {
-                alert('Failed to leave waitlist: ' + data.message);
+                alert('Failed to delete waitlist entry: ' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred while leaving the waitlist');
+            alert('An error occurred while deleting the waitlist entry');
         });
     }
 }

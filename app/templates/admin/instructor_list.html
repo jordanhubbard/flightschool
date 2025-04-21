@@ -12,9 +12,9 @@
                         <i class="fas fa-plus"></i> Add Instructor
                     </a>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover mb-0">
                             <thead>
                                 <tr>
                                     <th>Name</th>
@@ -28,21 +28,21 @@
                             <tbody>
                                 {% for instructor in instructors %}
                                 <tr>
-                                    <td>{{ instructor.first_name }} {{ instructor.last_name }}</td>
+                                    <td>{{ instructor.full_name }}</td>
                                     <td>{{ instructor.email }}</td>
                                     <td>{{ instructor.phone }}</td>
                                     <td>{{ instructor.certificates }}</td>
                                     <td>
                                         <span class="badge {% if instructor.status == 'active' %}bg-success{% else %}bg-danger{% endif %}">
-                                            {{ instructor.status }}
+                                            {{ instructor.status|title }}
                                         </span>
                                     </td>
                                     <td>
-                                        <div class="btn-group" role="group">
-                                            <a href="{{ url_for('admin.edit_user', id=instructor.id) }}" class="btn btn-sm btn-info">
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('admin.edit_user', id=instructor.id) }}" class="btn btn-primary">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <button class="btn btn-sm btn-danger delete-instructor" data-id="{{ instructor.id }}">
+                                            <button class="btn btn-danger delete-instructor" data-id="{{ instructor.id }}">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </div>

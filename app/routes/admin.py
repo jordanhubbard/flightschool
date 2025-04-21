@@ -65,7 +65,7 @@ def admin_required(f):
 
         if not current_user.is_admin:
             flash('You do not have permission to access this page.', 'warning')
-            return redirect(url_for('main.index'))
+            return render_template('errors/403.html'), 403
 
         return f(*args, **kwargs)
     return decorated_function
@@ -81,15 +81,13 @@ def dashboard():
     Returns:
         render_template: The admin dashboard template.
     """
-    instructor_count = User.query.filter_by(
-        role='instructor',
-        status='active'
-    ).count()
-    student_count = User.query.filter_by(
-        role='student',
-        status='active'
-    ).count()
-    aircraft_count = Aircraft.query.filter_by(status='available').count()
+    instructors = User.query.filter_by(role='instructor').all()
+    students = User.query.filter_by(role='student').all()
+    aircraft = Aircraft.query.all()
+
+    instructor_count = len([i for i in instructors if i.status == 'active'])
+    student_count = len([s for s in students if s.status == 'active'])
+    aircraft_count = len([a for a in aircraft if a.status == 'available'])
 
     recent_bookings = Booking.query.order_by(
         Booking.start_time.desc()
@@ -97,6 +95,9 @@ def dashboard():
 
     return render_template(
         'admin/dashboard.html',
+        instructors=instructors,
+        students=students,
+        aircraft=aircraft,
         instructor_count=instructor_count,
         student_count=student_count,
         aircraft_count=aircraft_count,
@@ -214,7 +215,7 @@ def settings():
     return render_template('admin/settings.html')
 
 
-@admin_bp.route('/user/create', methods=['GET', 'POST'])
+@admin_bp.route('/user/create', methods=['GET', 'POST'], endpoint='create_user')
 @login_required
 @admin_required
 def create_user():
@@ -297,7 +298,7 @@ def create_user():
     )
 
 
-@admin_bp.route('/user/<int:id>/edit', methods=['GET', 'POST'])
+@admin_bp.route('/user/<int:id>/edit', methods=['GET', 'POST'], endpoint='edit_user')
 @login_required
 @admin_required
 def edit_user(id):
@@ -354,7 +355,7 @@ def edit_user(id):
     return render_template('admin/user_edit.html', user=user)
 
 
-@admin_bp.route('/user/<int:id>', methods=['DELETE'])
+@admin_bp.route('/user/<int:id>', methods=['DELETE'], endpoint='delete_user')
 @login_required
 @admin_required
 def delete_user(id):
@@ -393,7 +394,7 @@ def delete_user(id):
         return redirect(url_for('admin.dashboard'))
 
 
-@admin_bp.route('/aircraft/create', methods=['GET', 'POST'])
+@admin_bp.route('/aircraft/create', methods=['GET', 'POST'], endpoint='create_aircraft')
 @login_required
 @admin_required
 def create_aircraft():
@@ -437,7 +438,7 @@ def create_aircraft():
     )
 
 
-@admin_bp.route('/aircraft/<int:id>/edit', methods=['GET', 'POST'])
+@admin_bp.route('/aircraft/<int:id>/edit', methods=['GET', 'POST'], endpoint='edit_aircraft')
 @login_required
 @admin_required
 def edit_aircraft(id):
@@ -474,7 +475,7 @@ def edit_aircraft(id):
     )
 
 
-@admin_bp.route('/aircraft/<int:id>', methods=['DELETE'])
+@admin_bp.route('/aircraft/<int:id>', methods=['DELETE'], endpoint='delete_aircraft')
 @login_required
 @admin_required
 def delete_aircraft(id):
@@ -586,7 +587,7 @@ def maintenance_types():
     )
 
 
-@admin_bp.route('/maintenance/records', methods=['GET', 'POST'])
+@admin_bp.route('/maintenance/records', endpoint='maintenance_records', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def maintenance_records():
@@ -636,7 +637,7 @@ def maintenance_records():
     )
 
 
-@admin_bp.route('/squawks', methods=['GET', 'POST'])
+@admin_bp.route('/squawks', endpoint='squawks', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def squawks():
@@ -723,7 +724,7 @@ def edit_booking(booking_id):
     )
 
 
-@admin_bp.route('/aircraft')
+@admin_bp.route('/aircraft', endpoint='aircraft')
 @login_required
 @admin_required
 def aircraft_list():
@@ -790,7 +791,7 @@ def instructor_list():
     return render_template('admin/instructor_list.html', instructors=instructors)
 
 
-@admin_bp.route('/users')
+@admin_bp.route('/users', endpoint='users')
 @login_required
 @admin_required
 def user_list():
@@ -873,7 +874,7 @@ def update_aircraft_status(id):
         ), 500
 
 
-@admin_bp.route('/endorsements', methods=['GET'])
+@admin_bp.route('/endorsements', endpoint='endorsements', methods=['GET'])
 @login_required
 @admin_required
 def endorsements():
@@ -890,7 +891,7 @@ def endorsements():
     return render_template('admin/endorsements.html', endorsements=endorsements)
 
 
-@admin_bp.route('/endorsements/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+@admin_bp.route('/endorsements/<int:id>', methods=['GET', 'PUT', 'DELETE'], endpoint='manage_endorsement')
 @login_required
 @admin_required
 def manage_endorsement(id):
@@ -954,7 +955,7 @@ def manage_endorsement(id):
             ), 500
 
 
-@admin_bp.route('/documents', methods=['GET'])
+@admin_bp.route('/documents', endpoint='documents', methods=['GET'])
 @login_required
 @admin_required
 def documents():
@@ -971,7 +972,7 @@ def documents():
     return render_template('admin/documents.html', documents=documents)
 
 
-@admin_bp.route('/documents/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+@admin_bp.route('/documents/<int:id>', methods=['GET', 'PUT', 'DELETE'], endpoint='manage_document')
 @login_required
 @admin_required
 def manage_document(id):
@@ -1133,7 +1134,7 @@ def manage_weather_minima(id):
             ), 500
 
 
-@admin_bp.route('/audit-logs', methods=['GET'])
+@admin_bp.route('/audit-logs', endpoint='audit_logs', methods=['GET'])
 @login_required
 @admin_required
 def audit_logs():
@@ -1151,7 +1152,7 @@ def audit_logs():
     return render_template('admin/audit_logs.html', logs=logs)
 
 
-@admin_bp.route('/waitlist', methods=['GET'])
+@admin_bp.route('/waitlist', endpoint='waitlist', methods=['GET'])
 @login_required
 @admin_required
 def waitlist():
@@ -1169,7 +1170,7 @@ def waitlist():
     return render_template('admin/waitlist.html', entries=entries)
 
 
-@admin_bp.route('/waitlist/<int:id>', methods=['PUT'])
+@admin_bp.route('/waitlist/<int:id>', methods=['PUT'], endpoint='manage_waitlist_entry')
 @login_required
 @admin_required
 def update_waitlist_entry(id):
@@ -1202,7 +1203,7 @@ def update_waitlist_entry(id):
         ), 500
 
 
-@admin_bp.route('/recurring-bookings', methods=['GET'])
+@admin_bp.route('/recurring-bookings', endpoint='recurring_bookings', methods=['GET'])
 @login_required
 @admin_required
 def recurring_bookings():
@@ -1219,7 +1220,7 @@ def recurring_bookings():
     return render_template('admin/recurring_bookings.html', bookings=bookings)
 
 
-@admin_bp.route('/recurring-bookings/<int:id>', methods=['PUT', 'DELETE'])
+@admin_bp.route('/recurring-bookings/<int:id>', methods=['PUT', 'DELETE'], endpoint='manage_recurring_booking')
 @login_required
 @admin_required
 def manage_recurring_booking(id):

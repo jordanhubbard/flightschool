@@ -1,13 +1,8 @@
-from app import db, login_manager
 from flask_login import UserMixin, AnonymousUserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from flask import url_for
-
-
-@login_manager.user_loader
-def load_user(id):
-    return User.query.get(int(id))
+from app import db, login_manager
 
 
 class AnonymousUser(AnonymousUserMixin):
@@ -156,7 +151,11 @@ class User(UserMixin, db.Model):
     def full_name(self):
         if self.first_name and self.last_name:
             return f"{self.first_name} {self.last_name}"
-        return self.name
+        elif self.first_name:
+            return self.first_name
+        elif self.last_name:
+            return self.last_name
+        return self.email or "Unknown"
 
     def __repr__(self):
         return f'<User {self.email}>'
@@ -280,6 +279,18 @@ class MaintenanceRecord(db.Model):
     next_due_hours = db.Column(db.Float)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    @property
+    def aircraft(self):
+        return Aircraft.query.get(self.aircraft_id)
+
+    @property
+    def maintenance_type_obj(self):
+        return MaintenanceType.query.get(self.maintenance_type_id)
+
+    @property
+    def performed_by(self):
+        return User.query.get(self.performed_by_id)
+
     def __repr__(self):
         return f'<MaintenanceRecord {self.id}>'
 
@@ -308,6 +319,18 @@ class Squawk(db.Model):
     resolved_at = db.Column(db.DateTime)
     resolved_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     resolution_notes = db.Column(db.Text)
+
+    @property
+    def aircraft(self):
+        return Aircraft.query.get(self.aircraft_id)
+
+    @property
+    def reported_by(self):
+        return User.query.get(self.reported_by_id)
+
+    @property
+    def resolved_by(self):
+        return User.query.get(self.resolved_by_id) if self.resolved_by_id else None
 
     def __repr__(self):
         return f'<Squawk {self.id}>'
@@ -405,7 +428,7 @@ class Aircraft(db.Model):
     @property
     def display_name(self):
         """Return a display name for the aircraft."""
-        return f"{self.make} {self.model} ({self.registration})"
+        return f"{self.registration} ({self.make} {self.model})"
 
     @property
     def time_to_maintenance(self):
@@ -476,6 +499,18 @@ class Booking(db.Model):
     check_out = db.relationship('CheckOut', backref='booking', uselist=False)
     invoice = db.relationship('Invoice', backref='booking', uselist=False)
     flight_log = db.relationship('FlightLog', backref='booking', uselist=False)
+
+    @property
+    def student(self):
+        return User.query.get(self.student_id)
+
+    @property
+    def instructor(self):
+        return User.query.get(self.instructor_id) if self.instructor_id else None
+
+    @property
+    def aircraft(self):
+        return Aircraft.query.get(self.aircraft_id)
 
     def __repr__(self):
         return f'<Booking {self.id}>'
@@ -616,6 +651,22 @@ class FlightLog(db.Model):
         onupdate=datetime.utcnow
     )
 
+    @property
+    def booking(self):
+        return Booking.query.get(self.booking_id)
+
+    @property
+    def aircraft(self):
+        return Aircraft.query.get(self.aircraft_id)
+
+    @property
+    def pic(self):
+        return User.query.get(self.pic_id)
+
+    @property
+    def sic(self):
+        return User.query.get(self.sic_id) if self.sic_id else None
+
     def __repr__(self):
         return f'<FlightLog {self.id}>'
 
@@ -661,6 +712,22 @@ class Invoice(db.Model):
     payment_method = db.Column(db.String(50))
     notes = db.Column(db.Text)
 
+    @property
+    def booking(self):
+        return Booking.query.get(self.booking_id)
+
+    @property
+    def aircraft(self):
+        return Aircraft.query.get(self.aircraft_id)
+
+    @property
+    def student(self):
+        return User.query.get(self.student_id)
+
+    @property
+    def instructor(self):
+        return User.query.get(self.instructor_id) if self.instructor_id else None
+
     def __repr__(self):
         return f'<Invoice {self.invoice_number}>'
 
@@ -685,7 +752,7 @@ class WeatherMinima(db.Model):
     )
 
     def __repr__(self):
-        return f'<WeatherMinima {self.id}>'
+        return f"<WeatherMinima {self.category}: ceiling {self.ceiling_min}, vis {self.visibility_min}>"
 
 
 class Endorsement(db.Model):
@@ -707,6 +774,14 @@ class Endorsement(db.Model):
     # URL to stored endorsement document
     document_url = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def student(self):
+        return User.query.get(self.student_id)
+
+    @property
+    def instructor(self):
+        return User.query.get(self.instructor_id)
 
     def __repr__(self):
         return f'<Endorsement {self.id}>'
@@ -730,6 +805,10 @@ class Document(db.Model):
         default=datetime.utcnow,
         onupdate=datetime.utcnow
     )
+
+    @property
+    def user(self):
+        return User.query.get(self.user_id)
 
     def __repr__(self):
         return f'<Document {self.id}>'
@@ -777,6 +856,18 @@ class WaitlistEntry(db.Model):
     status = db.Column(db.String(20), default='active')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    @property
+    def student(self):
+        return User.query.get(self.student_id)
+
+    @property
+    def instructor(self):
+        return User.query.get(self.instructor_id) if self.instructor_id else None
+
+    @property
+    def aircraft(self):
+        return Aircraft.query.get(self.aircraft_id)
+
     def __repr__(self):
         return f'<WaitlistEntry {self.id}>'
 
@@ -806,6 +897,18 @@ class RecurringBooking(db.Model):
     end_date = db.Column(db.DateTime, nullable=True)
     status = db.Column(db.String(20), default='active')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def student(self):
+        return User.query.get(self.student_id)
+
+    @property
+    def instructor(self):
+        return User.query.get(self.instructor_id) if self.instructor_id else None
+
+    @property
+    def aircraft(self):
+        return Aircraft.query.get(self.aircraft_id)
 
     def __repr__(self):
         return f'<RecurringBooking {self.id}>'

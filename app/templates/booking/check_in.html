@@ -153,6 +153,38 @@
                                 </div>
                             </div>
 
+                            <!-- Instructor -->
+                            <div class="col-md-6">
+                                <div class="p-3 bg-light rounded-3">
+                                    <h6 class="text-muted mb-3">Instructor</h6>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-chalkboard-teacher"></i></span>
+                                        <select class="form-select" id="instructor" name="instructor" required>
+                                            <option value="">Select instructor</option>
+                                            {% for instructor in instructors %}
+                                            <option value="{{ instructor.id }}">{{ instructor.full_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Aircraft -->
+                            <div class="col-md-6">
+                                <div class="p-3 bg-light rounded-3">
+                                    <h6 class="text-muted mb-3">Aircraft</h6>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-plane"></i></span>
+                                        <select class="form-select" id="aircraft" name="aircraft" required>
+                                            <option value="">Select aircraft</option>
+                                            {% for aircraft in aircrafts %}
+                                            <option value="{{ aircraft.id }}">{{ aircraft.display_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Notes -->
                             <div class="col-12">
                                 <div class="p-3 bg-light rounded-3">

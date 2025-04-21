@@ -7,9 +7,8 @@ from flask_wtf.csrf import CSRFProtect
 from config import config
 from datetime import datetime
 import os
-from app.models import User
 
-
+# Initialize extensions
 db = SQLAlchemy()
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
@@ -17,7 +16,6 @@ login_manager.login_message_category = 'info'
 migrate = Migrate()
 mail = Mail()
 csrf = CSRFProtect()
-
 
 def create_app(config_name='default'):
     """Application factory."""
@@ -35,6 +33,13 @@ def create_app(config_name='default'):
     def inject_datetime():
         return dict(datetime=datetime)
 
+    @app.template_filter('datetime')
+    def format_datetime(value, format='%Y-%m-%d %H:%M'):
+        """Format a datetime object."""
+        if value is None:
+            return ''
+        return value.strftime(format)
+
     @app.before_request
     def before_request():
         if '_id' not in session:
@@ -49,7 +54,7 @@ def create_app(config_name='default'):
 
     # Register blueprints
     from app.routes import auth, booking, admin, main, maintenance
-    app.register_blueprint(auth.auth_bp)
+    app.register_blueprint(auth.auth_bp, url_prefix='/auth')
     app.register_blueprint(booking.booking_bp)
     app.register_blueprint(admin.admin_bp, url_prefix='/admin')
     app.register_blueprint(main.main_bp)
@@ -66,6 +71,8 @@ def create_app(config_name='default'):
 
     return app
 
+# Import models after db is defined to avoid circular imports
+from app.models import User
 
 @login_manager.user_loader
 def load_user(id):

@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Invoice - {{ booking.aircraft.tail_number }}{% endblock %}
+{% block title %}Invoice - {{ booking.aircraft.display_name }}{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <h2>Generate Invoice - {{ booking.aircraft.tail_number }}</h2>
+    <h2>Generate Invoice - {{ booking.aircraft.display_name }}</h2>
     <div class="card">
         <div class="card-body">
             <div class="alert alert-info">
@@ -38,7 +38,7 @@
                 <p class="mb-0"><strong>Total Amount: ${{ "%.2f"|format(check_out.total_aircraft_time * booking.aircraft.rate_per_hour + (check_out.total_instructor_time * booking.instructor.instructor_rate_per_hour if booking.instructor else 0)) }}</strong></p>
             </div>
 
-            <form method="POST">
+            <form method="POST" action="{{ url_for('booking.generate_invoice', id=booking.id) }}">
                 <button type="submit" class="btn btn-primary">Generate Invoice</button>
             </form>
         </div>

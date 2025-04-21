@@ -229,7 +229,7 @@
                                      alt="{{ aircraft.make }} {{ aircraft.model }}">
                                 <span class="aircraft-status {{ aircraft.status }}">{{ aircraft.status|title }}</span>
                                 <div class="aircraft-info">
-                                    <h5 class="mb-1">{{ aircraft.make }} {{ aircraft.model }}</h5>
+                                    <h5 class="mb-1">{{ aircraft.display_name }}</h5>
                                     <p class="mb-2">{{ aircraft.registration }}</p>
                                     <div class="d-flex justify-content-between align-items-center">
                                         <span>${{ "%.2f"|format(aircraft.rate_per_hour) }}/hour</span>
@@ -305,7 +305,7 @@
                         <!-- Aircraft rows -->
                         {% for aircraft_id, data in schedule.aircraft.items() %}
                             <div class="schedule-row">
-                                <div class="schedule-label">{{ data.aircraft.registration }}</div>
+                                <div class="schedule-label">{{ data.aircraft.display_name }}</div>
                                 {% for hour in range(24) %}
                                     <div class="schedule-cell" onclick="setStartTime('{{ "%02d"|format(hour) }}:00')">
                                         {% for booking in data.bookings %}

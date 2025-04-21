@@ -46,20 +46,24 @@
                         <table class="table table-hover">
                             <thead>
                                 <tr>
-                                    <th>Date</th>
                                     <th>Aircraft</th>
+                                    <th>Date</th>
                                     <th>Route</th>
-                                    <th>Flight Time</th>
-                                    <th>Landings</th>
-                                    <th>Conditions</th>
+                                    <th>PIC</th>
+                                    <th>SIC</th>
+                                    <th>Night</th>
+                                    <th>Cross Country</th>
+                                    <th>Instrument</th>
+                                    <th>Landings Day</th>
+                                    <th>Landings Night</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for log in logs %}
                                 <tr>
+                                    <td>{{ log.aircraft.display_name }}</td>
                                     <td>{{ log.flight_date.strftime('%Y-%m-%d') }}</td>
-                                    <td>{{ log.booking.aircraft.registration }}</td>
                                     <td>
                                         {% if log.route %}
                                         <span class="text-monospace">{{ log.route }}</span>
@@ -67,39 +71,15 @@
                                         <span class="text-muted">Local</span>
                                         {% endif %}
                                     </td>
+                                    <td>{{ log.pic.full_name }}</td>
+                                    <td>{{ log.sic.full_name if log.sic else 'N/A' }}</td>
+                                    <td>{{ log.night }}</td>
+                                    <td>{{ log.cross_country }}</td>
+                                    <td>{{ log.actual_instrument }}</td>
+                                    <td>{{ log.landings_day }}</td>
+                                    <td>{{ log.landings_night }}</td>
                                     <td>
-                                        {% if log.pic_time %}
-                                        <span class="badge bg-primary">PIC: {{ "%.1f"|format(log.pic_time) }}</span>
-                                        {% endif %}
-                                        {% if log.dual_received %}
-                                        <span class="badge bg-info">Dual: {{ "%.1f"|format(log.dual_received) }}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if log.landings_day %}
-                                        <span class="badge bg-light text-dark">Day: {{ log.landings_day }}</span>
-                                        {% endif %}
-                                        {% if log.landings_night %}
-                                        <span class="badge bg-dark">Night: {{ log.landings_night }}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-{{ 'success' if log.weather_conditions == 'VFR' else 'warning' if log.weather_conditions == 'MVFR' else 'danger' }}">
-                                            {{ log.weather_conditions }}
-                                        </span>
-                                        {% if log.actual_instrument %}
-                                        <span class="badge bg-info">IMC</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="btn-group">
-                                            <button class="btn btn-sm btn-outline-primary" onclick="viewFlightLog({{ log.id }})">
-                                                <i class="fas fa-eye me-1"></i>View
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-secondary" onclick="copyFlightLog({{ log.id }})">
-                                                <i class="fas fa-copy me-1"></i>Copy
-                                            </button>
-                                        </div>
+                                        <a href="{{ url_for('auth.view_flight_log', id=log.id) }}" class="btn btn-sm btn-outline-primary">View</a>
                                     </td>
                                 </tr>
                                 {% endfor %}

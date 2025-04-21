@@ -25,18 +25,18 @@
                         {% for booking in bookings %}
                         <tr>
                             <td>{{ booking.student.full_name }}</td>
-                            <td>{{ booking.instructor.full_name if booking.instructor else 'No Instructor' }}</td>
-                            <td>{{ booking.aircraft.registration }}</td>
+                            <td>{{ booking.instructor.full_name if booking.instructor else 'N/A' }}</td>
+                            <td>{{ booking.aircraft.display_name }}</td>
                             <td>{{ ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][booking.day_of_week] }}</td>
                             <td>{{ booking.start_time.strftime('%H:%M') }}</td>
                             <td>{{ booking.duration_hours }} hrs</td>
                             <td>{{ booking.start_date.strftime('%Y-%m-%d') }}</td>
                             <td>{{ booking.end_date.strftime('%Y-%m-%d') if booking.end_date else 'Ongoing' }}</td>
-                            <td>{{ booking.status }}</td>
+                            <td>{{ booking.status|title }}</td>
                             <td>
                                 <div class="btn-group">
-                                    <button class="btn btn-sm btn-outline-primary" onclick="editBooking({{ booking.id }})">Edit</button>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteBooking({{ booking.id }})">Delete</button>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="editRecurringBooking({{ booking.id }})">Edit</button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteRecurringBooking({{ booking.id }})">Delete</button>
                                 </div>
                             </td>
                         </tr>
@@ -121,7 +121,7 @@
 </div>
 
 <script>
-function editBooking(id) {
+function editRecurringBooking(id) {
     document.getElementById('bookingId').value = id;
     // TODO: Fetch booking details and populate form
     $('#editBookingModal').modal('show');
@@ -161,7 +161,7 @@ function saveBooking() {
     });
 }
 
-function deleteBooking(id) {
+function deleteRecurringBooking(id) {
     if (confirm('Are you sure you want to delete this recurring booking?')) {
         fetch(`/admin/recurring-bookings/${id}`, {
             method: 'DELETE',

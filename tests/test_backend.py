@@ -6,10 +6,10 @@ from app import db
 import pytest
 
 
-def test_instructor_management(client, test_admin, app):
+def test_instructor_management(client, admin_user, app):
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['_user_id'] = test_admin.id
+            sess['_user_id'] = admin_user.id
             sess['_fresh'] = True
 
     response = client.post('/admin/user/create', data={
@@ -25,10 +25,10 @@ def test_instructor_management(client, test_admin, app):
     assert b'User created successfully' in response.data
 
 
-def test_google_calendar_settings(client, test_admin, app):
+def test_google_calendar_settings(client, admin_user, app):
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['_user_id'] = test_admin.id
+            sess['_user_id'] = admin_user.id
             sess['_fresh'] = True
 
     response = client.get('/admin/calendar/settings')
@@ -36,10 +36,10 @@ def test_google_calendar_settings(client, test_admin, app):
     assert b'Calendar Settings' in response.data
 
 
-def test_google_calendar_oauth(client, test_admin, app):
+def test_google_calendar_oauth(client, admin_user, app):
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['_user_id'] = test_admin.id
+            sess['_user_id'] = admin_user.id
             sess['_fresh'] = True
 
     response = client.get('/admin/calendar/oauth')
@@ -47,10 +47,10 @@ def test_google_calendar_oauth(client, test_admin, app):
     assert 'accounts.google.com' in response.location
 
 
-def test_booking_management(client, test_user, test_aircraft, app):
+def test_booking_management(client, admin_user, test_user, test_aircraft, app):
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['_user_id'] = test_user.id
+            sess['_user_id'] = admin_user.id
             sess['_fresh'] = True
 
         # Create a booking
@@ -73,10 +73,10 @@ def test_booking_management(client, test_user, test_aircraft, app):
         assert b'Pending' in response.data
 
 
-def test_booking_cancellation(client, test_user, test_aircraft, app):
+def test_booking_cancellation(client, admin_user, test_user, test_aircraft, app):
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['_user_id'] = test_user.id
+            sess['_user_id'] = admin_user.id
             sess['_fresh'] = True
 
         # Create a booking
@@ -98,10 +98,10 @@ def test_booking_cancellation(client, test_user, test_aircraft, app):
         assert b'Booking cancelled successfully' in response.data
 
 
-def test_user_management(client, test_admin, app):
+def test_user_management(client, admin_user, app):
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['_user_id'] = test_admin.id
+            sess['_user_id'] = admin_user.id
             sess['_fresh'] = True
 
     response = client.post('/admin/user/create', data={
@@ -116,10 +116,10 @@ def test_user_management(client, test_admin, app):
     assert b'User created successfully' in response.data
 
 
-def test_aircraft_management(client, test_admin, app):
+def test_aircraft_management(client, admin_user, app):
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['_user_id'] = test_admin.id
+            sess['_user_id'] = admin_user.id
             sess['_fresh'] = True
 
     response = client.post('/admin/aircraft/add', data={
@@ -142,10 +142,10 @@ def test_aircraft_management(client, test_admin, app):
     assert b'Aircraft added successfully' in response.data
 
 
-def test_schedule_management(client, test_admin, app):
+def test_schedule_management(client, admin_user, app):
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['_user_id'] = test_admin.id
+            sess['_user_id'] = admin_user.id
             sess['_fresh'] = True
 
     response = client.get('/admin/schedule')
@@ -153,10 +153,10 @@ def test_schedule_management(client, test_admin, app):
     assert b'Schedule Management' in response.data
 
 
-def test_report_generation(client, test_admin, app):
+def test_report_generation(client, admin_user, app):
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['_user_id'] = test_admin.id
+            sess['_user_id'] = admin_user.id
             sess['_fresh'] = True
 
     response = client.get('/admin/reports')
@@ -164,10 +164,10 @@ def test_report_generation(client, test_admin, app):
     assert b'Report Generation' in response.data
 
 
-def test_system_settings(client, test_admin, app):
+def test_system_settings(client, admin_user, app):
     with app.app_context():
         with client.session_transaction() as sess:
-            sess['_user_id'] = test_admin.id
+            sess['_user_id'] = admin_user.id
             sess['_fresh'] = True
 
     response = client.get('/admin/settings')

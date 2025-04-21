@@ -19,7 +19,7 @@
                             <select class="form-select" id="aircraft_id" name="aircraft_id" required>
                                 <option value="">Select an aircraft</option>
                                 {% for aircraft in available_aircraft %}
-                                    <option value="{{ aircraft.id }}">{{ aircraft.registration }} ({{ aircraft.make }} {{ aircraft.model }})</option>
+                                    <option value="{{ aircraft.id }}">{{ aircraft.display_name }}</option>
                                 {% endfor %}
                             </select>
                         </div>

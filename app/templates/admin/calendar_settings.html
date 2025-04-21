@@ -17,14 +17,32 @@
                 <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action">
                     <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                 </a>
-                <a href="{{ url_for('admin.user_list') }}" class="list-group-item list-group-item-action">
+                <a href="{{ url_for('admin.users') }}" class="list-group-item list-group-item-action">
                     <i class="fas fa-users me-2"></i>Users
                 </a>
-                <a href="{{ url_for('admin.aircraft_list') }}" class="list-group-item list-group-item-action">
+                <a href="{{ url_for('admin.aircraft') }}" class="list-group-item list-group-item-action">
                     <i class="fas fa-plane me-2"></i>Aircraft
                 </a>
                 <a href="{{ url_for('admin.schedule') }}" class="list-group-item list-group-item-action">
-                    <i class="fas fa-calendar-week me-2"></i>Schedule
+                    <i class="fas fa-calendar-alt me-2"></i>Bookings
+                </a>
+                <a href="{{ url_for('admin.maintenance_records') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-tools me-2"></i>Maintenance
+                </a>
+                <a href="{{ url_for('admin.squawks') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Squawks
+                </a>
+                <a href="{{ url_for('admin.endorsements') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-certificate me-2"></i>Endorsements
+                </a>
+                <a href="{{ url_for('admin.documents') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-file-alt me-2"></i>Documents
+                </a>
+                <a href="{{ url_for('admin.weather_minima') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-cloud-sun me-2"></i>Weather Minima
+                </a>
+                <a href="{{ url_for('admin.audit_logs') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-clipboard-list me-2"></i>Audit Logs
                 </a>
                 <a href="{{ url_for('admin.calendar_settings') }}" class="list-group-item list-group-item-action active">
                     <i class="fas fa-calendar-alt me-2"></i>Calendar Settings

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Flight Schedule - {{ config.SCHOOL_NAME }}{% endblock %}
+{% block title %}{{ title }} - {{ config.SCHOOL_NAME }}{% endblock %}
 
 {% block extra_css %}
 <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
@@ -128,7 +128,7 @@
         <!-- Left Column -->
         <div class="col-md-8">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="mb-0">Flight Schedule</h2>
+                <h2 class="mb-0">{{ title }}</h2>
                 <a href="{{ url_for('booking.create_booking') }}" class="btn btn-accent">
                     <i class="fas fa-plus me-2"></i>Book New Flight
                 </a>
@@ -151,7 +151,7 @@
                                     <div class="timeline-content">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <div>
-                                                <h6 class="mb-1">{{ booking.aircraft.make }} {{ booking.aircraft.model }} ({{ booking.aircraft.registration }})</h6>
+                                                <h6 class="mb-1">{{ booking.aircraft.display_name }} ({{ booking.aircraft.registration }})</h6>
                                                 <p class="mb-1">
                                                     <i class="fas fa-clock me-1"></i>
                                                     {{ booking.start_time.strftime('%H:%M') }} - {{ booking.end_time.strftime('%H:%M') }}

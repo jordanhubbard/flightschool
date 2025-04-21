@@ -121,11 +121,7 @@ def test_aircraft(session):
         hobbs_time=2345.6,
         tach_time=2300.4,
         description='Well-maintained Skyhawk with G1000 avionics',
-        maintenance_status='airworthy',
-        next_maintenance_date=datetime.now(timezone.utc) + timedelta(days=30),
-        next_maintenance_hours=2445.6,
-        insurance_expiry=datetime.now(timezone.utc) + timedelta(days=365),
-        registration_expiry=datetime.now(timezone.utc) + timedelta(days=730)
+        last_maintenance=datetime.now(timezone.utc) + timedelta(days=30)
     )
     session.add(aircraft)
     session.commit()
@@ -254,11 +250,10 @@ def test_document(session, test_user):
 
 
 @pytest.fixture
-def test_waitlist_entry(session, test_user, test_aircraft, test_instructor):
+def test_waitlist_entry(session, test_user, test_aircraft):
     """Create a test waitlist entry."""
     entry = WaitlistEntry(
         student_id=test_user.id,
-        instructor_id=test_instructor.id,
         aircraft_id=test_aircraft.id,
         requested_date=datetime.now(timezone.utc) + timedelta(days=7),
         time_preference='afternoon',
@@ -271,17 +266,16 @@ def test_waitlist_entry(session, test_user, test_aircraft, test_instructor):
 
 
 @pytest.fixture
-def test_recurring_booking(session, test_user, test_aircraft, test_instructor):
+def test_recurring_booking(session, test_user, test_aircraft):
     """Create a test recurring booking."""
     booking = RecurringBooking(
         student_id=test_user.id,
-        instructor_id=test_instructor.id,
         aircraft_id=test_aircraft.id,
         day_of_week=2,  # Wednesday
-        start_time=datetime.strptime('14:00', '%H:%M').time(),
+        start_time=datetime.now(timezone.utc).time(),
         duration_hours=2.0,
-        start_date=datetime.now(timezone.utc),
-        end_date=datetime.now(timezone.utc) + timedelta(days=90),
+        start_date=datetime.now(timezone.utc).date(),
+        end_date=datetime.now(timezone.utc).date() + timedelta(days=90),
         status='active'
     )
     session.add(booking)
