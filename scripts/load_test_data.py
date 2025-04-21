@@ -75,12 +75,14 @@ def load_test_data():
                     aircraft_data[field] = datetime.fromisoformat(aircraft_data[field].replace('Z', '+00:00'))
             
             # Create aircraft object
+            aircraft_data = dict(aircraft_data)  # make a copy to mutate
+            aircraft_data.pop('serial_number', None)  # Remove invalid field
+            aircraft_data.pop('gps_equipped', None)  # Remove invalid field
             aircraft = Aircraft(
                 registration=aircraft_data['registration'],
                 make=aircraft_data['make'],
                 model=aircraft_data['model'],
                 year=aircraft_data['year'],
-                serial_number=aircraft_data['serial_number'],
                 status=aircraft_data['status'],
                 category=aircraft_data['category'],
                 engine_type=aircraft_data['engine_type'],
@@ -89,7 +91,7 @@ def load_test_data():
                 
                 # Equipment
                 ifr_equipped=aircraft_data['ifr_equipped'],
-                gps_equipped=aircraft_data['gps_equipped'],
+                gps=aircraft_data.get('gps'),
                 gps_model=aircraft_data.get('gps_model'),
                 autopilot=aircraft_data['autopilot'],
                 autopilot_model=aircraft_data.get('autopilot_model'),
