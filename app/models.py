@@ -279,17 +279,11 @@ class MaintenanceRecord(db.Model):
     next_due_hours = db.Column(db.Float)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    @property
-    def aircraft(self):
-        return Aircraft.query.get(self.aircraft_id)
+    # Removed property: aircraft (conflicts with SQLAlchemy relationship backref)
 
     @property
     def maintenance_type_obj(self):
         return MaintenanceType.query.get(self.maintenance_type_id)
-
-    @property
-    def performed_by(self):
-        return User.query.get(self.performed_by_id)
 
     def __repr__(self):
         return f'<MaintenanceRecord {self.id}>'
@@ -319,18 +313,6 @@ class Squawk(db.Model):
     resolved_at = db.Column(db.DateTime)
     resolved_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     resolution_notes = db.Column(db.Text)
-
-    @property
-    def aircraft(self):
-        return Aircraft.query.get(self.aircraft_id)
-
-    @property
-    def reported_by(self):
-        return User.query.get(self.reported_by_id)
-
-    @property
-    def resolved_by(self):
-        return User.query.get(self.resolved_by_id) if self.resolved_by_id else None
 
     def __repr__(self):
         return f'<Squawk {self.id}>'
@@ -500,18 +482,6 @@ class Booking(db.Model):
     invoice = db.relationship('Invoice', backref='booking', uselist=False)
     flight_log = db.relationship('FlightLog', backref='booking', uselist=False)
 
-    @property
-    def student(self):
-        return User.query.get(self.student_id)
-
-    @property
-    def instructor(self):
-        return User.query.get(self.instructor_id) if self.instructor_id else None
-
-    @property
-    def aircraft(self):
-        return Aircraft.query.get(self.aircraft_id)
-
     def __repr__(self):
         return f'<Booking {self.id}>'
 
@@ -651,18 +621,6 @@ class FlightLog(db.Model):
         onupdate=datetime.utcnow
     )
 
-    @property
-    def aircraft(self):
-        return Aircraft.query.get(self.aircraft_id)
-
-    @property
-    def pic(self):
-        return User.query.get(self.pic_id)
-
-    @property
-    def sic(self):
-        return User.query.get(self.sic_id) if self.sic_id else None
-
     def __repr__(self):
         return f'<FlightLog {self.id}>'
 
@@ -707,18 +665,6 @@ class Invoice(db.Model):
     payment_date = db.Column(db.DateTime)
     payment_method = db.Column(db.String(50))
     notes = db.Column(db.Text)
-
-    @property
-    def aircraft(self):
-        return Aircraft.query.get(self.aircraft_id)
-
-    @property
-    def student(self):
-        return User.query.get(self.student_id)
-
-    @property
-    def instructor(self):
-        return User.query.get(self.instructor_id) if self.instructor_id else None
 
     def __repr__(self):
         return f'<Invoice {self.invoice_number}>'
@@ -767,14 +713,6 @@ class Endorsement(db.Model):
     document_url = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    @property
-    def student(self):
-        return User.query.get(self.student_id)
-
-    @property
-    def instructor(self):
-        return User.query.get(self.instructor_id)
-
     def __repr__(self):
         return f'<Endorsement {self.id}>'
 
@@ -797,10 +735,6 @@ class Document(db.Model):
         default=datetime.utcnow,
         onupdate=datetime.utcnow
     )
-
-    @property
-    def user(self):
-        return User.query.get(self.user_id)
 
     def __repr__(self):
         return f'<Document {self.id}>'
@@ -848,18 +782,6 @@ class WaitlistEntry(db.Model):
     status = db.Column(db.String(20), default='active')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    @property
-    def student(self):
-        return User.query.get(self.student_id)
-
-    @property
-    def instructor(self):
-        return User.query.get(self.instructor_id) if self.instructor_id else None
-
-    @property
-    def aircraft(self):
-        return Aircraft.query.get(self.aircraft_id)
-
     def __repr__(self):
         return f'<WaitlistEntry {self.id}>'
 
@@ -889,18 +811,6 @@ class RecurringBooking(db.Model):
     end_date = db.Column(db.DateTime, nullable=True)
     status = db.Column(db.String(20), default='active')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    @property
-    def student(self):
-        return User.query.get(self.student_id)
-
-    @property
-    def instructor(self):
-        return User.query.get(self.instructor_id) if self.instructor_id else None
-
-    @property
-    def aircraft(self):
-        return Aircraft.query.get(self.aircraft_id)
 
     def __repr__(self):
         return f'<RecurringBooking {self.id}>'
