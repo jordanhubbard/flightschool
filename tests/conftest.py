@@ -33,13 +33,11 @@ def client(app):
 
 @pytest.fixture
 def session(app):
-    """Create a new database session for a test."""
+    """Create a new database session for a test (SQLAlchemy 2.x compatible)."""
     with app.app_context():
         connection = db.engine.connect()
         transaction = connection.begin()
-        options = dict(bind=connection, binds={})
-        session = db.create_scoped_session(options=options)
-        db.session = session
+        session = db.session  # Use the global Flask-SQLAlchemy session
         yield session
         transaction.rollback()
         connection.close()
