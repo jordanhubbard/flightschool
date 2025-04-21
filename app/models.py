@@ -652,10 +652,6 @@ class FlightLog(db.Model):
     )
 
     @property
-    def booking(self):
-        return Booking.query.get(self.booking_id)
-
-    @property
     def aircraft(self):
         return Aircraft.query.get(self.aircraft_id)
 
@@ -711,10 +707,6 @@ class Invoice(db.Model):
     payment_date = db.Column(db.DateTime)
     payment_method = db.Column(db.String(50))
     notes = db.Column(db.Text)
-
-    @property
-    def booking(self):
-        return Booking.query.get(self.booking_id)
 
     @property
     def aircraft(self):

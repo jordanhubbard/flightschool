@@ -74,68 +74,10 @@ def load_test_data():
                 if field in aircraft_data and aircraft_data[field]:
                     aircraft_data[field] = datetime.fromisoformat(aircraft_data[field].replace('Z', '+00:00'))
             
-            # Create aircraft object
-            aircraft_data = dict(aircraft_data)  # make a copy to mutate
-            aircraft_data.pop('serial_number', None)  # Remove invalid field
-            aircraft_data.pop('gps_equipped', None)  # Remove invalid field
-            aircraft_data.pop('gps_model', None)  # Remove invalid field
-            aircraft_data.pop('autopilot_model', None)  # Remove invalid field
-            aircraft_data.pop('adsb_out', None)  # Remove invalid field
-            aircraft_data.pop('adsb_in', None)  # Remove invalid field
-            aircraft_data.pop('dme_equipped', None)  # Remove invalid field
-            aircraft = Aircraft(
-                registration=aircraft_data['registration'],
-                make=aircraft_data['make'],
-                model=aircraft_data['model'],
-                year=aircraft_data['year'],
-                status=aircraft_data['status'],
-                category=aircraft_data['category'],
-                engine_type=aircraft_data['engine_type'],
-                num_engines=aircraft_data['num_engines'],
-                description=aircraft_data['description'],
-                
-                # Equipment
-                ifr_equipped=aircraft_data['ifr_equipped'],
-                gps=aircraft_data.get('gps'),
-                autopilot=aircraft_data['autopilot'],
-                tcas_equipped=aircraft_data['tcas_equipped'],
-                
-                # Performance
-                rate_per_hour=aircraft_data['rate_per_hour'],
-                fuel_capacity=aircraft_data['fuel_capacity'],
-                fuel_type=aircraft_data['fuel_type'],
-                oil_capacity=aircraft_data['oil_capacity'],
-                max_weight=aircraft_data['max_weight'],
-                empty_weight=aircraft_data['empty_weight'],
-                useful_load=aircraft_data['useful_load'],
-                
-                # Times
-                hobbs_time=aircraft_data['hobbs_time'],
-                tach_time=aircraft_data['tach_time'],
-                total_time=aircraft_data['total_time'],
-                engine_time=aircraft_data['engine_time'],
-                prop_time=aircraft_data['prop_time'],
-                
-                # Maintenance
-                last_maintenance=aircraft_data['last_maintenance'],
-                last_annual=aircraft_data['last_annual'],
-                last_100hr=aircraft_data['last_100hr'],
-                last_pitot_static=aircraft_data['last_pitot_static'],
-                last_vor_check=aircraft_data['last_vor_check'],
-                last_altimeter=aircraft_data['last_altimeter'],
-                last_transponder=aircraft_data['last_transponder'],
-                last_elt_check=aircraft_data['last_elt_check'],
-                maintenance_status=aircraft_data['maintenance_status'],
-                next_maintenance_date=aircraft_data['next_maintenance_date'],
-                next_maintenance_hours=aircraft_data['next_maintenance_hours'],
-                maintenance_notes=aircraft_data['maintenance_notes'],
-                
-                # Documentation
-                insurance_expiry=aircraft_data['insurance_expiry'],
-                registration_expiry=aircraft_data['registration_expiry'],
-                airworthiness_cert=aircraft_data['airworthiness_cert'],
-                airworthiness_date=aircraft_data['airworthiness_date']
-            )
+            # Dynamically filter aircraft_data to only valid Aircraft fields
+            valid_aircraft_fields = set(c.name for c in Aircraft.__table__.columns)
+            filtered_aircraft_data = {k: v for k, v in aircraft_data.items() if k in valid_aircraft_fields}
+            aircraft = Aircraft(**filtered_aircraft_data)
             db.session.add(aircraft)
             db.session.flush()
             aircraft_map[aircraft.registration] = aircraft
