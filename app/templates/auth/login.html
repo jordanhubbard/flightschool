@@ -11,6 +11,14 @@
                     <h4 class="mb-0">Sign In</h4>
                 </div>
                 <div class="card-body">
+                    {# Render flashed messages #}
+                    {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-info">{{ message }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
                     <form method="POST" action="{{ url_for('auth.login') }}">
                         {{ form.csrf_token }}
                         <div class="mb-3">
@@ -62,4 +70,4 @@
     })
 })()
 </script>
-{% endblock %} 
+{% endblock %}
