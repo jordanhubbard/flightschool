@@ -17,6 +17,11 @@
                         <div class="mb-3">
                             <label for="aircraft_id" class="form-label">Aircraft</label>
                             {{ form.aircraft_id(class="form-select", id="aircraft_id") }}
+                            {% if form.aircraft_id.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.aircraft_id.errors[0] }}
+                                </div>
+                            {% endif %}
                         </div>
                         
                         <div class="mb-3">

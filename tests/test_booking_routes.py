@@ -74,3 +74,71 @@ def test_booking_cancel(client):
     with app.app_context():
         booking = Booking.query.get(booking.id)
         assert booking.status == "cancelled" or booking.status == "canceled"
+
+def test_booking_create_invalid_duration(client):
+    client, app = client
+    login_student(client, app)
+    with app.app_context():
+        ac = Aircraft.query.filter_by(registration="N77777").first()
+    start_time = datetime.now(timezone.utc).replace(microsecond=0, second=0)
+    # Duration too short
+    resp = client.post("/bookings", data={
+        "aircraft_id": ac.id,
+        "start_time": start_time.strftime("%Y-%m-%dT%H:%M"),
+        "duration": 0
+    }, follow_redirects=True)
+    assert resp.status_code == 200
+    assert b"Duration must be between" in resp.data or b"Invalid" in resp.data
+
+def test_booking_create_missing_aircraft(client):
+    client, app = client
+    login_student(client, app)
+    start_time = datetime.now(timezone.utc).replace(microsecond=0, second=0)
+    # Missing aircraft_id
+    resp = client.post("/bookings", data={
+        "start_time": start_time.strftime("%Y-%m-%dT%H:%M"),
+        "duration": 60
+    }, follow_redirects=True)
+    assert resp.status_code == 200
+    assert b"This field is required" in resp.data
+
+def test_booking_cancel_invalid_id(client):
+    client, app = client
+    login_student(client, app)
+    resp = client.post("/bookings/9999/cancel", follow_redirects=True)
+    assert resp.status_code == 404 or resp.status_code == 200
+
+def test_booking_dashboard_shows_upcoming(client):
+    client, app = client
+    login_student(client, app)
+    with app.app_context():
+        ac = Aircraft.query.filter_by(registration="N77777").first()
+    start_time = datetime.now(timezone.utc) + timedelta(days=1)
+    resp = client.post("/bookings", data={
+        "aircraft_id": ac.id,
+        "start_time": start_time.strftime("%Y-%m-%dT%H:%M"),
+        "duration": 60
+    }, follow_redirects=True)
+    resp = client.get("/dashboard")
+    assert resp.status_code == 200
+    assert b"Upcoming Flights" in resp.data
+
+def test_booking_cancel_twice(client):
+    client, app = client
+    login_student(client, app)
+    with app.app_context():
+        ac = Aircraft.query.filter_by(registration="N77777").first()
+    start_time = datetime.now(timezone.utc).replace(microsecond=0, second=0)
+    resp = client.post("/bookings", data={
+        "aircraft_id": ac.id,
+        "start_time": start_time.strftime("%Y-%m-%dT%H:%M"),
+        "duration": 60
+    }, follow_redirects=True)
+    with app.app_context():
+        booking = Booking.query.filter_by(aircraft_id=ac.id).first()
+    resp = client.post(f"/bookings/{booking.id}/cancel", follow_redirects=True)
+    resp2 = client.post(f"/bookings/{booking.id}/cancel", follow_redirects=True)
+    assert resp2.status_code == 200
+    with app.app_context():
+        booking = Booking.query.get(booking.id)
+        assert booking.status == "cancelled" or booking.status == "canceled"
