@@ -693,7 +693,11 @@ def check_in(booking_id):
     # Verify user has permission
     if not (current_user.is_admin or current_user.id == booking.student_id):
         flash('You do not have permission to check in for this booking', 'error')
-        return redirect(url_for('booking.dashboard'))
+        return render_template('error.html', message='Permission denied'), 403
+
+    # Prevent double check-in
+    if CheckIn.query.filter_by(booking_id=booking.id).first():
+        return render_template('error.html', message='Already checked in for this booking.'), 400
 
     if request.method == 'POST':
         form = CheckInForm()
@@ -731,12 +735,18 @@ def check_in(booking_id):
 def check_out(booking_id):
     """Handle check-out for a booking."""
     booking = Booking.query.get_or_404(booking_id)
-    check_in = CheckIn.query.filter_by(booking_id=booking_id).first_or_404()
+    check_in = CheckIn.query.filter_by(booking_id=booking_id).first()
+    if not check_in:
+        return render_template('error.html', message='Must check in before checking out.'), 400
+
+    # Prevent double check-out
+    if CheckOut.query.filter_by(booking_id=booking.id).first():
+        return render_template('error.html', message='Already checked out for this booking.'), 400
 
     # Verify user has permission
     if not (current_user.is_admin or current_user.id == booking.student_id):
         flash('You do not have permission to check out for this booking', 'error')
-        return redirect(url_for('booking.dashboard'))
+        return render_template('error.html', message='Permission denied'), 403
 
     if request.method == 'POST':
         form = CheckOutForm()
@@ -765,11 +775,7 @@ def check_out(booking_id):
                     flash(f'{field}: {error}', 'error')
 
     form = CheckOutForm()
-    return render_template(
-        'booking/check_out.html',
-        booking=booking,
-        check_in=check_in,
-        form=form)
+    return render_template('booking/check_out.html', booking=booking, form=form)
 
 
 @booking_bp.route('/booking/<int:id>/invoice', methods=['GET', 'POST'])
