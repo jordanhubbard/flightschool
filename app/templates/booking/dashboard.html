@@ -154,7 +154,7 @@
                                                 <h6 class="mb-1">{{ booking.aircraft.display_name }} ({{ booking.aircraft.registration }})</h6>
                                                 <p class="mb-1">
                                                     <i class="fas fa-clock me-1"></i>
-                                                    {{ booking.start_time.strftime('%H:%M') }} - {{ booking.end_time.strftime('%H:%M') }}
+                                                    <span class="utc-datetime" data-utc="{{ booking.start_time.isoformat() }}"></span> - <span class="utc-datetime" data-utc="{{ booking.end_time.isoformat() }}"></span>
                                                 </p>
                                                 <p class="mb-1">
                                                     <i class="fas fa-user me-1"></i>
@@ -304,6 +304,23 @@
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Convert all UTC datetimes to local time in the dashboard
+    function utcToLocalString(utcString) {
+        if (!utcString) return '';
+        const d = new Date(utcString);
+        return d.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // For each element with class 'utc-datetime', convert to local
+        document.querySelectorAll('.utc-datetime').forEach(function(el) {
+            const utc = el.getAttribute('data-utc');
+            if (utc) {
+                el.textContent = utcToLocalString(utc);
+            }
+        });
     });
 </script>
 {% endblock %}

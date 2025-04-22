@@ -57,7 +57,10 @@
                                     <td>{{ booking.student.full_name }}</td>
                                     <td>{{ booking.instructor.full_name if booking.instructor else 'N/A' }}</td>
                                     <td>{{ booking.aircraft.display_name }}</td>
-                                    <td>{{ ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][booking.day_of_week] }} at {{ booking.start_time.strftime('%H:%M') }}</td>
+                                    <td>
+                                        <span class="utc-datetime" data-utc="{{ booking.start_date.isoformat() }}"></span> at 
+                                        <span class="utc-datetime" data-utc="{{ booking.start_time.isoformat() }}"></span>
+                                    </td>
                                     <td>{{ booking.duration_hours }} hours</td>
                                     <td>
                                         {{ booking.status|title }}
@@ -193,6 +196,20 @@ function deleteRecurringBooking(bookingId) {
         });
     }
 }
+
+function utcToLocalString(utcString) {
+    if (!utcString) return '';
+    const d = new Date(utcString);
+    return d.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+}
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.utc-datetime').forEach(function(el) {
+        const utc = el.getAttribute('data-utc');
+        if (utc) {
+            el.textContent = utcToLocalString(utc);
+        }
+    });
+});
 </script>
 {% endblock %}
 {% endblock %}

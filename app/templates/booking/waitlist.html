@@ -58,7 +58,7 @@
                                     <td>{{ entry.student.full_name }}</td>
                                     <td>{{ entry.instructor.full_name if entry.instructor else 'N/A' }}</td>
                                     <td>{{ entry.aircraft.display_name }}</td>
-                                    <td>{{ entry.requested_date.strftime('%Y-%m-%d') }}</td>
+                                    <td><span class="utc-datetime" data-utc="{{ entry.requested_date.isoformat() }}"></span></td>
                                     <td>{{ entry.time_preference }}</td>
                                     <td>{{ entry.duration_hours }}</td>
                                     <td>{{ entry.status|title }}</td>
@@ -133,6 +133,20 @@
 
 {% block extra_js %}
 <script>
+function utcToLocalString(utcString) {
+    if (!utcString) return '';
+    const d = new Date(utcString);
+    return d.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+}
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.utc-datetime').forEach(function(el) {
+        const utc = el.getAttribute('data-utc');
+        if (utc) {
+            el.textContent = utcToLocalString(utc);
+        }
+    });
+});
+
 function editWaitlistEntry(entryId) {
     fetch(`/booking/waitlist/${entryId}`)
         .then(response => response.json())

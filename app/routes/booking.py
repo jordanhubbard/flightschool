@@ -199,6 +199,11 @@ def create_booking():
             try:
                 # Calculate end_time from start_time and duration
                 start_time = form.start_time.data
+                # Ensure start_time is timezone-aware UTC
+                if start_time.tzinfo is None:
+                    start_time = start_time.replace(tzinfo=timezone.utc)
+                else:
+                    start_time = start_time.astimezone(timezone.utc)
                 duration_minutes = form.duration.data
                 end_time = start_time + timedelta(minutes=duration_minutes)
                 booking = Booking(

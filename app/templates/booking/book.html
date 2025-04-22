@@ -26,12 +26,12 @@
                         
                         <div class="mb-3">
                             <label for="start_time" class="form-label">Start Time</label>
-                            <input type="datetime-local" class="form-control" id="start_time" name="start_time" required>
+                            {{ form.start_time(class="form-control", id="start_time", required=True) }}
                         </div>
                         
                         <div class="mb-3">
-                            <label for="end_time" class="form-label">End Time</label>
-                            <input type="datetime-local" class="form-control" id="end_time" name="end_time" required>
+                            <label for="duration" class="form-label">Duration (minutes)</label>
+                            {{ form.duration(class="form-control", id="duration", required=True) }}
                         </div>
                         
                         <div class="mb-3">
@@ -49,4 +49,27 @@
         </div>
     </div>
 </div>
+
+<script>
+// Ensure start_time is sent as UTC ISO string
+function localToUTCString(dtLocal) {
+    const d = new Date(dtLocal);
+    return d.toISOString().slice(0,16); // 'YYYY-MM-DDTHH:mm'
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const startInput = document.getElementById('start_time');
+            if (startInput && startInput.value) {
+                // Convert local datetime to UTC ISO string
+                const utcString = localToUTCString(startInput.value);
+                startInput.value = utcString;
+            }
+        });
+    }
+});
+</script>
+
 {% endblock %} 

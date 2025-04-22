@@ -32,8 +32,8 @@
                                             <td>{{ booking.student.full_name }}</td>
                                             <td>{{ booking.instructor.full_name if booking.instructor else 'N/A' }}</td>
                                             <td>{{ booking.aircraft.display_name }}</td>
-                                            <td>{{ booking.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
-                                            <td>{{ booking.end_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                                            <td><span class="utc-datetime" data-utc="{{ booking.start_time.isoformat() }}"></span></td>
+                                            <td><span class="utc-datetime" data-utc="{{ booking.end_time.isoformat() }}"></span></td>
                                             <td>
                                                 <span class="badge {% if booking.status == 'confirmed' %}bg-success{% elif booking.status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
                                                     {{ booking.status|title }}
@@ -60,4 +60,19 @@
         </div>
     </div>
 </div>
+<script>
+function utcToLocalString(utcString) {
+    if (!utcString) return '';
+    const d = new Date(utcString);
+    return d.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+}
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.utc-datetime').forEach(function(el) {
+        const utc = el.getAttribute('data-utc');
+        if (utc) {
+            el.textContent = utcToLocalString(utc);
+        }
+    });
+});
+</script>
 {% endblock %} 

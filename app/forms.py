@@ -10,6 +10,7 @@ from app.models import User
 import re
 from flask_wtf.csrf import CSRFProtect
 from datetime import datetime
+from datetime import timezone
 
 
 csrf = CSRFProtect()
@@ -108,10 +109,11 @@ class BookingForm(FlaskForm):
             Optional()
         ]
     )
+    # Always use UTC for default
     start_time = DateTimeField(
         'Start Time',
         format='%Y-%m-%dT%H:%M',
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         validators=[
             DataRequired()
         ]
