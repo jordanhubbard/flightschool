@@ -101,21 +101,11 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="aircraft" class="form-label">Aircraft</label>
-                        <select class="form-select" id="aircraft" name="aircraft_id" required>
-                            <option value="">Select aircraft</option>
-                            {% for aircraft in aircraft_list %}
-                            <option value="{{ aircraft.id }}">{{ aircraft.registration }} - {{ aircraft.make }} {{ aircraft.model }}</option>
-                            {% endfor %}
-                        </select>
+                        {{ form.aircraft_id(class="form-select", id="aircraft") }}
                     </div>
                     <div class="mb-3">
                         <label for="instructor" class="form-label">Instructor (optional)</label>
-                        <select class="form-select" id="instructor" name="instructor_id">
-                            <option value="">No instructor</option>
-                            {% for instructor in instructor_list %}
-                            <option value="{{ instructor.id }}">{{ instructor.full_name }}</option>
-                            {% endfor %}
-                        </select>
+                        {{ form.instructor_id(class="form-select", id="instructor") }}
                     </div>
                     <div class="mb-3">
                         <label for="requestedDate" class="form-label">Requested Date</label>
@@ -123,12 +113,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="timePreference" class="form-label">Time Preference</label>
-                        <select class="form-select" id="timePreference" name="time_preference" required>
-                            <option value="">Select time preference</option>
-                            <option value="morning">Morning (8:00 AM - 12:00 PM)</option>
-                            <option value="afternoon">Afternoon (12:00 PM - 4:00 PM)</option>
-                            <option value="evening">Evening (4:00 PM - 8:00 PM)</option>
-                        </select>
+                        {{ form.time_preference(class="form-select", id="timePreference") }}
                     </div>
                     <div class="mb-3">
                         <label for="duration" class="form-label">Duration (hours)</label>
