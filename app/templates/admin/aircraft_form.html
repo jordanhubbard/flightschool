@@ -89,11 +89,7 @@
                             
                             <div class="col-md-6 mb-3">
                                 <label for="status" class="form-label">Status*</label>
-                                <select class="form-select" id="status" name="status" required>
-                                    <option value="available" {% if aircraft and aircraft.status == 'available' %}selected{% endif %}>Available</option>
-                                    <option value="maintenance" {% if aircraft and aircraft.status == 'maintenance' %}selected{% endif %}>In Maintenance</option>
-                                    <option value="unavailable" {% if aircraft and aircraft.status == 'unavailable' %}selected{% endif %}>Unavailable</option>
-                                </select>
+                                {{ form.status(class="form-select", id="status") }}
                             </div>
                             
                             <div class="col-md-4 mb-3">
@@ -129,31 +125,17 @@
                             
                             <div class="col-md-4 mb-3">
                                 <label for="engine_type" class="form-label">Engine Type</label>
-                                <select class="form-select" id="engine_type" name="engine_type">
-                                    <option value="piston" {% if aircraft and aircraft.engine_type == 'piston' %}selected{% endif %}>Piston</option>
-                                    <option value="turboprop" {% if aircraft and aircraft.engine_type == 'turboprop' %}selected{% endif %}>Turboprop</option>
-                                    <option value="jet" {% if aircraft and aircraft.engine_type == 'jet' %}selected{% endif %}>Jet</option>
-                                </select>
+                                {{ form.engine_type(class="form-select", id="engine_type") }}
                             </div>
                             
                             <div class="col-md-4 mb-3">
                                 <label for="num_engines" class="form-label">Number of Engines</label>
-                                <select class="form-select" id="num_engines" name="num_engines">
-                                    <option value="1" {% if aircraft and aircraft.num_engines == 1 %}selected{% endif %}>Single</option>
-                                    <option value="2" {% if aircraft and aircraft.num_engines == 2 %}selected{% endif %}>Twin</option>
-                                    <option value="3" {% if aircraft and aircraft.num_engines == 3 %}selected{% endif %}>Three</option>
-                                    <option value="4" {% if aircraft and aircraft.num_engines == 4 %}selected{% endif %}>Four</option>
-                                </select>
+                                {{ form.num_engines(class="form-select", id="num_engines") }}
                             </div>
                             
                             <div class="col-md-4 mb-3">
                                 <label for="category" class="form-label">Category</label>
-                                <select class="form-select" id="category" name="category">
-                                    <option value="single_engine_land" {% if aircraft and aircraft.category == 'single_engine_land' %}selected{% endif %}>Single Engine Land</option>
-                                    <option value="multi_engine_land" {% if aircraft and aircraft.category == 'multi_engine_land' %}selected{% endif %}>Multi Engine Land</option>
-                                    <option value="single_engine_sea" {% if aircraft and aircraft.category == 'single_engine_sea' %}selected{% endif %}>Single Engine Sea</option>
-                                    <option value="multi_engine_sea" {% if aircraft and aircraft.category == 'multi_engine_sea' %}selected{% endif %}>Multi Engine Sea</option>
-                                </select>
+                                {{ form.category(class="form-select", id="category") }}
                             </div>
                             
                             <div class="col-md-6 mb-3">
