@@ -173,6 +173,7 @@ def create_booking():
             (a.id, f"{a.registration} - {a.model}")
             for a in Aircraft.query.filter_by(status='available').all()
         ]
+        print("DEBUG: Aircraft choices:", form.aircraft_id.choices)
         form.instructor_id.choices = [
             (i.id, f"{i.first_name} {i.last_name}")
             for i in User.query.filter_by(role='instructor', status='active').all()
