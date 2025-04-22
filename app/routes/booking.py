@@ -126,7 +126,7 @@ def dashboard():
     ).order_by(Booking.start_time).all()
 
     # Get available aircraft
-    available_aircraft = Aircraft.query.filter_by(status='active').all()
+    available_aircraft = Aircraft.query.filter_by(status='available').all()
 
     # Get available instructors
     available_instructors = User.query.filter_by(

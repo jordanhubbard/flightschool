@@ -16,6 +16,7 @@ export FLASK_APP = app
 export FLASK_ENV = development
 export PYTHONPATH = $(shell pwd)
 PORT ?= 5001  # Default port, can be overridden with make run PORT=xxxx
+TYPE ?= "Aircraft"
 
 help:
 	@echo "Available commands:"
@@ -31,6 +32,9 @@ help:
 	@echo "  make db-upgrade  - Apply all database migrations"
 	@echo "  make db-downgrade- Revert last database migration"
 	@echo "  make test-data   - Load sample data into the database"
+
+query: env
+	PYTHONPATH=/Users/jkh/Src/flightschool /Users/jkh/Src/flightschool/venv/bin/python /Users/jkh/Src/flightschool/scripts/db_query_helper.py "${TYPE}.query.all()"
 
 env:
 	@echo "Creating virtual environment..."
