@@ -55,6 +55,27 @@ def test_admin_aircraft_add(client):
     assert ac is not None
     assert ac.make == "TestMake"
 
+def test_admin_aircraft_maintenance_fields(client):
+    client, app = client
+    login_admin(client, app)
+    resp = client.post("/admin/aircraft/add", data={
+        "registration": "N77777",
+        "make": "Test",
+        "model": "Model",
+        "year": 2023,
+        "status": "available",
+        "rate_per_hour": 100,
+        "time_to_next_oil_change": 25.5,
+        "time_to_next_100hr": 50.0,
+        "date_of_next_annual": "2025-11-30"
+    }, follow_redirects=True)
+    assert b"Aircraft added successfully" in resp.data
+    ac = Aircraft.query.filter_by(registration="N77777").first()
+    assert ac is not None
+    assert ac.time_to_next_oil_change == 25.5
+    assert ac.time_to_next_100hr == 50.0
+    assert ac.date_of_next_annual.strftime('%Y-%m-%d') == "2025-11-30"
+
 def test_admin_aircraft_delete(client):
     client, app = client
     login_admin(client, app)

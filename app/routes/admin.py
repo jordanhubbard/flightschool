@@ -417,8 +417,18 @@ def create_aircraft():
 
     if request.method == 'POST':
         if form.validate_on_submit():
-            aircraft = Aircraft()
-            form.populate_obj(aircraft)
+            aircraft = Aircraft(
+                registration=form.registration.data,
+                make=form.make.data,
+                model=form.model.data,
+                year=form.year.data,
+                category=form.category.data,
+                rate_per_hour=form.rate_per_hour.data,
+                status=form.status.data,
+                time_to_next_oil_change=form.time_to_next_oil_change.data,
+                time_to_next_100hr=form.time_to_next_100hr.data,
+                date_of_next_annual=form.date_of_next_annual.data
+            )
             # Handle image upload
             image = form.image.data
             if image:
@@ -787,7 +797,10 @@ def aircraft_add():
             year=form.year.data,
             category=form.category.data,
             rate_per_hour=form.rate_per_hour.data,
-            status=form.status.data
+            status=form.status.data,
+            time_to_next_oil_change=form.time_to_next_oil_change.data,
+            time_to_next_100hr=form.time_to_next_100hr.data,
+            date_of_next_annual=form.date_of_next_annual.data
         )
         # Handle image upload
         image = form.image.data
