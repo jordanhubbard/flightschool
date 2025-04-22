@@ -117,7 +117,7 @@ test-data: init
 	@echo "Test data loaded successfully."
 
 check-aircraft-images:
-	. venv/bin/activate && PYTHONPATH=app venv/bin/python scripts/check_aircraft_images.py
+	. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(PYTHON) scripts/check_aircraft_images.py
 
 # Error if running on Windows
 ifeq ($(OS),Windows_NT)
