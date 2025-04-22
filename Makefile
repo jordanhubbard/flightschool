@@ -1,4 +1,4 @@
-.PHONY: help env init run test clean lint format db-migrate db-upgrade db-downgrade test-data
+.PHONY: help env init run test clean lint format db-migrate db-upgrade db-downgrade test-data check-aircraft-images
 
 # Default target when just running 'make'
 .DEFAULT_GOAL := help
@@ -32,6 +32,7 @@ help:
 	@echo "  make db-upgrade  - Apply all database migrations"
 	@echo "  make db-downgrade- Revert last database migration"
 	@echo "  make test-data   - Load sample data into the database"
+	@echo "  make check-aircraft-images - Check aircraft images"
 
 query: env
 	PYTHONPATH=/Users/jkh/Src/flightschool /Users/jkh/Src/flightschool/venv/bin/python /Users/jkh/Src/flightschool/scripts/db_query_helper.py "${TYPE}.query.all()"
@@ -114,6 +115,9 @@ test-data: init
 	@echo "Loading test data..."
 	. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(PYTHON) scripts/load_test_data.py
 	@echo "Test data loaded successfully."
+
+check-aircraft-images:
+	. venv/bin/activate && PYTHONPATH=app venv/bin/python scripts/check_aircraft_images.py
 
 # Error if running on Windows
 ifeq ($(OS),Windows_NT)

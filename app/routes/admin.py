@@ -34,6 +34,15 @@ from app.forms import (
     SquawkForm
 )
 from app.calendar_service import GoogleCalendarService
+from werkzeug.utils import secure_filename
+import os
+
+ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "gif"}
+MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
+
+
+def allowed_image(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS
 
 
 admin_bp = Blueprint('admin', __name__)
@@ -410,20 +419,20 @@ def create_aircraft():
         if form.validate_on_submit():
             aircraft = Aircraft()
             form.populate_obj(aircraft)
-            try:
-                db.session.add(aircraft)
-                db.session.commit()
-                flash('Aircraft created successfully', 'success')
-                return redirect(url_for('admin.dashboard'))
-            except Exception as e:
-                db.session.rollback()
-                current_app.logger.error(
-                    f"Error creating aircraft: {str(e)}"
-                )
-                flash(
-                    'Error creating aircraft. Please try again.',
-                    'error'
-                )
+            # Handle image upload
+            image = form.image.data
+            if image:
+                filename = secure_filename(f"{aircraft.registration.upper()}.jpg")
+                if allowed_image(image.filename) and image.content_length <= MAX_IMAGE_SIZE:
+                    image_path = os.path.join(os.path.dirname(__file__), '../static/images/aircraft', filename)
+                    image.save(image_path)
+                    aircraft.image_filename = filename
+                else:
+                    flash('Invalid image file. Only jpg, jpeg, png, gif under 5MB allowed.', 'error')
+            db.session.add(aircraft)
+            db.session.commit()
+            flash('Aircraft created successfully', 'success')
+            return redirect(url_for('admin.dashboard'))
         else:
             flash(
                 'Please correct the errors below',
@@ -434,7 +443,8 @@ def create_aircraft():
         'admin/aircraft_form.html',
         form=form,
         title='Create New Aircraft',
-        current_year=datetime.now().year
+        current_year=datetime.now().year,
+        aircraft=None
     )
 
 
@@ -455,6 +465,22 @@ def edit_aircraft(id):
     form = AircraftForm(obj=aircraft)
     if form.validate_on_submit():
         form.populate_obj(aircraft)
+        # Handle image upload
+        image = form.image.data
+        if image:
+            filename = secure_filename(f"{aircraft.registration.upper()}.jpg")
+            if allowed_image(image.filename) and image.content_length <= MAX_IMAGE_SIZE:
+                image_path = os.path.join(os.path.dirname(__file__), '../static/images/aircraft', filename)
+                image.save(image_path)
+                aircraft.image_filename = filename
+            else:
+                flash('Invalid image file. Only jpg, jpeg, png, gif under 5MB allowed.', 'error')
+        # Handle delete image
+        if 'delete_image' in request.form and aircraft.image_filename:
+            image_path = os.path.join(os.path.dirname(__file__), '../static/images/aircraft', aircraft.image_filename)
+            if os.path.exists(image_path):
+                os.remove(image_path)
+            aircraft.image_filename = None
         try:
             db.session.commit()
             flash('Aircraft updated successfully', 'success')
@@ -471,7 +497,8 @@ def edit_aircraft(id):
     return render_template(
         'admin/aircraft_form.html',
         form=form,
-        title='Edit Aircraft'
+        title='Edit Aircraft',
+        aircraft=aircraft
     )
 
 
@@ -762,6 +789,16 @@ def aircraft_add():
             rate_per_hour=form.rate_per_hour.data,
             status=form.status.data
         )
+        # Handle image upload
+        image = form.image.data
+        if image:
+            filename = secure_filename(f"{aircraft.registration.upper()}.jpg")
+            if allowed_image(image.filename) and image.content_length <= MAX_IMAGE_SIZE:
+                image_path = os.path.join(os.path.dirname(__file__), '../static/images/aircraft', filename)
+                image.save(image_path)
+                aircraft.image_filename = filename
+            else:
+                flash('Invalid image file. Only jpg, jpeg, png, gif under 5MB allowed.', 'error')
         db.session.add(aircraft)
         db.session.commit()
         flash('Aircraft added successfully', 'success')
@@ -769,7 +806,8 @@ def aircraft_add():
     return render_template(
         'admin/aircraft_form.html', 
         form=form, 
-        title='Add Aircraft'
+        title='Add Aircraft',
+        aircraft=None
     )
 
 

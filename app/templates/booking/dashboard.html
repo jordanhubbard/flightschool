@@ -247,7 +247,7 @@
             {% if available_aircraft %}
                 {% for aircraft in available_aircraft %}
                     <div class="aircraft-card">
-                        <img src="{{ url_for('static', filename='images/' + aircraft.image_filename) if aircraft.image_filename else url_for('static', filename='images/default-aircraft.jpg') }}"
+                        <img src="{{ url_for('static', filename='images/' + aircraft.image_filename) if aircraft.image_filename else url_for('static', filename='images/aircraft/default.jpg') }}"
                              class="aircraft-image"
                              alt="{{ aircraft.make }} {{ aircraft.model }}">
                         <span class="aircraft-status {{ aircraft.status }}">{{ aircraft.status|title }}</span>

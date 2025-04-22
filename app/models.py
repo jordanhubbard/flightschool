@@ -6,6 +6,8 @@ from app import db, login_manager
 import os
 import requests
 import logging
+import filetype
+import base64
 
 STATIC_IMAGE_DIR = os.path.join(os.path.dirname(__file__), 'static', 'images', 'aircraft')
 STATIC_IMAGE_WEB_PATH = 'images/aircraft/'
@@ -819,21 +821,45 @@ class RecurringBooking(db.Model):
         return f'<RecurringBooking {self.id}>'
 
 
+def ensure_default_aircraft_image():
+    """Ensure the fallback default aircraft image exists. Creates a 1x1 transparent PNG if missing."""
+    import base64
+    default_path = os.path.join(os.path.dirname(__file__), 'static', 'images', 'aircraft', 'default.jpg')
+    if not os.path.exists(default_path):
+        # 1x1 transparent PNG (base64)
+        png_data = base64.b64decode(
+            b'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMB/6XK9v8AAAAASUVORK5CYII='
+        )
+        os.makedirs(os.path.dirname(default_path), exist_ok=True)
+        with open(default_path, 'wb') as f:
+            f.write(png_data)
+        logger.info(f"Created fallback default aircraft image at {default_path}")
+
+
+# Call this at import time so the default always exists
+ensure_default_aircraft_image()
+
+
 def ensure_aircraft_image(filename, make=None, model=None):
     """
-    Ensure the aircraft image file exists and is not empty. If not, fetch a relevant image from the internet.
+    Ensure the aircraft image file exists and is not empty and valid. If not, fetch a relevant image from Wikimedia Commons (or fallback).
     Returns the filename to use (relative to static/).
     """
+    ensure_default_aircraft_image()
     if not filename:
         logger.info("No filename provided, using default.")
         return 'images/aircraft/default.jpg'
     local_path = os.path.join(os.path.dirname(__file__), 'static', 'images', 'aircraft', filename)
     logger.info(f"Checking image at {local_path}")
-    # Check if file exists and is not empty
+    # Check if file exists and is a valid image
     if os.path.exists(local_path) and os.path.getsize(local_path) > 1024:
-        logger.info(f"Image exists and is non-empty: {local_path}")
-        return f'images/aircraft/{filename}'
-    logger.info(f"Image missing or empty for {filename}. Attempting to fetch from Wikimedia.")
+        kind = None
+        with open(local_path, 'rb') as f:
+            kind = filetype.guess(f.read(261))
+        if kind and kind.mime in ("image/jpeg", "image/png", "image/gif"):
+            logger.info(f"Image exists and is valid: {local_path}")
+            return f'images/aircraft/{filename}'
+    logger.info(f"Image missing or invalid for {filename}. Attempting to fetch from Wikimedia.")
     # Try to fetch an image from Wikimedia Commons
     query = f"{make or ''} {model or ''} aircraft".strip()
     url = f"https://commons.wikimedia.org/w/api.php?action=query&format=json&prop=imageinfo&generator=search&gsrsearch={query}&gsrlimit=1&iiprop=url"
@@ -845,15 +871,19 @@ def ensure_aircraft_image(filename, make=None, model=None):
         for page in pages.values():
             img_url = page['imageinfo'][0]['url']
             logger.info(f"Fetching image from: {img_url}")
-            img_data = requests.get(img_url, timeout=10).content
-            os.makedirs(os.path.dirname(local_path), exist_ok=True)
-            with open(local_path, 'wb') as f:
-                f.write(img_data)
-            if os.path.getsize(local_path) > 1024:
-                logger.info(f"Successfully fetched and saved image: {local_path}")
-                return f'images/aircraft/{filename}'
+            img_resp = requests.get(img_url, timeout=10)
+            if img_resp.status_code == 200 and img_resp.content and len(img_resp.content) > 1024:
+                os.makedirs(os.path.dirname(local_path), exist_ok=True)
+                with open(local_path, 'wb') as f:
+                    f.write(img_resp.content)
+                kind = filetype.guess(img_resp.content)
+                if kind and kind.mime in ("image/jpeg", "image/png", "image/gif"):
+                    logger.info(f"Successfully fetched and saved valid image: {local_path}")
+                    return f'images/aircraft/{filename}'
+                else:
+                    logger.warning(f"Downloaded file is not a valid image: {local_path}")
             else:
-                logger.warning(f"Downloaded image is too small or empty: {local_path}")
+                logger.warning(f"Failed to fetch a valid image from Wikimedia: {img_url}")
     except Exception as e:
         logger.error(f"Error fetching image for {filename}: {e}")
     logger.info("Falling back to default image.")
