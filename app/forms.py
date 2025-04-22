@@ -4,11 +4,12 @@ from wtforms import (
     DateTimeField, FloatField, TextAreaField, IntegerField, FileField
 )
 from wtforms.validators import (
-    DataRequired, Email, Optional, EqualTo, ValidationError
+    DataRequired, Email, Optional, EqualTo, ValidationError, NumberRange
 )
 from app.models import User
 import re
 from flask_wtf.csrf import CSRFProtect
+from datetime import datetime
 
 
 csrf = CSRFProtect()
@@ -93,20 +94,6 @@ class RegistrationForm(FlaskForm):
 
 
 class BookingForm(FlaskForm):
-    start_time = DateTimeField(
-        'Start Time',
-        format='%Y-%m-%dT%H:%M',
-        validators=[
-            DataRequired()
-        ]
-    )
-    end_time = DateTimeField(
-        'End Time',
-        format='%Y-%m-%dT%H:%M',
-        validators=[
-            DataRequired()
-        ]
-    )
     aircraft_id = SelectField(
         'Aircraft',
         coerce=int,
@@ -121,13 +108,28 @@ class BookingForm(FlaskForm):
             Optional()
         ]
     )
+    start_time = DateTimeField(
+        'Start Time',
+        format='%Y-%m-%dT%H:%M',
+        default=datetime.utcnow,
+        validators=[
+            DataRequired()
+        ]
+    )
+    duration = IntegerField(
+        'Duration (minutes)',
+        validators=[
+            DataRequired(),
+            NumberRange(min=1, max=1440)
+        ]
+    )
     notes = TextAreaField(
         'Notes',
         validators=[
             Optional()
         ]
     )
-    submit = SubmitField('Create Booking')
+    submit = SubmitField('Book')
 
 
 class GoogleCalendarSettingsForm(FlaskForm):
@@ -527,47 +529,31 @@ class ChangePasswordForm(FlaskForm):
 
 class CheckInForm(FlaskForm):
     hobbs_start = FloatField(
-        'Hobbs Start Time',
+        'Hobbs Start',
         validators=[
             DataRequired()
         ]
     )
     tach_start = FloatField(
-        'Tach Start Time',
+        'Tach Start',
         validators=[
             DataRequired()
         ]
     )
-    instructor_start_time = DateTimeField(
-        'Instructor Start Time',
+    weather_conditions_acceptable = BooleanField('Weather Conditions Acceptable')
+    notes = TextAreaField(
+        'Notes',
         validators=[
             Optional()
         ]
     )
-    notes = TextAreaField('Notes')
     submit = SubmitField('Check In')
 
 
 class CheckOutForm(FlaskForm):
-    hobbs_end = FloatField(
-        'Hobbs End Time',
-        validators=[
-            DataRequired()
-        ]
-    )
-    tach_end = FloatField(
-        'Tach End Time',
-        validators=[
-            DataRequired()
-        ]
-    )
-    instructor_end_time = DateTimeField(
-        'Instructor End Time',
-        validators=[
-            Optional()
-        ]
-    )
-    notes = TextAreaField('Notes')
+    hobbs_end = FloatField('Hobbs End', validators=[Optional()])
+    tach_end = FloatField('Tach End', validators=[Optional()])
+    notes = TextAreaField('Notes', validators=[Optional()])
     submit = SubmitField('Check Out')
 
 

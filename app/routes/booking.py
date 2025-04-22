@@ -166,32 +166,47 @@ def instructor_dashboard():
 def create_booking():
     """Create a new booking."""
     form = BookingForm()
+    # Always set choices before validation
+    form.aircraft_id.choices = [
+        (a.id, f"{a.registration} - {a.model}")
+        for a in Aircraft.query.filter_by(status='available').all()
+    ]
+    form.instructor_id.choices = [
+        (i.id, f"{i.first_name} {i.last_name}")
+        for i in User.query.filter_by(role='instructor', status='active').all()
+    ]
 
     if request.method == 'GET':
-        # Set choices for aircraft and instructor select fields
-        form.aircraft_id.choices = [
-            (a.id, f"{a.registration} - {a.model}")
-            for a in Aircraft.query.filter_by(status='available').all()
-        ]
-        print("DEBUG: Aircraft choices:", form.aircraft_id.choices)
-        form.instructor_id.choices = [
-            (i.id, f"{i.first_name} {i.last_name}")
-            for i in User.query.filter_by(role='instructor', status='active').all()
-        ]
+        # Set default start_time to now if not set
+        if not form.start_time.data:
+            form.start_time.data = datetime.utcnow()
         return render_template('booking/book.html', form=form)
 
     if request.method == 'POST':
         if request.is_json:
             form = BookingForm(data=request.get_json())
+            # Set choices again for new form instance
+            form.aircraft_id.choices = [
+                (a.id, f"{a.registration} - {a.model}")
+                for a in Aircraft.query.filter_by(status='available').all()
+            ]
+            form.instructor_id.choices = [
+                (i.id, f"{i.first_name} {i.last_name}")
+                for i in User.query.filter_by(role='instructor', status='active').all()
+            ]
 
         if form.validate():
             try:
+                # Calculate end_time from start_time and duration
+                start_time = form.start_time.data
+                duration_minutes = form.duration.data
+                end_time = start_time + timedelta(minutes=duration_minutes)
                 booking = Booking(
                     student_id=current_user.id,
                     aircraft_id=form.aircraft_id.data,
                     instructor_id=form.instructor_id.data,
-                    start_time=form.start_time.data,
-                    end_time=form.end_time.data,
+                    start_time=start_time,
+                    end_time=end_time,
                     status='pending',
                     notes=form.notes.data
                 )
@@ -680,20 +695,19 @@ def check_in(booking_id):
         if form.validate_on_submit():
             try:
                 check_in = CheckIn(
-                    booking_id=booking_id,
+                    booking_id=booking.id,
+                    aircraft_id=booking.aircraft_id,
+                    instructor_id=booking.instructor_id if booking.instructor_id else None,
                     hobbs_start=form.hobbs_start.data,
                     tach_start=form.tach_start.data,
-                    instructor_start_time=form.instructor_start_time.data,
+                    weather_conditions_acceptable=form.weather_conditions_acceptable.data,
                     notes=form.notes.data
                 )
                 booking.status = 'in_progress'
                 db.session.add(check_in)
                 db.session.commit()
-                flash('Check-in completed successfully', 'success')
-                return redirect(
-                    url_for(
-                        'booking.view_booking',
-                        booking_id=booking_id))
+                flash('Check-in completed successfully.', 'success')
+                return redirect(url_for('booking.dashboard'))
             except Exception as e:
                 db.session.rollback()
                 current_app.logger.error(f'Error during check-in: {str(e)}')
@@ -724,20 +738,18 @@ def check_out(booking_id):
         if form.validate_on_submit():
             try:
                 check_out = CheckOut(
-                    booking_id=booking_id,
+                    booking_id=booking.id,
+                    aircraft_id=booking.aircraft_id,
+                    instructor_id=booking.instructor_id if booking.instructor_id else None,
                     hobbs_end=form.hobbs_end.data,
                     tach_end=form.tach_end.data,
-                    instructor_end_time=form.instructor_end_time.data,
                     notes=form.notes.data
                 )
                 booking.status = 'completed'
                 db.session.add(check_out)
                 db.session.commit()
                 flash('Check-out completed successfully', 'success')
-                return redirect(
-                    url_for(
-                        'booking.view_booking',
-                        booking_id=booking_id))
+                return redirect(url_for('booking.dashboard'))
             except Exception as e:
                 db.session.rollback()
                 current_app.logger.error(f'Error during check-out: {str(e)}')

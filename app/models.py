@@ -516,11 +516,7 @@ class CheckIn(db.Model):
     hobbs_start = db.Column(db.Float, nullable=False)
     tach_start = db.Column(db.Float, nullable=False)
     instructor_start_time = db.Column(db.DateTime, nullable=True)
-    fuel_level = db.Column(db.String(20), nullable=False)
-    oil_level = db.Column(db.Float, nullable=False)
-    preflight_checklist_completed = db.Column(db.Boolean, default=False)
     weather_conditions_acceptable = db.Column(db.Boolean, default=False)
-    equipment_status = db.Column(db.JSON)
     notes = db.Column(db.Text)
 
     @property
@@ -533,37 +529,12 @@ class CheckIn(db.Model):
 
 class CheckOut(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    booking_id = db.Column(
-        db.Integer,
-        db.ForeignKey('booking.id'),
-        nullable=False
-    )
-    aircraft_id = db.Column(
-        db.Integer,
-        db.ForeignKey('aircraft.id'),
-        nullable=False
-    )
-    instructor_id = db.Column(
-        db.Integer,
-        db.ForeignKey('user.id'),
-        nullable=True
-    )
-    check_out_time = db.Column(
-        db.DateTime,
-        nullable=False,
-        default=datetime.utcnow
-    )
+    booking_id = db.Column(db.Integer, db.ForeignKey('booking.id'), nullable=False)
+    aircraft_id = db.Column(db.Integer, db.ForeignKey('aircraft.id'), nullable=False)
+    instructor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    check_out_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     hobbs_end = db.Column(db.Float, nullable=False)
     tach_end = db.Column(db.Float, nullable=False)
-    instructor_end_time = db.Column(db.DateTime, nullable=True)
-    total_aircraft_time = db.Column(db.Float, nullable=False)
-    total_instructor_time = db.Column(db.Float, nullable=True)
-    fuel_level_end = db.Column(db.String(20), nullable=False)
-    fuel_added = db.Column(db.Float)
-    oil_added = db.Column(db.Float)
-    number_landings = db.Column(db.Integer, default=0)
-    post_flight_checklist_completed = db.Column(db.Boolean, default=False)
-    equipment_issues = db.Column(db.JSON)
     notes = db.Column(db.Text)
 
     def __repr__(self):
