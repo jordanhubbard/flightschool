@@ -1,7 +1,7 @@
 import pytest
 from app import create_app, db
 from app.models import User, Aircraft, Booking
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 @pytest.fixture
 def client():
@@ -42,7 +42,7 @@ def test_booking_create(client):
     login_student(client, app)
     with app.app_context():
         ac = Aircraft.query.filter_by(registration="N77777").first()
-    start_time = datetime.utcnow().replace(microsecond=0, second=0)
+    start_time = datetime.now(timezone.utc).replace(microsecond=0, second=0)
     resp = client.post("/bookings", data={
         "aircraft_id": ac.id,
         "start_time": start_time.strftime("%Y-%m-%dT%H:%M"),
@@ -60,7 +60,7 @@ def test_booking_cancel(client):
     login_student(client, app)
     with app.app_context():
         ac = Aircraft.query.filter_by(registration="N77777").first()
-    start_time = datetime.utcnow().replace(microsecond=0, second=0)
+    start_time = datetime.now(timezone.utc).replace(microsecond=0, second=0)
     resp = client.post("/bookings", data={
         "aircraft_id": ac.id,
         "start_time": start_time.strftime("%Y-%m-%dT%H:%M"),

@@ -78,7 +78,7 @@ from app.models import User
 def load_user(id):
     """Load user from database."""
     current_app.logger.debug(f"Loading user with ID: {id}")
-    user = User.query.get(int(id))
+    user = db.session.get(User, int(id))
     if user:
         msg = (
             f"Loaded user: {user}, "

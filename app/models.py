@@ -1,6 +1,6 @@
 from flask_login import UserMixin, AnonymousUserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import url_for
 from app import db, login_manager
 import os
@@ -77,7 +77,7 @@ class User(UserMixin, db.Model):
     status = db.Column(db.String(20), default='active')
     # Instructor rate per hour
     instructor_rate_per_hour = db.Column(db.Float)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Google Calendar integration
     # Store JSON credentials
@@ -132,7 +132,7 @@ class User(UserMixin, db.Model):
     flight_logs = db.relationship(
         'FlightLog',
         backref='pilot',
-        foreign_keys='FlightLog.pic_id'
+        foreign_keys='FlightLog.user_id'
     )
     endorsements_given = db.relationship(
         'Endorsement',
@@ -189,7 +189,7 @@ class MaintenanceType(db.Model):
     interval_days = db.Column(db.Integer)
     # Operating hours interval
     interval_hours = db.Column(db.Float)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     created_by_id = db.Column(
         db.Integer,
         db.ForeignKey('user.id'),
@@ -223,11 +223,11 @@ class EquipmentStatus(db.Model):
     last_inspection = db.Column(db.DateTime)
     next_inspection = db.Column(db.DateTime)
     notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(
         db.DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
     )
 
     # Relationships
@@ -253,7 +253,7 @@ class EquipmentStatus(db.Model):
     @property
     def requires_inspection(self):
         if self.next_inspection:
-            return datetime.utcnow() >= self.next_inspection
+            return datetime.now(timezone.utc) >= self.next_inspection
         return False
 
 
@@ -293,7 +293,7 @@ class MaintenanceRecord(db.Model):
     next_due_date = db.Column(db.DateTime)
     # Hours until this maintenance is due again
     next_due_hours = db.Column(db.Float)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Removed property: aircraft (conflicts with SQLAlchemy relationship backref)
 
@@ -320,11 +320,11 @@ class Squawk(db.Model):
     )
     # open, in_progress, resolved
     status = db.Column(db.String(20), default='open')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(
         db.DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
     )
     resolved_at = db.Column(db.DateTime)
     resolved_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -429,7 +429,7 @@ class Aircraft(db.Model):
         """Return days until next maintenance is due."""
         if not self.last_maintenance:
             return None
-        return (datetime.utcnow() - self.last_maintenance).days
+        return (datetime.now(timezone.utc) - self.last_maintenance).days
 
     @property
     def is_available(self):
@@ -462,11 +462,11 @@ class Booking(db.Model):
     status = db.Column(db.String(20), default='pending')
     booking_type = db.Column(db.String(50), default='training')
     lesson_type = db.Column(db.String(50))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(
         db.DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
     )
     google_calendar_event_id = db.Column(db.String(255), nullable=True)
     cancellation_reason = db.Column(db.String(50))
@@ -511,7 +511,7 @@ class CheckIn(db.Model):
     check_in_time = db.Column(
         db.DateTime,
         nullable=False,
-        default=datetime.utcnow
+        default=lambda: datetime.now(timezone.utc)
     )
     hobbs_start = db.Column(db.Float, nullable=False)
     tach_start = db.Column(db.Float, nullable=False)
@@ -532,7 +532,7 @@ class CheckOut(db.Model):
     booking_id = db.Column(db.Integer, db.ForeignKey('booking.id'), nullable=False)
     aircraft_id = db.Column(db.Integer, db.ForeignKey('aircraft.id'), nullable=False)
     instructor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    check_out_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    check_out_time = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     hobbs_end = db.Column(db.Float, nullable=False)
     tach_end = db.Column(db.Float, nullable=False)
     notes = db.Column(db.Text)
@@ -553,15 +553,10 @@ class FlightLog(db.Model):
         db.ForeignKey('aircraft.id'),
         nullable=False
     )
-    pic_id = db.Column(
+    user_id = db.Column(
         db.Integer,
         db.ForeignKey('user.id'),
         nullable=False
-    )
-    sic_id = db.Column(
-        db.Integer,
-        db.ForeignKey('user.id'),
-        nullable=True
     )
     flight_date = db.Column(db.DateTime, nullable=False)
     route = db.Column(db.String(200))
@@ -569,9 +564,7 @@ class FlightLog(db.Model):
     arrival_airport = db.Column(db.String(10))
     alternate_airport = db.Column(db.String(10))
     remarks = db.Column(db.Text)
-    # VFR, MVFR, IFR, LIFR
     weather_conditions = db.Column(db.String(50))
-    # Day VFR, Night VFR, IFR
     flight_conditions = db.Column(db.String(50))
     ground_instruction = db.Column(db.Float)
     dual_received = db.Column(db.Float)
@@ -584,17 +577,14 @@ class FlightLog(db.Model):
     hood_time = db.Column(db.Float)
     landings_day = db.Column(db.Integer)
     landings_night = db.Column(db.Integer)
-    # Number of approaches performed
     approaches = db.Column(db.Integer)
-    # Types of approaches performed
     approach_types = db.Column(db.JSON)
-    # Number of holds performed
     holds = db.Column(db.Integer)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(
         db.DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
     )
 
     def __repr__(self):
@@ -627,7 +617,7 @@ class Invoice(db.Model):
     invoice_date = db.Column(
         db.DateTime,
         nullable=False,
-        default=datetime.utcnow
+        default=lambda: datetime.now(timezone.utc)
     )
     aircraft_rate = db.Column(db.Float, nullable=False)
     instructor_rate = db.Column(db.Float, nullable=True)
@@ -658,11 +648,11 @@ class WeatherMinima(db.Model):
     wind_max = db.Column(db.Integer)
     # Maximum crosswind component
     crosswind_max = db.Column(db.Integer)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(
         db.DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
     )
 
     def __repr__(self):
@@ -687,7 +677,7 @@ class Endorsement(db.Model):
     expiration = db.Column(db.DateTime, nullable=True)
     # URL to stored endorsement document
     document_url = db.Column(db.String(500))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def __repr__(self):
         return f'<Endorsement {self.id}>'
@@ -705,11 +695,11 @@ class Document(db.Model):
     filename = db.Column(db.String(255))
     url = db.Column(db.String(500))
     expiration = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(
         db.DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
     )
 
     def __repr__(self):
@@ -727,7 +717,7 @@ class AuditLog(db.Model):
     table_name = db.Column(db.String(50), nullable=False)
     record_id = db.Column(db.Integer, nullable=False)
     changes = db.Column(db.JSON)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def __repr__(self):
         return f'<AuditLog {self.id}>'
@@ -756,7 +746,7 @@ class WaitlistEntry(db.Model):
     duration_hours = db.Column(db.Float, nullable=False)
     # active, fulfilled, expired
     status = db.Column(db.String(20), default='active')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def __repr__(self):
         return f'<WaitlistEntry {self.id}>'
@@ -786,7 +776,7 @@ class RecurringBooking(db.Model):
     start_date = db.Column(db.DateTime, nullable=False)
     end_date = db.Column(db.DateTime, nullable=True)
     status = db.Column(db.String(20), default='active')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def __repr__(self):
         return f'<RecurringBooking {self.id}>'
