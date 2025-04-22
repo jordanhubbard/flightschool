@@ -6,6 +6,7 @@
             "last_name": "User",
             "role": "admin",
             "is_admin": true,
+            "is_student": false,
             "password": "admin123",
             "status": "active"
         },
@@ -15,6 +16,7 @@
             "last_name": "Smith",
             "role": "instructor",
             "is_instructor": true,
+            "is_student": false,
             "password": "instructor123",
             "status": "active",
             "certificates": "CFI, CFII, MEI",
@@ -26,6 +28,7 @@
             "first_name": "Jane",
             "last_name": "Doe",
             "role": "student",
+            "is_student": true,
             "password": "student123",
             "status": "active",
             "student_id": "S12345",
@@ -37,6 +40,7 @@
             "first_name": "Bob",
             "last_name": "Wilson",
             "role": "student",
+            "is_student": true,
             "password": "student123",
             "status": "active",
             "student_id": "S12346",
@@ -56,7 +60,6 @@
             "engine_type": "piston",
             "num_engines": 1,
             "description": "Well-maintained Skyhawk with G1000 avionics",
-            
             "ifr_equipped": true,
             "gps_equipped": true,
             "gps_model": "Garmin G1000",
@@ -66,7 +69,6 @@
             "adsb_in": true,
             "dme_equipped": true,
             "tcas_equipped": false,
-            
             "rate_per_hour": 165.0,
             "fuel_capacity": 56.0,
             "fuel_type": "100LL",
@@ -74,13 +76,11 @@
             "max_weight": 2550,
             "empty_weight": 1663,
             "useful_load": 887,
-            
             "hobbs_time": 2345.6,
             "tach_time": 2300.4,
             "total_time": 2345.6,
             "engine_time": 800.0,
             "prop_time": 800.0,
-            
             "last_maintenance": "2025-03-01T00:00:00Z",
             "last_annual": "2025-01-15T00:00:00Z",
             "last_100hr": "2025-03-01T00:00:00Z",
@@ -93,11 +93,14 @@
             "next_maintenance_date": "2025-05-01T00:00:00Z",
             "next_maintenance_hours": 2445.6,
             "maintenance_notes": "All systems operating normally",
-            
             "insurance_expiry": "2026-01-01T00:00:00Z",
             "registration_expiry": "2026-12-31T00:00:00Z",
             "airworthiness_cert": "1234567",
-            "airworthiness_date": "2010-05-15T00:00:00Z"
+            "airworthiness_date": "2010-05-15T00:00:00Z",
+            "image_filename": "n12345.jpg",
+            "time_to_next_oil_change": 12.5,
+            "time_to_next_100hr": 88.0,
+            "date_of_next_annual": "2025-12-15"
         },
         {
             "registration": "N54321",
@@ -110,7 +113,6 @@
             "engine_type": "piston",
             "num_engines": 1,
             "description": "Archer III with modern avionics",
-            
             "ifr_equipped": true,
             "gps_equipped": true,
             "gps_model": "Garmin GTN 650",
@@ -119,7 +121,6 @@
             "adsb_in": true,
             "dme_equipped": true,
             "tcas_equipped": false,
-            
             "rate_per_hour": 155.0,
             "fuel_capacity": 48.0,
             "fuel_type": "100LL",
@@ -127,13 +128,11 @@
             "max_weight": 2550,
             "empty_weight": 1688,
             "useful_load": 862,
-            
             "hobbs_time": 1234.5,
             "tach_time": 1200.3,
             "total_time": 1234.5,
             "engine_time": 1234.5,
             "prop_time": 1234.5,
-            
             "last_maintenance": "2025-02-15T00:00:00Z",
             "last_annual": "2025-01-01T00:00:00Z",
             "last_100hr": "2025-02-15T00:00:00Z",
@@ -146,11 +145,14 @@
             "next_maintenance_date": "2025-04-25T00:00:00Z",
             "next_maintenance_hours": 1334.5,
             "maintenance_notes": "Oil change due at next inspection",
-            
             "insurance_expiry": "2026-03-01T00:00:00Z",
             "registration_expiry": "2026-12-31T00:00:00Z",
             "airworthiness_cert": "7654321",
-            "airworthiness_date": "2015-06-01T00:00:00Z"
+            "airworthiness_date": "2015-06-01T00:00:00Z",
+            "image_filename": "n54321.jpg",
+            "time_to_next_oil_change": 20.0,
+            "time_to_next_100hr": 55.0,
+            "date_of_next_annual": "2025-12-31"
         }
     ],
     "maintenance_types": [

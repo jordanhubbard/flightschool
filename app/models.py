@@ -173,6 +173,14 @@ class User(UserMixin, db.Model):
             return self.last_name
         return self.email or "Unknown"
 
+    @property
+    def name(self):
+        if self.first_name:
+            return self.first_name
+        elif self.last_name:
+            return self.last_name
+        return self.email or "Unknown"
+
     def __repr__(self):
         return f'<User {self.email}>'
 
