@@ -9,13 +9,15 @@ def test_ensure_aircraft_image_default():
     assert ensure_aircraft_image('') == 'images/aircraft/default.jpg'
 
 def test_ensure_aircraft_image_existing(tmp_path, monkeypatch):
-    # Create a dummy image file >1KB
+    # Create a dummy valid JPEG image file >1KB
     test_dir = tmp_path / "static" / "images" / "aircraft"
     test_dir.mkdir(parents=True, exist_ok=True)
     fname = "test_existing.jpg"
     fpath = test_dir / fname
+    # Write a real JPEG header followed by padding
+    jpeg_header = b'\xff\xd8\xff\xe0' + b'JFIF' + b'\x00' * 100
     with open(fpath, "wb") as f:
-        f.write(b"x" * 2048)
+        f.write(jpeg_header + b"x" * (2048 - len(jpeg_header)))
     orig_exists = os.path.exists
     orig_getsize = os.path.getsize
     monkeypatch.setattr(os.path, "exists", lambda path: str(fpath) in path or orig_exists(path))
@@ -31,9 +33,10 @@ def test_ensure_aircraft_image_existing(tmp_path, monkeypatch):
 def test_ensure_aircraft_image_fetch(monkeypatch, tmp_path):
     # Simulate Wikimedia returning an image url and valid image content
     class DummyResp:
-        def __init__(self, json_data=None, content=None):
+        def __init__(self, json_data=None, content=None, status_code=200):
             self._json = json_data
             self.content = content
+            self.status_code = status_code
         def json(self):
             return self._json
     def dummy_requests_get(url, timeout=None):
@@ -42,7 +45,9 @@ def test_ensure_aircraft_image_fetch(monkeypatch, tmp_path):
                 'query': {'pages': {'1': {'imageinfo': [{'url': 'http://dummy/image.jpg'}]}}}
             })
         elif 'dummy/image.jpg' in url:
-            return DummyResp(content=b"z" * 2048)
+            # Return a valid JPEG header as content
+            jpeg_header = b'\xff\xd8\xff\xe0' + b'JFIF' + b'\x00' * 100
+            return DummyResp(content=jpeg_header + b"z" * (2048 - len(jpeg_header)), status_code=200)
         raise RuntimeError("Unexpected url")
     monkeypatch.setattr("requests.get", dummy_requests_get)
     # Patch os.path to use tmp_path
@@ -63,6 +68,9 @@ def test_ensure_aircraft_image_fetch_fail(monkeypatch, tmp_path):
         raise Exception("fail")
     monkeypatch.setattr("requests.get", dummy_requests_get)
     monkeypatch.setattr(os.path, "dirname", lambda path: str(tmp_path))
+    # Ensure parent directories exist for default image
+    test_dir = tmp_path / "static" / "images" / "aircraft"
+    test_dir.mkdir(parents=True, exist_ok=True)
     fname = "fail.jpg"
     result = ensure_aircraft_image(fname, make="TestMake", model="TestModel")
     assert result == 'images/aircraft/default.jpg'

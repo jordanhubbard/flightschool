@@ -825,12 +825,14 @@ def ensure_default_aircraft_image():
     """Ensure the fallback default aircraft image exists. Creates a 1x1 transparent PNG if missing."""
     import base64
     default_path = os.path.join(os.path.dirname(__file__), 'static', 'images', 'aircraft', 'default.jpg')
+    parent_dir = os.path.dirname(default_path)
+    if not os.path.exists(parent_dir):
+        os.makedirs(parent_dir, exist_ok=True)
     if not os.path.exists(default_path):
         # 1x1 transparent PNG (base64)
         png_data = base64.b64decode(
             b'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMB/6XK9v8AAAAASUVORK5CYII='
         )
-        os.makedirs(os.path.dirname(default_path), exist_ok=True)
         with open(default_path, 'wb') as f:
             f.write(png_data)
         logger.info(f"Created fallback default aircraft image at {default_path}")
