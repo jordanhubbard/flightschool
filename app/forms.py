@@ -350,6 +350,19 @@ class AircraftForm(FlaskForm):
         ],
         format='%Y-%m-%d'
     )
+    time_to_next_oil_change = FloatField(
+        'Time to Next Oil Change (hours)',
+        validators=[Optional()]
+    )
+    time_to_next_100hr = FloatField(
+        'Time to Next 100 Hour (hours)',
+        validators=[Optional()]
+    )
+    date_of_next_annual = DateTimeField(
+        'Date of Next Annual',
+        format='%Y-%m-%d',
+        validators=[Optional()]
+    )
     image = FileField(
         'Aircraft Image',
         validators=[

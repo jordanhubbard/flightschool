@@ -23,7 +23,11 @@ def client():
             instructor.set_password("password")
             db.session.add(instructor)
             # Create aircraft
-            ac = Aircraft(registration="N55555", make="Test", model="Model", year=2022, category="single_engine_land", rate_per_hour=99, status="available")
+            ac = Aircraft(registration="N55555", make="Test", model="Model", year=2022, category="single_engine_land", rate_per_hour=99, status="available",
+                time_to_next_oil_change=40.0,
+                time_to_next_100hr=80.0,
+                date_of_next_annual=None
+            )
             db.session.add(ac)
             db.session.commit()
         yield client, app
@@ -42,6 +46,9 @@ def test_booking_checkin_checkout(client):
     login_student(client, app)
     with app.app_context():
         ac = Aircraft.query.filter_by(registration="N55555").first()
+        assert ac.time_to_next_oil_change == 40.0
+        assert ac.time_to_next_100hr == 80.0
+        assert ac.date_of_next_annual is None
     # Create booking with start_time and duration
     start = (datetime.now(timezone.utc) + timedelta(days=1)).replace(microsecond=0, second=0)
     resp = client.post("/bookings", data={
@@ -86,6 +93,9 @@ def test_checkin_twice(client):
     login_student(client, app)
     with app.app_context():
         ac = Aircraft.query.filter_by(registration="N55555").first()
+        assert ac.time_to_next_oil_change == 40.0
+        assert ac.time_to_next_100hr == 80.0
+        assert ac.date_of_next_annual is None
     start = (datetime.now(timezone.utc) + timedelta(days=1)).replace(microsecond=0, second=0)
     client.post("/bookings", data={"aircraft_id": ac.id, "start_time": start.strftime("%Y-%m-%dT%H:%M"), "duration": 60}, follow_redirects=True)
     with app.app_context():
@@ -100,6 +110,9 @@ def test_checkout_without_checkin(client):
     login_student(client, app)
     with app.app_context():
         ac = Aircraft.query.filter_by(registration="N55555").first()
+        assert ac.time_to_next_oil_change == 40.0
+        assert ac.time_to_next_100hr == 80.0
+        assert ac.date_of_next_annual is None
     start = (datetime.now(timezone.utc) + timedelta(days=1)).replace(microsecond=0, second=0)
     client.post("/bookings", data={"aircraft_id": ac.id, "start_time": start.strftime("%Y-%m-%dT%H:%M"), "duration": 60}, follow_redirects=True)
     with app.app_context():
@@ -113,6 +126,9 @@ def test_checkout_twice(client):
     login_student(client, app)
     with app.app_context():
         ac = Aircraft.query.filter_by(registration="N55555").first()
+        assert ac.time_to_next_oil_change == 40.0
+        assert ac.time_to_next_100hr == 80.0
+        assert ac.date_of_next_annual is None
     start = (datetime.now(timezone.utc) + timedelta(days=1)).replace(microsecond=0, second=0)
     client.post("/bookings", data={"aircraft_id": ac.id, "start_time": start.strftime("%Y-%m-%dT%H:%M"), "duration": 60}, follow_redirects=True)
     with app.app_context():
@@ -128,6 +144,9 @@ def test_checkin_missing_fields(client):
     login_student(client, app)
     with app.app_context():
         ac = Aircraft.query.filter_by(registration="N55555").first()
+        assert ac.time_to_next_oil_change == 40.0
+        assert ac.time_to_next_100hr == 80.0
+        assert ac.date_of_next_annual is None
     start = (datetime.now(timezone.utc) + timedelta(days=1)).replace(microsecond=0, second=0)
     client.post("/bookings", data={"aircraft_id": ac.id, "start_time": start.strftime("%Y-%m-%dT%H:%M"), "duration": 60}, follow_redirects=True)
     with app.app_context():

@@ -195,8 +195,7 @@ def load_test_data():
             log = FlightLog(
                 booking=booking,
                 aircraft=aircraft,
-                pic_id=pic.id,
-                sic_id=sic.id if sic else None,
+                user_id=pic.id,
                 flight_date=flight_date,
                 route=log_data['route'],
                 departure_airport=log_data['departure_airport'],

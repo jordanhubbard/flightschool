@@ -166,6 +166,25 @@
                         
                         <div class="row mb-4">
                             <div class="col-12">
+                                <h4>Maintenance Intervals</h4>
+                                <hr>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.time_to_next_oil_change.label(class="form-label") }}
+                                {{ form.time_to_next_oil_change(class="form-control") }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.time_to_next_100hr.label(class="form-label") }}
+                                {{ form.time_to_next_100hr(class="form-control") }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.date_of_next_annual.label(class="form-label") }}
+                                {{ form.date_of_next_annual(class="form-control") }}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-12">
                                 <h4>Pricing & Availability</h4>
                                 <hr>
                             </div>

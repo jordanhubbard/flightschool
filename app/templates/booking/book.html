@@ -30,13 +30,22 @@
                         </div>
                         
                         <div class="mb-3">
-                            <label for="start_time" class="form-label">Start Time</label>
-                            {{ form.start_time(class="form-control", id="start_time", required=True) }}
+                            <label class="form-label">Select Booking Date & Time</label>
+                            <div id="calendar-widget"></div>
+                            <input type="hidden" id="calendar-datetime-start" name="calendar_datetime_start">
+                            <input type="hidden" id="calendar-datetime-end" name="calendar_datetime_end">
                         </div>
                         
                         <div class="mb-3">
                             <label for="duration" class="form-label">Duration (minutes)</label>
-                            {{ form.duration(class="form-control", id="duration", required=True) }}
+                            <input type="number" class="form-control" id="duration" name="duration" min="30" step="30" required readonly>
+                            <small id="duration-local" class="form-text text-muted"></small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="start_time" class="form-label d-none">Start Time</label>
+                            {{ form.start_time(class="form-control d-none", id="start_time", required=True) }}
+                            <small id="start-time-local" class="form-text text-muted d-none"></small>
                         </div>
                         
                         <div class="mb-3">
@@ -55,11 +64,26 @@
     </div>
 </div>
 
+<link rel="stylesheet" href="{{ url_for('static', filename='calendar.css') }}">
+<script src="{{ url_for('static', filename='calendar.js') }}"></script>
+
 <script>
 // Ensure start_time is sent as UTC ISO string
 function localToUTCString(dtLocal) {
     const d = new Date(dtLocal);
     return d.toISOString().slice(0,16); // 'YYYY-MM-DDTHH:mm'
+}
+
+// Format and display the local time next to the input
+function formatLocalDatetime(dtString) {
+    if (!dtString) return '';
+    const d = new Date(dtString);
+    // Get local timezone abbreviation
+    const tz = Intl.DateTimeFormat(undefined, {timeZoneName:'short'}).formatToParts(d).find(x => x.type === 'timeZoneName');
+    const tzAbbr = tz ? tz.value : '';
+    // Format as YYYY-MM-DD HH:MM TZ
+    const pad = n => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())} ${tzAbbr}`;
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -74,6 +98,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // Calendar integration
+    let selectedStart = null, selectedEnd = null;
+    if (window.WeekCalendar) {
+        new WeekCalendar('calendar-widget', function(start, end) {
+            selectedStart = start;
+            selectedEnd = end;
+            document.getElementById('calendar-datetime-start').value = start.toISOString();
+            document.getElementById('calendar-datetime-end').value = end.toISOString();
+            // Calculate duration in minutes
+            const duration = Math.round((end - start) / (1000 * 60)) + 30; // slot is inclusive
+            document.getElementById('duration').value = duration;
+            document.getElementById('duration-local').textContent = `Selected: ${duration} minutes (${formatLocalDatetime(start.toISOString())} to ${formatLocalDatetime(end.toISOString())})`;
+        });
+    }
+    // Hide manual time input
+    document.getElementById('start_time').classList.add('d-none');
+    document.getElementById('start-time-local').classList.add('d-none');
 });
 </script>
 

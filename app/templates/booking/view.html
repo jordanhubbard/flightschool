@@ -285,7 +285,7 @@
                 </a>
                 <div>
                     {% if booking.status == 'pending' %}
-                        <a href="{{ url_for('booking.cancel', booking_id=booking.id) }}" 
+                        <a href="{{ url_for('booking.cancel_booking', booking_id=booking.id) }}" 
                            class="btn btn-outline-danger" 
                            onclick="return confirm('Are you sure you want to cancel this booking?')">
                             <i class="fas fa-times me-2"></i>Cancel Flight

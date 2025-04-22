@@ -119,7 +119,12 @@ GOOGLE_CLIENT_CONFIG = {
 @login_required
 def dashboard():
     """Display the booking dashboard."""
-    # Get upcoming bookings
+    # DEBUG: Print all bookings for current user
+    debug_bookings = Booking.query.filter(Booking.student_id == current_user.id).order_by(Booking.start_time).all()
+    for b in debug_bookings:
+        print(f"DEBUG: Booking {b.id} start_time={b.start_time} status={b.status}")
+    # END DEBUG
+
     upcoming_bookings = Booking.query.filter(
         Booking.student_id == current_user.id,
         Booking.start_time > datetime.now(UTC)
@@ -197,21 +202,34 @@ def create_booking():
 
         if form.validate():
             try:
-                # Calculate end_time from start_time and duration
-                start_time = form.start_time.data
-                # Ensure start_time is timezone-aware UTC
-                if start_time.tzinfo is None:
-                    start_time = start_time.replace(tzinfo=timezone.utc)
-                else:
-                    start_time = start_time.astimezone(timezone.utc)
-                duration_minutes = form.duration.data
-                end_time = start_time + timedelta(minutes=duration_minutes)
+                # Use new calendar_datetime_start and calendar_datetime_end fields for start_time and duration
+                calendar_datetime_start = request.form.get('calendar_datetime_start')
+                calendar_datetime_end = request.form.get('calendar_datetime_end')
+                from datetime import datetime, timezone
+                if calendar_datetime_start and calendar_datetime_end:
+                    try:
+                        start_dt = datetime.fromisoformat(calendar_datetime_start)
+                        end_dt = datetime.fromisoformat(calendar_datetime_end)
+                        # Ensure UTC
+                        if start_dt.tzinfo is None:
+                            start_dt = start_dt.replace(tzinfo=timezone.utc)
+                        if end_dt.tzinfo is None:
+                            end_dt = end_dt.replace(tzinfo=timezone.utc)
+                        form.start_time.data = start_dt
+                        # Calculate duration in minutes
+                        duration = int((end_dt - start_dt).total_seconds() / 60) + 30
+                        form.duration.data = duration
+                    except Exception as e:
+                        flash(f"Invalid date/time: {e}", 'error')
+                        return render_template('booking/book.html', form=form)
+
+                # Create booking
                 booking = Booking(
                     student_id=current_user.id,
                     aircraft_id=form.aircraft_id.data,
                     instructor_id=form.instructor_id.data,
-                    start_time=start_time,
-                    end_time=end_time,
+                    start_time=form.start_time.data,
+                    end_time=form.start_time.data + timedelta(minutes=form.duration.data),
                     status='pending',
                     notes=form.notes.data
                 )
@@ -865,3 +883,10 @@ def google_disconnect():
         flash('Failed to disconnect from Google Calendar. Please try again.', 'error')
 
     return redirect(url_for('booking.dashboard'))
+
+
+@booking_bp.route('/aircraft/<int:aircraft_id>/info', methods=['GET'])
+def aircraft_info(aircraft_id):
+    from app.models import Aircraft
+    aircraft = Aircraft.query.get_or_404(aircraft_id)
+    return render_template('booking/aircraft_info.html', aircraft=aircraft)

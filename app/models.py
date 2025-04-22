@@ -357,6 +357,11 @@ class Aircraft(db.Model):
     tach_time = db.Column(db.Float)
     last_maintenance = db.Column(db.DateTime)
     image_filename = db.Column(db.String(255))
+    # Aircraft-specific maintenance intervals (in hours)
+    time_to_next_oil_change = db.Column(db.Float, nullable=True)
+    time_to_next_100hr = db.Column(db.Float, nullable=True)
+    # Date of next annual inspection (calendar date)
+    date_of_next_annual = db.Column(db.Date, nullable=True)
 
     # Relationships
     recurring_bookings = db.relationship(
