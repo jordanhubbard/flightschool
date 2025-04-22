@@ -3,6 +3,20 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from flask import url_for
 from app import db, login_manager
+import os
+import requests
+import logging
+
+STATIC_IMAGE_DIR = os.path.join(os.path.dirname(__file__), 'static', 'images', 'aircraft')
+STATIC_IMAGE_WEB_PATH = 'images/aircraft/'
+
+# Setup logging
+logger = logging.getLogger("aircraft_image")
+logger.setLevel(logging.INFO)
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter('[%(asctime)s] %(levelname)s in %(module)s: %(message)s'))
+    logger.addHandler(handler)
 
 
 class AnonymousUser(AnonymousUserMixin):
@@ -371,41 +385,30 @@ class Aircraft(db.Model):
 
     @property
     def image_url(self):
-        """Get the URL for the aircraft's image."""
+        """Get the URL for the aircraft's image, ensuring it exists and is non-empty."""
         if self.image_filename:
-            return url_for(
-                'static',
-                filename=f'images/aircraft/{self.image_filename}'
-            )
+            img_path = ensure_aircraft_image(self.image_filename, self.make, self.model)
+            return url_for('static', filename=img_path)
         # Default images based on category and engine type
         if self.category == 'single_engine_land':
             if self.engine_type == 'piston':
-                return url_for(
-                    'static',
-                    filename='images/aircraft/cessna172.jpg'
-                )
+                img_path = ensure_aircraft_image('cessna172.jpg', 'Cessna', '172')
+                return url_for('static', filename=img_path)
             elif self.engine_type == 'turboprop':
-                return url_for(
-                    'static',
-                    filename='images/aircraft/tbm930.jpg'
-                )
+                img_path = ensure_aircraft_image('tbm930.jpg', 'Daher', 'TBM 930')
+                return url_for('static', filename=img_path)
         elif self.category == 'multi_engine_land':
             if self.engine_type == 'piston':
-                return url_for(
-                    'static',
-                    filename='images/aircraft/baron58.jpg'
-                )
+                img_path = ensure_aircraft_image('baron58.jpg', 'Beechcraft', 'Baron 58')
+                return url_for('static', filename=img_path)
             elif self.engine_type == 'turboprop':
-                return url_for(
-                    'static',
-                    filename='images/aircraft/kingair350.jpg'
-                )
+                img_path = ensure_aircraft_image('kingair350.jpg', 'Beechcraft', 'King Air 350')
+                return url_for('static', filename=img_path)
             elif self.engine_type == 'jet':
-                return url_for(
-                    'static',
-                    filename='images/aircraft/citation.jpg'
-                )
-        return url_for('static', filename='images/aircraft/default.jpg')
+                img_path = ensure_aircraft_image('citation.jpg', 'Cessna', 'Citation')
+                return url_for('static', filename=img_path)
+        img_path = ensure_aircraft_image('default.jpg')
+        return url_for('static', filename=img_path)
 
     @property
     def display_name(self):
@@ -814,3 +817,44 @@ class RecurringBooking(db.Model):
 
     def __repr__(self):
         return f'<RecurringBooking {self.id}>'
+
+
+def ensure_aircraft_image(filename, make=None, model=None):
+    """
+    Ensure the aircraft image file exists and is not empty. If not, fetch a relevant image from the internet.
+    Returns the filename to use (relative to static/).
+    """
+    if not filename:
+        logger.info("No filename provided, using default.")
+        return 'images/aircraft/default.jpg'
+    local_path = os.path.join(os.path.dirname(__file__), 'static', 'images', 'aircraft', filename)
+    logger.info(f"Checking image at {local_path}")
+    # Check if file exists and is not empty
+    if os.path.exists(local_path) and os.path.getsize(local_path) > 1024:
+        logger.info(f"Image exists and is non-empty: {local_path}")
+        return f'images/aircraft/{filename}'
+    logger.info(f"Image missing or empty for {filename}. Attempting to fetch from Wikimedia.")
+    # Try to fetch an image from Wikimedia Commons
+    query = f"{make or ''} {model or ''} aircraft".strip()
+    url = f"https://commons.wikimedia.org/w/api.php?action=query&format=json&prop=imageinfo&generator=search&gsrsearch={query}&gsrlimit=1&iiprop=url"
+    logger.info(f"Wikimedia query: {url}")
+    try:
+        resp = requests.get(url, timeout=5)
+        data = resp.json()
+        pages = data.get('query', {}).get('pages', {})
+        for page in pages.values():
+            img_url = page['imageinfo'][0]['url']
+            logger.info(f"Fetching image from: {img_url}")
+            img_data = requests.get(img_url, timeout=10).content
+            os.makedirs(os.path.dirname(local_path), exist_ok=True)
+            with open(local_path, 'wb') as f:
+                f.write(img_data)
+            if os.path.getsize(local_path) > 1024:
+                logger.info(f"Successfully fetched and saved image: {local_path}")
+                return f'images/aircraft/{filename}'
+            else:
+                logger.warning(f"Downloaded image is too small or empty: {local_path}")
+    except Exception as e:
+        logger.error(f"Error fetching image for {filename}: {e}")
+    logger.info("Falling back to default image.")
+    return 'images/aircraft/default.jpg'
