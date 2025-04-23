@@ -4,7 +4,7 @@ from wtforms import (
     DateTimeField, FloatField, TextAreaField, IntegerField, FileField
 )
 from wtforms.validators import (
-    DataRequired, Email, Optional, EqualTo, ValidationError, NumberRange
+    DataRequired, Email, Optional, EqualTo, ValidationError, NumberRange, Length
 )
 from app.models import User
 import re
@@ -645,3 +645,12 @@ class AccountSettingsForm(FlaskForm):
         ]
     )
     submit = SubmitField('Update Settings')
+
+
+class ContactForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired(), Length(min=2, max=100)])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    phone = StringField('Phone', validators=[Length(min=10, max=15)])
+    subject = StringField('Subject', validators=[DataRequired(), Length(min=5, max=100)])
+    message = TextAreaField('Message', validators=[DataRequired(), Length(min=10, max=1000)])
+    submit = SubmitField('Send Message')

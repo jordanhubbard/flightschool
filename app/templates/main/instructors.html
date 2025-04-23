@@ -3,94 +3,42 @@
 {% block title %}Our Instructors - {{ config.SCHOOL_NAME }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-12">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
-                    <li class="breadcrumb-item active">Our Instructors</li>
-                </ol>
-            </nav>
-        </div>
-    </div>
-
+<div class="container">
     <div class="row mb-4">
-        <div class="col-12">
-            <h1 class="display-4 text-primary">
-                <i class="fas fa-chalkboard-teacher me-3"></i>Our Instructors
-            </h1>
-            <p class="lead">Meet our experienced flight instructors who will guide you through your aviation journey.</p>
+        <div class="col-md-12">
+            <h1 class="display-4">Our Instructors</h1>
+            <p class="lead">Meet our team of experienced flight instructors</p>
         </div>
     </div>
 
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    <div class="row">
         {% for instructor in instructors %}
-        <div class="col">
+        <div class="col-md-4 mb-4">
             <div class="card h-100">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-user-tie me-2"></i>{{ instructor.full_name }}
-                    </h5>
-                </div>
+                {% if instructor.image_url %}
+                <img src="{{ instructor.image_url }}" class="card-img-top" alt="{{ instructor.full_name }}">
+                {% endif %}
                 <div class="card-body">
-                    {% if instructor.certificates %}
-                    <div class="mb-3">
-                        <h6 class="text-muted">Certificates & Ratings</h6>
-                        <p class="card-text">
-                            {% for cert in instructor.certificates.split(',') %}
-                            <span class="badge bg-secondary me-1">{{ cert.strip() }}</span>
-                            {% endfor %}
-                        </p>
-                    </div>
-                    {% endif %}
-
-                    <div class="mb-3">
-                        <h6 class="text-muted">Contact</h6>
-                        {% if instructor.email %}
-                        <p class="card-text">
-                            <i class="fas fa-envelope me-2"></i>
-                            <a href="mailto:{{ instructor.email }}" class="text-decoration-none btn btn-sm btn-outline-primary">Email</a>
-                        </p>
-                        {% endif %}
-                        {% if instructor.phone %}
-                        <p class="card-text">
-                            <i class="fas fa-phone me-2"></i>
-                            <a href="tel:{{ instructor.phone }}" class="text-decoration-none btn btn-sm btn-outline-primary">Call</a>
-                        </p>
-                        {% endif %}
-                    </div>
-
-                    {% if current_user.is_authenticated %}
-                    <div class="text-center">
-                        <a href="{{ url_for('booking.create', instructor_id=instructor.id) }}" class="btn btn-accent">
-                            <i class="fas fa-calendar-plus me-2"></i>Book with {{ instructor.full_name }}
-                        </a>
-                    </div>
+                    <h5 class="card-title">{{ instructor.full_name }}</h5>
+                    <p class="card-text">
+                        <strong>Certificates:</strong> {{ instructor.certificates|join(', ') }}<br>
+                        <strong>Ratings:</strong> {{ instructor.ratings|join(', ') }}<br>
+                        <strong>Experience:</strong> {{ instructor.total_hours }} hours
+                    </p>
+                    {% if instructor.bio %}
+                    <p class="card-text">{{ instructor.bio }}</p>
                     {% endif %}
                 </div>
-            </div>
-        </div>
-        {% else %}
-        <div class="col-12">
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i>No instructors are currently available.
+                <div class="card-footer">
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('booking.create_booking', instructor_id=instructor.id) }}" class="btn btn-primary">Book Lesson</a>
+                    {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Login to Book</a>
+                    {% endif %}
+                </div>
             </div>
         </div>
         {% endfor %}
     </div>
-
-    {% if not current_user.is_authenticated %}
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="alert alert-primary">
-                <i class="fas fa-info-circle me-2"></i>
-                <a href="{{ url_for('auth.login') }}" class="alert-link">Log in</a> or 
-                <a href="{{ url_for('auth.register') }}" class="alert-link">register</a> 
-                to book lessons with our instructors.
-            </div>
-        </div>
-    </div>
-    {% endif %}
 </div>
 {% endblock %}

@@ -40,7 +40,7 @@ def test_admin_dashboard_access(client):
 def test_admin_aircraft_add(client):
     client, app = client
     login_admin(client, app)
-    resp = client.post("/admin/aircraft/add", data={
+    resp = client.post("/admin/aircraft/create", data={
         "registration": "N99999",
         "make": "TestMake",
         "model": "TestModel",
@@ -58,7 +58,7 @@ def test_admin_aircraft_add(client):
 def test_admin_aircraft_maintenance_fields(client):
     client, app = client
     login_admin(client, app)
-    resp = client.post("/admin/aircraft/add", data={
+    resp = client.post("/admin/aircraft/create", data={
         "registration": "N77777",
         "make": "Test",
         "model": "Model",
@@ -80,7 +80,7 @@ def test_admin_aircraft_delete(client):
     client, app = client
     login_admin(client, app)
     # Add then delete
-    client.post("/admin/aircraft/add", data={
+    client.post("/admin/aircraft/create", data={
         "registration": "N88888",
         "make": "DelMake",
         "model": "DelModel",
@@ -91,6 +91,6 @@ def test_admin_aircraft_delete(client):
     }, follow_redirects=True)
     ac = Aircraft.query.filter_by(registration="N88888").first()
     assert ac is not None
-    resp = client.delete(f"/admin/aircraft/{ac.id}")
+    resp = client.delete(f"/admin/aircraft/{ac.id}/delete")
     assert resp.status_code == 200
     assert b"deleted successfully" in resp.data

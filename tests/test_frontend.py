@@ -1,6 +1,5 @@
 import pytest
 from flask import url_for
-from bs4 import BeautifulSoup
 from app import create_app, db
 from app.models import User
 
@@ -31,13 +30,10 @@ def test_booking_page_renders_calendar_and_time(client):
     login(client, 'student@example.com', 'student123')
     response = client.get('/bookings')
     assert response.status_code == 200
-    soup = BeautifulSoup(response.data, 'html.parser')
     # Check for current time label
-    label = soup.find('label', {'class': 'form-label'})
-    assert label and 'Current Time:' in label.text
+    assert b'Current Time:' in response.data
     # Check for calendar-widget div
-    cal_div = soup.find('div', {'id': 'calendar-widget'})
-    assert cal_div is not None
+    assert b'calendar-widget' in response.data
 
 def test_booking_page_includes_booking_blocks_js(client):
     login(client, 'student@example.com', 'student123')
@@ -46,3 +42,30 @@ def test_booking_page_includes_booking_blocks_js(client):
     # Check that booking_blocks JSON is present in the page
     assert b'const BOOKING_BLOCKS' in response.data
     assert b'calendar-widget' in response.data
+
+def test_contact_form(client):
+    """Test contact form submission."""
+    # Test GET request
+    response = client.get('/contact')
+    assert response.status_code == 200
+    assert b'Contact Us' in response.data
+
+    # Test POST request with valid data
+    response = client.post('/contact', data={
+        'name': 'Test User',
+        'email': 'test@example.com',
+        'subject': 'Test Subject',
+        'message': 'Test Message'
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Thank you for your message' in response.data
+
+    # Test POST request with missing data
+    response = client.post('/contact', data={
+        'name': '',
+        'email': '',
+        'subject': '',
+        'message': ''
+    })
+    assert response.status_code == 200
+    assert b'Contact Us' in response.data

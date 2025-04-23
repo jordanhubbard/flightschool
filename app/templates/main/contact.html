@@ -1,106 +1,177 @@
 {% extends "base.html" %}
 
-{% block title %}Contact Us{% endblock %}
+{% block title %}Contact Us - {{ config.SCHOOL_NAME }}{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="row mb-5">
-        <div class="col-md-12 text-center">
-            <h1 class="display-4">Contact Us</h1>
-            <p class="lead">We're here to help with your aviation journey</p>
+<!-- Header Section -->
+<div class="container py-5">
+    <div class="row text-center">
+        <div class="col-md-12">
+            <h1 class="display-4 fw-bold">Contact Us</h1>
+            <p class="lead text-muted">Get in touch with our team</p>
         </div>
     </div>
+</div>
 
+<!-- Contact Information -->
+<div class="container py-5">
     <div class="row">
-        <div class="col-md-6 mb-4">
+        <div class="col-md-4 mb-4">
             <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-map-marker-alt fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">Location</h5>
+                    <p class="card-text">
+                        {{ config.SCHOOL_ADDRESS }}<br>
+                        {{ config.SCHOOL_CITY }}, {{ config.SCHOOL_STATE }} {{ config.SCHOOL_ZIP }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-phone fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">Phone</h5>
+                    <p class="card-text">
+                        {{ config.SCHOOL_PHONE }}<br>
+                        Available 7 days a week
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-envelope fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">Email</h5>
+                    <p class="card-text">
+                        {{ config.SCHOOL_EMAIL }}<br>
+                        Response within 24 hours
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contact Form -->
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
                 <div class="card-body">
-                    <h2 class="card-title">Send Us a Message</h2>
-                    <form method="POST" class="needs-validation" novalidate>
+                    <h3 class="card-title text-center mb-4">Send us a Message</h3>
+                    <form method="POST" action="{{ url_for('main.contact') }}">
+                        {{ form.hidden_tag() }}
                         <div class="mb-3">
-                            <label for="name" class="form-label">Your Name</label>
-                            <input type="text" class="form-control" id="name" name="name" required>
-                            <div class="invalid-feedback">
-                                Please enter your name.
-                            </div>
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control") }}
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
-
                         <div class="mb-3">
-                            <label for="email" class="form-label">Email Address</label>
-                            <input type="email" class="form-control" id="email" name="email" required>
-                            <div class="invalid-feedback">
-                                Please enter a valid email address.
-                            </div>
+                            {{ form.email.label(class="form-label") }}
+                            {{ form.email(class="form-control") }}
+                            {% if form.email.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.email.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
-
                         <div class="mb-3">
-                            <label for="subject" class="form-label">Subject</label>
-                            <select class="form-select" id="subject" name="subject" required>
-                                <option value="">Choose a subject...</option>
-                                <option value="general">General Inquiry</option>
-                                <option value="training">Training Programs</option>
-                                <option value="scheduling">Scheduling</option>
-                                <option value="support">Technical Support</option>
-                            </select>
-                            <div class="invalid-feedback">
-                                Please select a subject.
-                            </div>
+                            {{ form.phone.label(class="form-label") }}
+                            {{ form.phone(class="form-control") }}
+                            {% if form.phone.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.phone.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
-
                         <div class="mb-3">
-                            <label for="message" class="form-label">Message</label>
-                            <textarea class="form-control" id="message" name="message" rows="5" required></textarea>
-                            <div class="invalid-feedback">
-                                Please enter your message.
-                            </div>
+                            {{ form.subject.label(class="form-label") }}
+                            {{ form.subject(class="form-control") }}
+                            {% if form.subject.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.subject.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
-
-                        <button type="submit" class="btn btn-primary">Send Message</button>
+                        <div class="mb-3">
+                            {{ form.message.label(class="form-label") }}
+                            {{ form.message(class="form-control", rows=5) }}
+                            {% if form.message.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.message.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="text-center">
+                            {{ form.submit(class="btn btn-primary btn-lg") }}
+                        </div>
                     </form>
                 </div>
             </div>
         </div>
+    </div>
+</div>
 
-        <div class="col-md-6 mb-4">
-            <div class="card h-100">
+<!-- Map Section -->
+<div class="container-fluid py-5 bg-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <h3 class="text-center mb-4">Find Us</h3>
+                <div class="ratio ratio-16x9">
+                    <iframe
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3151.8354345096034!2d144.95373631531978!3d-37.817327679751734!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6ad65d4c2b349649%3A0xb6899234e561db11!2sMelbourne%20Airport!5e0!3m2!1sen!2sus!4v1635167261304!5m2!1sen!2sus"
+                        style="border:0;"
+                        allowfullscreen=""
+                        loading="lazy">
+                    </iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Business Hours -->
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
                 <div class="card-body">
-                    <h2 class="card-title">Contact Information</h2>
-                    
-                    <div class="mb-4">
-                        <h5><i class="fas fa-map-marker-alt text-primary me-2"></i>Location</h5>
-                        <p>
-                            Tailwheel Addicts Aviation<br>
-                            123 Airport Road<br>
-                            Anytown, ST 12345<br>
-                            United States
-                        </p>
-                    </div>
-
-                    <div class="mb-4">
-                        <h5><i class="fas fa-phone text-primary me-2"></i>Phone</h5>
-                        <p>
-                            Main: (555) 123-4567<br>
-                            Support: (555) 123-4568<br>
-                            Emergency: (555) 123-4569
-                        </p>
-                    </div>
-
-                    <div class="mb-4">
-                        <h5><i class="fas fa-envelope text-primary me-2"></i>Email</h5>
-                        <p>
-                            General Inquiries: info@nextleveltailwheel.com<br>
-                            Support: support@nextleveltailwheel.com<br>
-                            Scheduling: schedule@nextleveltailwheel.com
-                        </p>
-                    </div>
-
-                    <div class="mb-4">
-                        <h5><i class="fas fa-clock text-primary me-2"></i>Hours of Operation</h5>
-                        <p>
-                            Monday - Friday: 7:00 AM - 8:00 PM<br>
-                            Saturday: 8:00 AM - 6:00 PM<br>
-                            Sunday: 9:00 AM - 5:00 PM
-                        </p>
+                    <h3 class="card-title text-center mb-4">Business Hours</h3>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <td>Monday - Friday</td>
+                                    <td>8:00 AM - 6:00 PM</td>
+                                </tr>
+                                <tr>
+                                    <td>Saturday</td>
+                                    <td>9:00 AM - 4:00 PM</td>
+                                </tr>
+                                <tr>
+                                    <td>Sunday</td>
+                                    <td>10:00 AM - 2:00 PM</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

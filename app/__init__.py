@@ -53,12 +53,19 @@ def create_app(config_name='default'):
         return response
 
     # Register blueprints
-    from app.routes import auth, booking, admin, main, maintenance
-    app.register_blueprint(auth.auth_bp, url_prefix='/auth')
-    app.register_blueprint(booking.booking_bp)
-    app.register_blueprint(admin.admin_bp, url_prefix='/admin')
-    app.register_blueprint(main.main_bp)
-    app.register_blueprint(maintenance.maintenance_bp)
+    from app.routes import main as main_blueprint
+    from app.routes import auth as auth_blueprint
+    from app.routes import booking as booking_blueprint
+    from app.routes import instructor as instructor_blueprint
+    from app.routes import admin as admin_blueprint
+    from app.routes import settings as settings_blueprint
+
+    app.register_blueprint(main_blueprint.main_bp)
+    app.register_blueprint(auth_blueprint.auth_bp, url_prefix='/auth')
+    app.register_blueprint(booking_blueprint.booking_bp)
+    app.register_blueprint(instructor_blueprint.instructor_bp)
+    app.register_blueprint(admin_blueprint.admin_bp, url_prefix='/admin')
+    app.register_blueprint(settings_blueprint.settings_bp, url_prefix='/settings')
 
     @app.errorhandler(404)
     def not_found_error(error):
