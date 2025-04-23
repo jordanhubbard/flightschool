@@ -68,11 +68,15 @@ def load_test_data():
                 'last_maintenance', 'last_annual', 'last_100hr', 'last_pitot_static',
                 'last_vor_check', 'last_altimeter', 'last_transponder', 'last_elt_check',
                 'next_maintenance_date', 'insurance_expiry', 'registration_expiry',
-                'airworthiness_date'
+                'airworthiness_date', 'date_of_next_annual'
             ]
             for field in date_fields:
                 if field in aircraft_data and aircraft_data[field]:
-                    aircraft_data[field] = datetime.fromisoformat(aircraft_data[field].replace('Z', '+00:00'))
+                    dt = datetime.fromisoformat(aircraft_data[field].replace('Z', '+00:00'))
+                    if field == 'date_of_next_annual':
+                        aircraft_data[field] = dt.date()
+                    else:
+                        aircraft_data[field] = dt
             
             # Dynamically filter aircraft_data to only valid Aircraft fields
             valid_aircraft_fields = set(c.name for c in Aircraft.__table__.columns)

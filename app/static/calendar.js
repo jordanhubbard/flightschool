@@ -2,13 +2,17 @@
 // Renders a week view, allows navigation, and emits selected datetime
 
 class WeekCalendar {
-    constructor(containerId, onSelect) {
+    constructor(containerId, onSelect, options = {}) {
         this.container = document.getElementById(containerId);
         this.onSelect = onSelect;
         this.selectedStart = null;
         this.selectedEnd = null;
         this.currentStart = this.getStartOfWeek(new Date());
         this.isDragging = false;
+        // Booking block rendering support
+        this.bookingBlocks = options.bookingBlocks || [];
+        this.aircraftBlockColor = options.aircraftBlockColor || '#ffcccc';
+        this.instructorBlockColor = options.instructorBlockColor || '#cce5ff';
         this.render();
     }
 
@@ -31,6 +35,10 @@ class WeekCalendar {
 
     formatDayHeader(date) {
         return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    }
+
+    overlaps(start1, end1, start2, end2) {
+        return (start1 < end2 && start2 < end1);
     }
 
     render() {
@@ -83,6 +91,21 @@ class WeekCalendar {
                     }
                 } else if (this.selectedStart && new Date(this.selectedStart).toISOString() === slotTime.toISOString()) {
                     td.classList.add('bg-primary', 'text-white');
+                }
+                // Highlight booking blocks
+                if (this.bookingBlocks && this.bookingBlocks.length > 0) {
+                    this.bookingBlocks.forEach(block => {
+                        const blockStart = new Date(block.start);
+                        const blockEnd = new Date(block.end);
+                        // Aircraft block
+                        if (block.aircraft_id && block.aircraft_id == document.getElementById('aircraft_id').value && this.overlaps(slotTime, new Date(slotTime.getTime()+30*60000), blockStart, blockEnd)) {
+                            td.style.backgroundColor = this.aircraftBlockColor;
+                        }
+                        // Instructor block
+                        if (block.instructor_id && block.instructor_id == document.getElementById('instructor_id').value && this.overlaps(slotTime, new Date(slotTime.getTime()+30*60000), blockStart, blockEnd)) {
+                            td.style.backgroundColor = this.instructorBlockColor;
+                        }
+                    });
                 }
                 // Mouse events for drag selection
                 td.onmousedown = (ev) => {

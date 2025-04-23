@@ -2,6 +2,12 @@
 
 A Flask-based web application for managing a flight school's operations, including student registration, aircraft and instructor management, booking system, and administrative functions.
 
+# Quick start
+- make demo
+- log in as student@example.com / student123
+  - This username and password comes from tests/test_data.json - see this file
+  for admin user credentials as well as pre-loaded aircraft types and other data
+
 ## Features
 
 - User Management
@@ -10,7 +16,9 @@ A Flask-based web application for managing a flight school's operations, includi
   - Role-based access control (Admin, Instructor, Student)
 - Booking System
   - Aircraft and instructor scheduling
-  - Calendar view with status-based coloring
+  - Interactive calendar with real-time availability
+  - Current time display on booking page
+  - Color-coded blocks for aircraft and instructor conflicts
   - Conflict prevention for bookings
 - Aircraft Management
   - Aircraft registration and status tracking
@@ -23,6 +31,8 @@ A Flask-based web application for managing a flight school's operations, includi
   - Responsive Bootstrap-based design
   - Interactive calendar interface
   - Status indicators and notifications
+  - Real-time feedback for booking conflicts
+  - Dynamic updates based on selected aircraft/instructor
 
 ## Project Structure
 
@@ -98,10 +108,12 @@ flightschool/
    make run
    ```
    The application will be available at `http://localhost:5000`
+   - Or at `http://localhost:5001` if configured for alternate port
 
 2. Default admin credentials:
    - Email: admin@example.com
    - Password: admin123
+   - You can log in as a student or instructor using the test data accounts in `tests/test_data.json`.
 
 ## Testing
 
@@ -148,6 +160,14 @@ make test-booking
    - Create/update templates in `app/templates/`
    - Add corresponding tests in `tests/`
    - Update documentation as needed
+
+## Application Behavior Notes
+
+- The booking calendar visually displays all aircraft and instructor conflicts for the selected week.
+- Aircraft conflicts are shown in red, instructor conflicts in blue.
+- The current UTC time is always displayed above the calendar widget.
+- All bookings are validated to prevent double-booking of aircraft or instructors.
+- The test data loader (`scripts/load_test_data.py`) automatically converts date fields and ensures consistency with the models.
 
 ## Contributing
 

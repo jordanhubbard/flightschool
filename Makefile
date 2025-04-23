@@ -21,6 +21,7 @@ TYPE ?= "Aircraft"
 help:
 	@echo "Available commands:"
 	@echo "  make help         - Show this help message"
+	@echo "  make demo         - Do all steps necessary to bring up a demo
 	@echo "  make env         - Create and activate Python virtual environment"
 	@echo "  make init        - Initialize the application (create venv, install deps, init db)"
 	@echo "  make run         - Run the Flask application in development mode"
@@ -33,6 +34,8 @@ help:
 	@echo "  make db-downgrade- Revert last database migration"
 	@echo "  make test-data   - Load sample data into the database"
 	@echo "  make check-aircraft-images - Check aircraft images"
+
+demo: clean init test-data run
 
 query: env
 	PYTHONPATH=/Users/jkh/Src/flightschool /Users/jkh/Src/flightschool/venv/bin/python /Users/jkh/Src/flightschool/scripts/db_query_helper.py "${TYPE}.query.all()"

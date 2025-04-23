@@ -30,7 +30,7 @@
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label">Select Booking Date & Time</label>
+                            <label class="form-label">Current Time: {{ current_time }}</label>
                             <div id="calendar-widget"></div>
                             <input type="hidden" id="calendar-datetime-start" name="calendar_datetime_start">
                             <input type="hidden" id="calendar-datetime-end" name="calendar_datetime_end">
@@ -86,6 +86,18 @@ function formatLocalDatetime(dtString) {
     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())} ${tzAbbr}`;
 }
 
+// Booking blocks from backend
+const BOOKING_BLOCKS = {{ booking_blocks|safe }};
+
+// Color config
+const AIRCRAFT_BLOCK_COLOR = '#ffcccc';
+const INSTRUCTOR_BLOCK_COLOR = '#cce5ff';
+
+// Helper to check overlap
+function overlaps(start1, end1, start2, end2) {
+    return (start1 < end2 && end1 > start2);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form');
     if (form) {
@@ -111,6 +123,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const duration = Math.round((end - start) / (1000 * 60)) + 30; // slot is inclusive
             document.getElementById('duration').value = duration;
             document.getElementById('duration-local').textContent = `Selected: ${duration} minutes (${formatLocalDatetime(start.toISOString())} to ${formatLocalDatetime(end.toISOString())})`;
+        }, {
+            bookingBlocks: BOOKING_BLOCKS,
+            aircraftBlockColor: AIRCRAFT_BLOCK_COLOR,
+            instructorBlockColor: INSTRUCTOR_BLOCK_COLOR
         });
     }
     // Hide manual time input

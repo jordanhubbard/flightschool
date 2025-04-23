@@ -14,6 +14,7 @@ from datetime import datetime, timedelta, timezone, UTC
 from app.calendar_service import GoogleCalendarService
 import os
 from sqlalchemy import and_, or_
+import json
 
 booking_bp = Blueprint('booking', __name__)
 calendar_service = GoogleCalendarService()
@@ -185,7 +186,25 @@ def create_booking():
         # Set default start_time to now if not set
         if not form.start_time.data:
             form.start_time.data = datetime.utcnow()
-        return render_template('booking/book.html', form=form)
+        # --- Add current time and booking blocks for calendar ---
+        now = datetime.now(timezone.utc)
+        current_time = now.strftime('%Y-%m-%d %H:%M UTC')
+        # Get all future bookings for all aircraft and instructors
+        future_bookings = Booking.query.filter(
+            Booking.end_time > now,
+            Booking.status != 'cancelled'
+        ).all()
+        # Build blocks for JS: list of {start, end, aircraft_id, instructor_id}
+        booking_blocks = [
+            {
+                'start': b.start_time.isoformat(),
+                'end': b.end_time.isoformat(),
+                'aircraft_id': b.aircraft_id,
+                'instructor_id': b.instructor_id
+            }
+            for b in future_bookings
+        ]
+        return render_template('booking/book.html', form=form, current_time=current_time, booking_blocks=json.dumps(booking_blocks))
 
     if request.method == 'POST':
         if request.is_json:
