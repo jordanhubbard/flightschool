@@ -1,7 +1,6 @@
-from flask import Blueprint, render_template, flash, redirect, url_for, request, current_app
+from flask import Blueprint, render_template, flash, redirect, url_for, request
 from flask_login import login_required, current_user
 from app.models import User, Aircraft, Booking, MaintenanceType, MaintenanceRecord, Squawk, Document, WeatherMinima
-from app import db
 from datetime import datetime
 
 admin_bp = Blueprint('admin', __name__)
@@ -141,7 +140,7 @@ def delete_aircraft(id):
     
     aircraft = Aircraft.query.get_or_404(id)
     try:
-        db.session.delete(airircraft)
+        db.session.delete(aircraft)
         db.session.commit()
         flash('Aircraft deleted successfully', 'success')
         return redirect(url_for('admin.dashboard'))
