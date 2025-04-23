@@ -1,252 +1,28 @@
-"""Authentication routes for the application."""
+from flask import Blueprint, render_template, flash, redirect, url_for, request, current_app
+from flask_login import login_required, login_user, logout_user
+from app.models import User
+from app.forms import LoginForm, RegistrationForm
 
-from urllib.parse import urlparse
-
-from flask import (
-    Blueprint,
-    current_app,
-    flash,
-    redirect,
-    render_template,
-    request,
-    session,
-    url_for,
-)
-from flask_login import current_user, login_required, login_user, logout_user
-from flask_wtf.csrf import CSRFProtect
-
-from app import db
-from app.calendar_service import GoogleCalendarService
-from app.forms import AccountSettingsForm, LoginForm, RegistrationForm
-from app.models import Document, FlightLog, User
-
-csrf = CSRFProtect()
 auth_bp = Blueprint('auth', __name__)
-calendar_service = GoogleCalendarService()
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    """Handle user login.
-
-    Returns:
-        Response: Redirects to appropriate dashboard or renders login form.
-    """
-    current_app.logger.debug(f"Session: {dict(session)}")
-    current_app.logger.debug(f"Session ID: {session.get('_id')}")
-
-    if current_user.is_authenticated:
-        if current_user.is_admin:
-            return redirect(url_for('admin.dashboard'))
-        return redirect(url_for('booking.dashboard'))
-
+    """Handle user login."""
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
-        if user is None or not user.check_password(form.password.data):
-            flash('Invalid email or password', 'error')
-            return redirect(url_for('auth.login'))
-
-        if user.status != 'active':
-            flash('Your account is not active', 'error')
-            return redirect(url_for('auth.login'))
-
-        remember = bool(form.remember_me.data)
-        login_user(user, remember=remember)
-        if remember:
-            session['_remember'] = '1'
-
-        next_page = request.args.get('next')
-        if not next_page or urlparse(next_page).netloc != '':
-            if user.is_admin:
-                next_page = url_for('admin.dashboard')
-            else:
-                next_page = url_for('booking.dashboard')
-        return redirect(next_page)
-
-    return render_template('auth/login.html', title='Sign In', form=form)
-
-
-@auth_bp.route('/logout')
-@login_required
-def logout():
-    """Handle user logout.
-
-    Returns:
-        Response: Redirects to home page.
-    """
-    logout_user()
-    flash('You have been logged out.', 'info')
-    return redirect(url_for('main.index'))
-
-
-@auth_bp.route('/account-settings', methods=['GET', 'POST'])
-@login_required
-def account_settings():
-    """Handle account settings.
-
-    Returns:
-        Response: Renders account settings page or redirects after update.
-    """
-    form = AccountSettingsForm(obj=current_user)
-    if form.validate_on_submit():
-        try:
-            current_user.first_name = form.first_name.data
-            current_user.last_name = form.last_name.data
-            current_user.phone = form.phone.data
-            current_user.address = form.address.data
-            if form.password.data:
-                current_user.set_password(form.password.data)
-            db.session.commit()
-            flash('Account settings updated successfully', 'success')
-            return redirect(url_for('auth.account_settings'))
-        except Exception as e:
-            db.session.rollback()
-            msg = f'Account settings update error: {str(e)}'
-            current_app.logger.error(msg)
-            flash('Failed to update account settings.', 'error')
-    elif request.method == 'GET':
-        form.first_name.data = current_user.first_name
-        form.last_name.data = current_user.last_name
-        form.phone.data = current_user.phone
-        has_addr = hasattr(current_user, 'address')
-        form.address.data = current_user.address if has_addr else None
-
-    return render_template(
-        'auth/account_settings.html',
-        form=form,
-        title='Account Settings',
-        user=current_user,
-    )
-
-
-@auth_bp.route('/google-auth')
-@login_required
-def google_auth():
-    """Start Google Calendar OAuth2 flow.
-
-    Returns:
-        Response: Redirects to Google authorization URL.
-    """
-    authorization_url = calendar_service.get_authorization_url()
-    return redirect(authorization_url)
-
-
-@auth_bp.route('/google-callback')
-@login_required
-def google_callback():
-    """Handle Google Calendar OAuth2 callback.
-
-    Returns:
-        Response: Redirects to account settings page.
-    """
-    code = request.args.get('code')
-    if not code:
-        flash('Failed to authenticate with Google Calendar', 'error')
-        return redirect(url_for('auth.account_settings'))
-
-    try:
-        credentials = calendar_service.handle_callback(code)
-        current_user.google_calendar_credentials = credentials.to_json()
-        current_user.google_calendar_enabled = True
-        db.session.commit()
-        flash('Successfully connected to Google Calendar', 'success')
-    except Exception as e:
-        db.session.rollback()
-        msg = f'Google Calendar connection error: {str(e)}'
-        current_app.logger.error(msg)
-        flash(f'Error connecting to Google Calendar: {str(e)}', 'error')
-
-    return redirect(url_for('auth.account_settings'))
-
-
-@auth_bp.route('/google-disconnect', methods=['POST'])
-@login_required
-def google_disconnect():
-    """Disconnect Google Calendar integration.
-
-    Returns:
-        Response: Redirects to account settings page.
-    """
-    try:
-        current_user.google_calendar_credentials = None
-        current_user.google_calendar_enabled = False
-        db.session.commit()
-        flash('Successfully disconnected from Google Calendar', 'success')
-    except Exception as e:
-        db.session.rollback()
-        msg = f'Google Calendar disconnect error: {str(e)}'
-        current_app.logger.error(msg)
-        flash('Failed to disconnect from Google Calendar.', 'error')
-
-    return redirect(url_for('auth.account_settings'))
-
-
-@auth_bp.route('/update-profile', methods=['POST'])
-@login_required
-def update_profile():
-    """Update user profile information.
-
-    Returns:
-        Response: Redirects to account settings page.
-    """
-    try:
-        current_user.first_name = request.form.get('first_name')
-        current_user.last_name = request.form.get('last_name')
-        current_user.phone = request.form.get('phone')
-        current_user.address = request.form.get('address')
-        db.session.commit()
-        flash('Profile updated successfully', 'success')
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f'Profile update error: {str(e)}')
-        flash('Failed to update profile. Please try again.', 'error')
-
-    return redirect(url_for('auth.account_settings'))
-
-
-@auth_bp.route('/change-password', methods=['POST'])
-@login_required
-def change_password():
-    """Change user password.
-
-    Returns:
-        Response: Redirects to account settings page.
-    """
-    current_password = request.form.get('current_password')
-    new_password = request.form.get('new_password')
-    confirm_password = request.form.get('confirm_password')
-
-    if not current_user.check_password(current_password):
-        flash('Current password is incorrect', 'error')
-        return redirect(url_for('auth.account_settings'))
-
-    if new_password != confirm_password:
-        flash('New passwords do not match', 'error')
-        return redirect(url_for('auth.account_settings'))
-
-    try:
-        current_user.set_password(new_password)
-        db.session.commit()
-        flash('Password changed successfully', 'success')
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f'Password change error: {str(e)}')
-        flash('Failed to change password. Please try again.', 'error')
-
-    return redirect(url_for('auth.account_settings'))
+        if user and user.check_password(form.password.data):
+            login_user(user)
+            next_page = request.args.get('next')
+            return redirect(next_page) if next_page else redirect(url_for('main.index'))
+        flash('Invalid email or password', 'error')
+    return render_template('auth/login.html', form=form)
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
-    """Handle user registration.
-
-    Returns:
-        Response: Renders registration form or redirects after registration.
-    """
-    if current_user.is_authenticated:
-        return redirect(url_for('main.index'))
-
+    """Handle user registration."""
     form = RegistrationForm()
     if form.validate_on_submit():
         try:
@@ -255,40 +31,25 @@ def register():
                 first_name=form.first_name.data,
                 last_name=form.last_name.data,
                 phone=form.phone.data,
-                status='pending',
+                status='pending'
             )
             user.set_password(form.password.data)
             db.session.add(user)
             db.session.commit()
-            flash('Registration successful! Please wait for admin approval.')
+            flash('Registration successful! Please wait for admin approval.', 'success')
             return redirect(url_for('auth.login'))
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f'Registration error: {str(e)}')
             flash('An error occurred during registration.', 'danger')
+    
+    return render_template('auth/register.html', form=form)
 
-    return render_template('auth/register.html', title='Register', form=form)
 
-
-@auth_bp.route('/documents')
+@auth_bp.route('/logout')
 @login_required
-def documents():
-    """View user's documents.
-
-    Returns:
-        Response: Renders documents page.
-    """
-    documents = Document.query.filter_by(user_id=current_user.id).all()
-    return render_template('auth/documents.html', documents=documents)
-
-
-@auth_bp.route('/flight-logs')
-@login_required
-def flight_logs():
-    """View user's flight logs.
-
-    Returns:
-        Response: Renders flight logs page.
-    """
-    flight_logs = FlightLog.query.filter_by(user_id=current_user.id).all()
-    return render_template('auth/flight_logs.html', flight_logs=flight_logs)
+def logout():
+    """Handle user logout."""
+    logout_user()
+    flash('You have been logged out.', 'info')
+    return redirect(url_for('main.index'))
