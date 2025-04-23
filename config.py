@@ -18,7 +18,7 @@ class Config:
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     PREFERRED_URL_SCHEME = 'http'  # Change to 'https' in production
-    SCHOOL_NAME = os.environ.get('SCHOOL_NAME', 'Next Level Tailwheel')
+    SCHOOL_NAME = os.environ.get('SCHOOL_NAME', 'Tailwheel Addicts Aviation')
     CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'info@nextleveltailwheel.com')
     CONTACT_PHONE = os.environ.get('CONTACT_PHONE', '(555) 123-4567')
     
