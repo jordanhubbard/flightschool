@@ -1,4 +1,4 @@
-.PHONY: help env init run test clean lint format db-migrate db-upgrade db-downgrade test-data check-aircraft-images
+.PHONY: help env init run test clean lint format db-migrate db-upgrade db-downgrade test-data check-aircraft-images frontend-test
 
 # Default target when just running 'make'
 .DEFAULT_GOAL := help
@@ -34,6 +34,7 @@ help:
 	@echo "  make db-downgrade- Revert last database migration"
 	@echo "  make test-data   - Load sample data into the database"
 	@echo "  make check-aircraft-images - Check aircraft images"
+	@echo "  make frontend-test - Run frontend smoke tests against the running demo instance"
 
 demo: clean init test-data run
 
@@ -121,6 +122,10 @@ test-data: init
 
 check-aircraft-images:
 	. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(PYTHON) scripts/check_aircraft_images.py
+
+frontend-test:
+	@echo "Running frontend smoke tests against the running demo instance..."
+	$(VENV)/bin/python -m pytest tests/frontend_smoke_test.py
 
 # Error if running on Windows
 ifeq ($(OS),Windows_NT)

@@ -134,6 +134,26 @@ make test-admin
 make test-booking
 ```
 
+## Frontend Smoke Testing
+
+To verify that all major endpoints are up and responding (and that there are no server-side errors or backtraces), use the frontend smoke test workflow:
+
+1. **Start the application in demo mode:**
+   ```bash
+   make demo
+   ```
+   This will initialize the database with test data and run the app.
+
+2. **In a separate terminal, run the frontend smoke tests:**
+   ```bash
+   make frontend-test
+   ```
+   This will send HTTP requests to all major endpoints and verify:
+   - The endpoint responds with a 2xx or 3xx status code
+   - The response does not contain a Python traceback or Flask error page
+
+You can add or adjust endpoints in `tests/frontend_smoke_test.py` as your app evolves.
+
 ## Development Guidelines
 
 1. Code Style

@@ -10,7 +10,7 @@ from app.forms import (
     CheckInForm,
     CheckOutForm,
     InvoiceForm)
-from datetime import datetime, timedelta, timezone, UTC
+from datetime import timedelta, UTC
 from app.calendar_service import GoogleCalendarService
 import os
 from sqlalchemy import and_, or_
@@ -224,7 +224,7 @@ def create_booking():
                 # Use new calendar_datetime_start and calendar_datetime_end fields for start_time and duration
                 calendar_datetime_start = request.form.get('calendar_datetime_start')
                 calendar_datetime_end = request.form.get('calendar_datetime_end')
-                from datetime import datetime, timezone
+                from datetime import datetime
                 if calendar_datetime_start and calendar_datetime_end:
                     try:
                         start_dt = datetime.fromisoformat(calendar_datetime_start)
