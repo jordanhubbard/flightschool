@@ -113,7 +113,6 @@ class BookingForm(FlaskForm):
     start_time = DateTimeField(
         'Start Time',
         format='%Y-%m-%dT%H:%M',
-        default=lambda: datetime.now(timezone.utc),
         validators=[
             DataRequired()
         ]
