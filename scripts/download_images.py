@@ -9,25 +9,30 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Default aircraft images to download
+# Updated aircraft images with reliable sources that allow hotlinking
 AIRCRAFT_IMAGES = {
-    'cessna172.jpg': 'https://upload.wikimedia.org/wikipedia/commons/0/09/Cessna_172S_Skyhawk_SP%2C_Private_JP6817606.jpg',
-    'tbm930.jpg': 'https://upload.wikimedia.org/wikipedia/commons/7/7d/Daher_TBM_930_at_AERO_Friedrichshafen_2019.jpg',
-    'baron58.jpg': 'https://upload.wikimedia.org/wikipedia/commons/5/54/Beechcraft_Baron_58_N58DF.jpg',
-    'kingair350.jpg': 'https://upload.wikimedia.org/wikipedia/commons/c/c8/Beechcraft_King_Air_350i_OK-HWK.jpg',
-    'citation.jpg': 'https://upload.wikimedia.org/wikipedia/commons/0/02/Cessna_525A_Citation_CJ2%2B%2C_Private_JP7683833.jpg',
-    'default.jpg': 'https://upload.wikimedia.org/wikipedia/commons/8/82/Generic_Aircraft_Silhouette.svg'
+    'cessna172.jpg': 'https://images.unsplash.com/photo-1474302770737-173ee21bab63?q=80&w=1964&auto=format&fit=crop',
+    'tbm930.jpg': 'https://images.pexels.com/photos/1381613/pexels-photo-1381613.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'baron58.jpg': 'https://images.pexels.com/photos/1556801/pexels-photo-1556801.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'kingair350.jpg': 'https://images.pexels.com/photos/46148/aircraft-jet-landing-cloud-46148.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    'citation.jpg': 'https://images.unsplash.com/photo-1540962351504-03099e0a754b?q=80&w=1000',
+    'default.jpg': 'https://images.pexels.com/photos/1089306/pexels-photo-1089306.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
 }
 
-# Define a user agent string to prevent Wikipedia from blocking requests
-USER_AGENT = 'FlightSchool/1.0 (https://github.com/jordanhubbard/flightschool; contact@flightschool.com)'
+# Define a comprehensive user agent string to prevent sites from blocking requests
+USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36'
 
 def download_and_save_image(url, filename, target_size=(800, 600)):
     """Download an image from URL, resize it, and save it as JPEG."""
     logger.info(f"Downloading {url} to {filename}")
     try:
-        # Add user agent header to the request
-        headers = {'User-Agent': USER_AGENT}
+        # Add user agent header and other headers to the request
+        headers = {
+            'User-Agent': USER_AGENT,
+            'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Referer': 'https://www.google.com/'
+        }
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         logger.info(f"Downloaded {len(response.content)} bytes")
