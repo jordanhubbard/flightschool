@@ -39,7 +39,7 @@
                     <a href="{{ url_for('admin.maintenance_add') }}" class="btn btn-success d-block mb-2">
                         <i class="fas fa-plus-circle me-2"></i> Add Maintenance Record
                     </a>
-                    <a href="{{ url_for('admin.aircraft_list') }}" class="btn btn-secondary d-block">
+                    <a href="{{ url_for('admin.aircraft') }}" class="btn btn-secondary d-block">
                         <i class="fas fa-arrow-left me-2"></i> Back to Aircraft List
                     </a>
                 </div>
@@ -64,7 +64,7 @@
                                     <th>Date</th>
                                     <th>Aircraft</th>
                                     <th>Type</th>
-                                    <th>Notes</th>
+                                    <th>Hobbs Hours</th>
                                     <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
@@ -74,59 +74,27 @@
                                 <tr>
                                     <td>{{ record.performed_at.strftime('%Y-%m-%d') }}</td>
                                     <td>{{ record.aircraft.registration }}</td>
-                                    <td>{{ record.maintenance_type_obj.name if record.maintenance_type_obj else 'Unknown' }}</td>
-                                    <td>{{ record.notes }}</td>
+                                    <td>{{ record.maintenance_type.name }}</td>
+                                    <td>{{ record.hobbs_hours }}</td>
                                     <td>
-                                        {% if record.status == 'completed' %}
-                                        <span class="badge bg-success">Completed</span>
-                                        {% elif record.status == 'in_progress' %}
-                                        <span class="badge bg-warning">In Progress</span>
-                                        {% elif record.status == 'scheduled' %}
-                                        <span class="badge bg-info">Scheduled</span>
-                                        {% else %}
-                                        <span class="badge bg-secondary">{{ record.status }}</span>
-                                        {% endif %}
+                                        <span class="badge {% if record.status == 'completed' %}bg-success{% elif record.status == 'pending' %}bg-warning{% elif record.status == 'in_progress' %}bg-primary{% elif record.status == 'due' %}bg-danger{% endif %}">
+                                            {{ record.status }}
+                                        </span>
                                     </td>
                                     <td>
-                                        <div class="btn-group btn-group-sm">
-                                            <a href="{{ url_for('admin.maintenance_edit', id=record.id) }}" class="btn btn-primary">
-                                                <i class="fas fa-edit"></i>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('admin.maintenance_edit', id=record.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-edit"></i> Edit
                                             </a>
-                                            <a href="{{ url_for('admin.maintenance_view', id=record.id) }}" class="btn btn-info">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ record.id }}">
-                                                <i class="fas fa-trash"></i>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteMaintenanceRecord('{{ record.id }}')">
+                                                <i class="fas fa-trash"></i> Delete
                                             </button>
-                                        </div>
-                                        
-                                        <!-- Delete Modal -->
-                                        <div class="modal fade" id="deleteModal{{ record.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ record.id }}" aria-hidden="true">
-                                            <div class="modal-dialog">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title" id="deleteModalLabel{{ record.id }}">Confirm Deletion</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        Are you sure you want to delete this maintenance record?
-                                                        <p class="text-danger mt-2">This action cannot be undone.</p>
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                        <form action="{{ url_for('admin.maintenance_delete', id=record.id) }}" method="POST">
-                                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                                                            <button type="submit" class="btn btn-danger">Delete Record</button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
                                         </div>
                                     </td>
                                 </tr>
                                 {% else %}
                                 <tr>
-                                    <td colspan="6" class="text-center">No maintenance records found.</td>
+                                    <td colspan="6" class="text-center">No maintenance records found</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -152,4 +120,26 @@
         </div>
     </div>
 </div>
-{% endblock %} 
+
+<script>
+function deleteMaintenanceRecord(recordId) {
+    if (confirm('Are you sure you want to delete this maintenance record? This action cannot be undone.')) {
+        // Create a form to submit the delete request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `{{ url_for('admin.maintenance_delete', id=0) }}`.replace('0', recordId);
+        
+        // Add CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

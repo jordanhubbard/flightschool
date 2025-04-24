@@ -488,3 +488,275 @@ def recurring_bookings():
 def flight_logs():
     """Display flight logs management page."""
     return render_template('admin/flight_logs.html')
+
+
+@admin_bp.route('/bookings')
+@login_required
+@admin_required
+def bookings():
+    """Display booking management page."""
+    bookings = Booking.query.order_by(Booking.start_time.desc()).all()
+    students = User.query.filter_by(is_instructor=False, is_admin=False).all()
+    instructors = User.query.filter_by(is_instructor=True).all()
+    aircraft_list = Aircraft.query.all()
+    
+    return render_template('admin/bookings.html', 
+                          bookings=bookings,
+                          students=students,
+                          instructors=instructors,
+                          aircraft_list=aircraft_list)
+
+
+@admin_bp.route('/booking/create', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def create_booking():
+    """Create a new booking as admin."""
+    if request.method == 'POST':
+        student_id = request.form.get('student_id')
+        instructor_id = request.form.get('instructor_id')
+        aircraft_id = request.form.get('aircraft_id')
+        start_time_str = request.form.get('start_time')
+        duration = int(request.form.get('duration', 60))
+        notes = request.form.get('notes', '')
+        
+        try:
+            # Parse start time
+            start_time = datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M')
+            # Calculate end time
+            end_time = start_time + timedelta(minutes=duration)
+            
+            # Check if aircraft is available
+            conflicting_bookings = Booking.query.filter(
+                Booking.aircraft_id == aircraft_id,
+                Booking.status.in_(['confirmed', 'in_progress']),
+                Booking.start_time < end_time,
+                Booking.end_time > start_time
+            ).all()
+            
+            if conflicting_bookings:
+                flash('This aircraft is already booked during the selected time.', 'error')
+                return redirect(url_for('admin.bookings'))
+            
+            # Create booking
+            booking = Booking(
+                student_id=student_id,
+                instructor_id=instructor_id if instructor_id else None,
+                aircraft_id=aircraft_id,
+                start_time=start_time,
+                end_time=end_time,
+                status='confirmed',
+                notes=notes
+            )
+            
+            db.session.add(booking)
+            db.session.commit()
+            
+            flash('Booking created successfully.', 'success')
+            return redirect(url_for('admin.bookings'))
+            
+        except Exception as e:
+            flash(f'Error creating booking: {str(e)}', 'error')
+            return redirect(url_for('admin.bookings'))
+    
+    # GET request - render form
+    students = User.query.filter_by(is_instructor=False, is_admin=False).all()
+    instructors = User.query.filter_by(is_instructor=True).all()
+    aircraft_list = Aircraft.query.filter_by(status='available').all()
+    
+    return render_template('admin/booking_form.html',
+                          students=students,
+                          instructors=instructors,
+                          aircraft_list=aircraft_list,
+                          booking=None)
+
+
+@admin_bp.route('/booking/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_booking(id):
+    """Edit an existing booking."""
+    booking = Booking.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        student_id = request.form.get('student_id')
+        instructor_id = request.form.get('instructor_id')
+        aircraft_id = request.form.get('aircraft_id')
+        start_time_str = request.form.get('start_time')
+        duration = int(request.form.get('duration', 60))
+        status = request.form.get('status')
+        notes = request.form.get('notes', '')
+        
+        try:
+            # Parse start time
+            start_time = datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M')
+            # Calculate end time
+            end_time = start_time + timedelta(minutes=duration)
+            
+            # Check if aircraft is available (excluding this booking)
+            conflicting_bookings = Booking.query.filter(
+                Booking.id != id,
+                Booking.aircraft_id == aircraft_id,
+                Booking.status.in_(['confirmed', 'in_progress']),
+                Booking.start_time < end_time,
+                Booking.end_time > start_time
+            ).all()
+            
+            if conflicting_bookings:
+                flash('This aircraft is already booked during the selected time.', 'error')
+                return redirect(url_for('admin.edit_booking', id=id))
+            
+            # Update booking
+            booking.student_id = student_id
+            booking.instructor_id = instructor_id if instructor_id else None
+            booking.aircraft_id = aircraft_id
+            booking.start_time = start_time
+            booking.end_time = end_time
+            booking.status = status
+            booking.notes = notes
+            
+            db.session.commit()
+            
+            flash('Booking updated successfully.', 'success')
+            return redirect(url_for('admin.bookings'))
+            
+        except Exception as e:
+            flash(f'Error updating booking: {str(e)}', 'error')
+            return redirect(url_for('admin.edit_booking', id=id))
+    
+    # GET request - render form
+    students = User.query.filter_by(is_instructor=False, is_admin=False).all()
+    instructors = User.query.filter_by(is_instructor=True).all()
+    aircraft_list = Aircraft.query.all()
+    
+    # Calculate duration in minutes
+    duration = int((booking.end_time - booking.start_time).total_seconds() / 60)
+    
+    return render_template('admin/booking_form.html',
+                          students=students,
+                          instructors=instructors,
+                          aircraft_list=aircraft_list,
+                          booking=booking,
+                          duration=duration)
+
+
+@admin_bp.route('/booking/<int:id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def delete_booking(id):
+    """Delete a booking."""
+    booking = Booking.query.get_or_404(id)
+    
+    try:
+        db.session.delete(booking)
+        db.session.commit()
+        flash('Booking deleted successfully.', 'success')
+    except Exception as e:
+        flash(f'Error deleting booking: {str(e)}', 'error')
+    
+    return redirect(url_for('admin.bookings'))
+
+
+@admin_bp.route('/maintenance/add', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def maintenance_add():
+    """Add a new maintenance record."""
+    aircraft_list = Aircraft.query.all()
+    maintenance_types = MaintenanceType.query.all()
+    
+    if request.method == 'POST':
+        aircraft_id = request.form.get('aircraft_id')
+        maintenance_type_id = request.form.get('maintenance_type_id')
+        performed_at_str = request.form.get('performed_at')
+        hobbs_hours = request.form.get('hobbs_hours')
+        notes = request.form.get('notes', '')
+        
+        try:
+            # Parse performed_at date
+            performed_at = datetime.strptime(performed_at_str, '%Y-%m-%d')
+            
+            # Create maintenance record
+            record = MaintenanceRecord(
+                aircraft_id=aircraft_id,
+                maintenance_type_id=maintenance_type_id,
+                performed_at=performed_at,
+                performed_by_id=current_user.id,
+                hobbs_hours=hobbs_hours,
+                notes=notes,
+                status='completed'
+            )
+            
+            db.session.add(record)
+            db.session.commit()
+            
+            flash('Maintenance record added successfully.', 'success')
+            return redirect(url_for('admin.maintenance_records'))
+            
+        except Exception as e:
+            flash(f'Error adding maintenance record: {str(e)}', 'error')
+    
+    return render_template('admin/maintenance_form.html', 
+                          aircraft_list=aircraft_list,
+                          maintenance_types=maintenance_types,
+                          record=None)
+
+
+@admin_bp.route('/maintenance/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def maintenance_edit(id):
+    """Edit an existing maintenance record."""
+    record = MaintenanceRecord.query.get_or_404(id)
+    aircraft_list = Aircraft.query.all()
+    maintenance_types = MaintenanceType.query.all()
+    
+    if request.method == 'POST':
+        aircraft_id = request.form.get('aircraft_id')
+        maintenance_type_id = request.form.get('maintenance_type_id')
+        performed_at_str = request.form.get('performed_at')
+        hobbs_hours = request.form.get('hobbs_hours')
+        notes = request.form.get('notes', '')
+        status = request.form.get('status')
+        
+        try:
+            # Parse performed_at date
+            performed_at = datetime.strptime(performed_at_str, '%Y-%m-%d')
+            
+            # Update maintenance record
+            record.aircraft_id = aircraft_id
+            record.maintenance_type_id = maintenance_type_id
+            record.performed_at = performed_at
+            record.hobbs_hours = hobbs_hours
+            record.notes = notes
+            record.status = status
+            
+            db.session.commit()
+            
+            flash('Maintenance record updated successfully.', 'success')
+            return redirect(url_for('admin.maintenance_records'))
+            
+        except Exception as e:
+            flash(f'Error updating maintenance record: {str(e)}', 'error')
+    
+    return render_template('admin/maintenance_form.html', 
+                          aircraft_list=aircraft_list,
+                          maintenance_types=maintenance_types,
+                          record=record)
+
+
+@admin_bp.route('/maintenance/delete/<int:id>', methods=['POST'])
+@login_required
+@admin_required
+def maintenance_delete(id):
+    """Delete a maintenance record."""
+    record = MaintenanceRecord.query.get_or_404(id)
+    
+    try:
+        db.session.delete(record)
+        db.session.commit()
+        flash('Maintenance record deleted successfully.', 'success')
+    except Exception as e:
+        flash(f'Error deleting maintenance record: {str(e)}', 'error')
+    
+    return redirect(url_for('admin.maintenance_records'))
