@@ -60,7 +60,10 @@ def client():
     app.config["TESTING"] = True
     with app.test_client() as client:
         with app.app_context():
+            # Drop all tables and recreate them to ensure schema is up-to-date
+            db.drop_all()
             db.create_all()
+            
             # Create admin user for testing admin routes
             admin = User(
                 email="admin@example.com", 
