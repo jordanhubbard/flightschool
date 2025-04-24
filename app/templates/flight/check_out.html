@@ -109,6 +109,15 @@
                                             <label for="squawk_description" class="form-label">Describe the Issue</label>
                                             <textarea class="form-control" id="squawk_description" name="squawk_description" rows="3" placeholder="Describe any issues encountered during the flight..."></textarea>
                                         </div>
+                                        <div class="mb-3 form-check">
+                                            <input type="checkbox" class="form-check-input" id="ground_airplane" name="ground_airplane">
+                                            <label class="form-check-label" for="ground_airplane">
+                                                <strong class="text-danger">Ground Airplane</strong> - This issue prevents safe operation of the aircraft
+                                            </label>
+                                            <div class="form-text">
+                                                Checking this box will mark the aircraft as unavailable for booking until the squawk is resolved.
+                                            </div>
+                                        </div>
                                         <div class="form-text">
                                             <i class="fas fa-info-circle me-1"></i>
                                             This report will be visible to all users and maintenance staff.
