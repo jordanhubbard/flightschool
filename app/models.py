@@ -459,8 +459,11 @@ class Aircraft(db.Model):
             return False
             
         # Check if annual inspection is due or overdue
-        if self.date_of_next_annual is not None and self.date_of_next_annual <= datetime.now().date():
-            return False
+        if self.date_of_next_annual is not None:
+            # Get current date in UTC to compare with annual inspection date
+            current_date = datetime.now(timezone.utc).date()
+            if self.date_of_next_annual <= current_date:
+                return False
             
         # Check if there are any open squawks that ground the aircraft
         # Only check for grounding squawks if we're in an application context
@@ -491,8 +494,11 @@ class Aircraft(db.Model):
         if self.time_to_next_100hr is not None and self.time_to_next_100hr < 1.0:
             return "Unavailable: 100hr inspection due"
             
-        if self.date_of_next_annual is not None and self.date_of_next_annual <= datetime.now().date():
-            return "Unavailable: Annual inspection overdue"
+        if self.date_of_next_annual is not None:
+            # Get current date in UTC to compare with annual inspection date
+            current_date = datetime.now(timezone.utc).date()
+            if self.date_of_next_annual <= current_date:
+                return "Unavailable: Annual inspection overdue"
             
         # Only check for grounding squawks if we're in an application context
         from flask import current_app

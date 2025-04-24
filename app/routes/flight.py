@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from app import db
 from app.models import Booking, Aircraft, CheckIn, CheckOut, MaintenanceRecord, Squawk
-from datetime import datetime, timezone
+from app.utils.datetime_utils import utcnow, to_utc, from_utc, format_datetime
 from functools import wraps
 
 flight_bp = Blueprint('flight', __name__, url_prefix='/flight')
@@ -47,7 +47,7 @@ def check_in(booking_id):
                 booking_id=booking_id,
                 aircraft_id=booking.aircraft_id,
                 instructor_id=current_user.id if current_user.is_instructor else None,
-                check_in_time=datetime.now(timezone.utc),
+                check_in_time=utcnow(),
                 hobbs_start=float(request.form['hobbs_start']),
                 tach_start=float(request.form['tach_start']),
                 weather_conditions_acceptable=request.form.get('weather_conditions_acceptable') == 'on',
@@ -102,7 +102,7 @@ def check_out(booking_id):
                 booking_id=booking_id,
                 aircraft_id=booking.aircraft_id,
                 instructor_id=current_user.id if current_user.is_instructor else None,
-                check_out_time=datetime.now(timezone.utc),
+                check_out_time=utcnow(),
                 hobbs_end=float(request.form['hobbs_end']),
                 tach_end=float(request.form['tach_end']),
                 notes=request.form.get('notes', '')

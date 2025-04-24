@@ -6,6 +6,7 @@ from app import db
 from functools import wraps
 from flask import current_app
 from app.forms import BookingForm
+from app.utils.datetime_utils import utcnow, to_utc, from_utc, format_datetime
 
 booking_bp = Blueprint('booking', __name__)
 
@@ -52,7 +53,7 @@ def list_bookings():
 def dashboard():
     """Display the booking dashboard."""
     # Get current date and time
-    now = datetime.now()
+    now = utcnow()
     
     # Calculate the end date (14 days from now)
     end_date = now + timedelta(days=14)
@@ -64,14 +65,15 @@ def dashboard():
     ).order_by(Booking.start_time).all()
     
     # Filter bookings in Python to handle timezone issues
-    upcoming_bookings = [b for b in upcoming_bookings if b.end_time > now]
+    # Make sure both datetimes have timezone info before comparing
+    upcoming_bookings = [b for b in upcoming_bookings if to_utc(b.end_time) > now]
     
     available_aircraft = Aircraft.query.filter_by(status='available').all()
     
     return render_template('booking/dashboard.html',
                          upcoming_bookings=upcoming_bookings,
                          available_aircraft=available_aircraft,
-                         date_range=f"{now.strftime('%b %d')} - {end_date.strftime('%b %d, %Y')}")
+                         date_range=f"{format_datetime(now, '%b %d')} - {format_datetime(end_date, '%b %d, %Y')}")
 
 
 @booking_bp.route('/weather-minima')
@@ -125,13 +127,13 @@ def create_booking():
 
     if form.validate_on_submit():
         try:
-            end_time = form.start_time.data + timedelta(minutes=form.duration.data)
+            end_time = to_utc(form.start_time.data) + timedelta(minutes=form.duration.data)
             
             booking = Booking(
                 student_id=current_user.id,
                 aircraft_id=form.aircraft_id.data,
                 instructor_id=form.instructor_id.data if form.instructor_id.data != 0 else None,
-                start_time=form.start_time.data,
+                start_time=to_utc(form.start_time.data),
                 end_time=end_time,
                 status='pending',
                 notes=form.notes.data
@@ -146,7 +148,7 @@ def create_booking():
             current_app.logger.error(f'Booking creation error: {str(e)}')
     
     # Get existing bookings for the calendar UI
-    now = datetime.now()
+    now = utcnow()
     start_of_week = now - timedelta(days=now.weekday())
     end_of_week = start_of_week + timedelta(days=14)  # Show 2 weeks
     
@@ -173,8 +175,8 @@ def create_booking():
         booking_blocks.append({
             'type': 'aircraft',
             'id': booking.aircraft_id,
-            'start': booking.start_time.isoformat(),
-            'end': booking.end_time.isoformat(),
+            'start': format_datetime(booking.start_time),
+            'end': format_datetime(booking.end_time),
             'title': f"{booking.aircraft.registration} - Booked"
         })
     
@@ -183,8 +185,8 @@ def create_booking():
         booking_blocks.append({
             'type': 'instructor',
             'id': booking.instructor_id,
-            'start': booking.start_time.isoformat(),
-            'end': booking.end_time.isoformat(),
+            'start': format_datetime(booking.start_time),
+            'end': format_datetime(booking.end_time),
             'title': f"{booking.instructor.full_name} - Booked"
         })
     
@@ -192,7 +194,7 @@ def create_booking():
     return render_template(
         'booking/book.html', 
         form=form, 
-        current_time=datetime.now().strftime('%Y-%m-%d %H:%M'),
+        current_time=format_datetime(now),
         booking_blocks=json.dumps(booking_blocks)
     )
 
