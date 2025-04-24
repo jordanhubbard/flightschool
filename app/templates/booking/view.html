@@ -292,13 +292,28 @@
                         </a>
                     {% endif %}
                     {% if booking.status == 'confirmed' and not booking.check_in %}
-                        <a href="{{ url_for('booking.check_in', booking_id=booking.id) }}" class="btn btn-accent">
-                            <i class="fas fa-plane-departure me-2"></i>Check In
+                        <a href="{{ url_for('flight.check_in', booking_id=booking.id) }}" class="btn btn-success">
+                            <i class="fas fa-plane-departure me-2"></i>Start Flight
                         </a>
                     {% endif %}
                     {% if booking.status == 'in_progress' and booking.check_in and not booking.check_out %}
-                        <a href="{{ url_for('booking.check_out', booking_id=booking.id) }}" class="btn btn-accent">
-                            <i class="fas fa-plane-arrival me-2"></i>Check Out
+                        <a href="{{ url_for('flight.check_out', booking_id=booking.id) }}" class="btn btn-info">
+                            <i class="fas fa-plane-arrival me-2"></i>End Flight
+                        </a>
+                    {% endif %}
+                    {% if booking.check_in and not booking.check_out %}
+                        <a href="{{ url_for('flight.flight_status', booking_id=booking.id) }}" class="btn btn-primary">
+                            <i class="fas fa-info-circle me-2"></i>View Flight Status
+                        </a>
+                    {% endif %}
+                    {% if booking.check_in and booking.check_out %}
+                        <a href="{{ url_for('flight.flight_summary', booking_id=booking.id) }}" class="btn btn-primary">
+                            <i class="fas fa-clipboard-list me-2"></i>View Flight Summary
+                        </a>
+                    {% endif %}
+                    {% if booking.aircraft %}
+                        <a href="{{ url_for('flight.maintenance_records', aircraft_id=booking.aircraft_id) }}" class="btn btn-outline-primary">
+                            <i class="fas fa-wrench me-2"></i>View Maintenance Records
                         </a>
                     {% endif %}
                 </div>

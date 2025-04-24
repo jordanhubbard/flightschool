@@ -59,6 +59,7 @@ def create_app(config_name='default'):
     from app.routes import instructor as instructor_blueprint
     from app.routes import admin as admin_blueprint
     from app.routes import settings as settings_blueprint
+    from app.routes import flight as flight_blueprint
 
     app.register_blueprint(main_blueprint.main_bp)
     app.register_blueprint(auth_blueprint.auth_bp, url_prefix='/auth')
@@ -66,6 +67,7 @@ def create_app(config_name='default'):
     app.register_blueprint(instructor_blueprint.instructor_bp)
     app.register_blueprint(admin_blueprint.admin_bp, url_prefix='/admin')
     app.register_blueprint(settings_blueprint.settings_bp, url_prefix='/settings')
+    app.register_blueprint(flight_blueprint.flight_bp)
 
     @app.errorhandler(404)
     def not_found_error(error):
