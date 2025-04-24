@@ -840,14 +840,24 @@ def ensure_aircraft_image(filename, make=None, model=None):
     query = f"{make or ''} {model or ''} aircraft".strip()
     url = f"https://commons.wikimedia.org/w/api.php?action=query&format=json&prop=imageinfo&generator=search&gsrsearch={query}&gsrlimit=1&iiprop=url"
     logger.info(f"Wikimedia query: {url}")
+    
+    # Define headers with proper user agent according to Wikimedia policy
+    headers = {
+        'User-Agent': 'FlightSchool/1.0 (https://github.com/jordanhubbard/flightschool; contact@flightschool.com)',
+        'Accept': 'application/json',
+        'Accept-Language': 'en-US,en;q=0.9'
+    }
+    
     try:
-        resp = requests.get(url, timeout=5)
+        # Use headers in the request
+        resp = requests.get(url, headers=headers, timeout=10)
         data = resp.json()
         pages = data.get('query', {}).get('pages', {})
         for page in pages.values():
             img_url = page['imageinfo'][0]['url']
             logger.info(f"Fetching image from: {img_url}")
-            img_resp = requests.get(img_url, timeout=10)
+            # Also use headers in the image request
+            img_resp = requests.get(img_url, headers=headers, timeout=15)
             if img_resp.status_code == 200 and img_resp.content and len(img_resp.content) > 1024:
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
                 with open(local_path, 'wb') as f:

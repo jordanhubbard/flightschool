@@ -136,6 +136,7 @@ def test_booking_cancel_twice(client):
     }, follow_redirects=True)
     with app.app_context():
         booking = Booking.query.filter_by(aircraft_id=ac.id).first()
+        assert booking is not None
     resp = client.post(f"/booking/{booking.id}/cancel", follow_redirects=True)
     resp2 = client.post(f"/booking/{booking.id}/cancel", follow_redirects=True)
     assert resp2.status_code == 200
