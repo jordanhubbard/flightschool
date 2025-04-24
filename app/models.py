@@ -201,7 +201,7 @@ class MaintenanceType(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     created_by_id = db.Column(
         db.Integer,
-        db.ForeignKey('user.id'),
+        db.ForeignKey('users.id'),
         nullable=False
     )
 
@@ -286,7 +286,7 @@ class MaintenanceRecord(db.Model):
     performed_at = db.Column(db.DateTime, nullable=False)
     performed_by_id = db.Column(
         db.Integer,
-        db.ForeignKey('user.id'),
+        db.ForeignKey('users.id'),
         nullable=False
     )
     notes = db.Column(db.Text)
@@ -326,7 +326,7 @@ class Squawk(db.Model):
     description = db.Column(db.Text, nullable=False)
     reported_by_id = db.Column(
         db.Integer,
-        db.ForeignKey('user.id'),
+        db.ForeignKey('users.id'),
         nullable=False
     )
     # open, in_progress, resolved
@@ -339,7 +339,7 @@ class Squawk(db.Model):
         onupdate=lambda: datetime.now(timezone.utc)
     )
     resolved_at = db.Column(db.DateTime)
-    resolved_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    resolved_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     resolution_notes = db.Column(db.Text)
 
     def __repr__(self):
@@ -528,12 +528,12 @@ class Booking(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(
         db.Integer,
-        db.ForeignKey('user.id'),
+        db.ForeignKey('users.id'),
         nullable=False
     )
     instructor_id = db.Column(
         db.Integer,
-        db.ForeignKey('user.id'),
+        db.ForeignKey('users.id'),
         nullable=True
     )
     aircraft_id = db.Column(
@@ -589,7 +589,7 @@ class CheckIn(db.Model):
     )
     instructor_id = db.Column(
         db.Integer,
-        db.ForeignKey('user.id'),
+        db.ForeignKey('users.id'),
         nullable=True
     )
     check_in_time = db.Column(
@@ -615,7 +615,7 @@ class CheckOut(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     booking_id = db.Column(db.Integer, db.ForeignKey('booking.id'), nullable=False)
     aircraft_id = db.Column(db.Integer, db.ForeignKey('aircraft.id'), nullable=False)
-    instructor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    instructor_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     check_out_time = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     hobbs_end = db.Column(db.Float, nullable=False)
     tach_end = db.Column(db.Float, nullable=False)
@@ -639,7 +639,7 @@ class FlightLog(db.Model):
     )
     user_id = db.Column(
         db.Integer,
-        db.ForeignKey('user.id'),
+        db.ForeignKey('users.id'),
         nullable=False
     )
     flight_date = db.Column(db.DateTime, nullable=False)
@@ -689,12 +689,12 @@ class Invoice(db.Model):
     )
     student_id = db.Column(
         db.Integer,
-        db.ForeignKey('user.id'),
+        db.ForeignKey('users.id'),
         nullable=False
     )
     instructor_id = db.Column(
         db.Integer,
-        db.ForeignKey('user.id'),
+        db.ForeignKey('users.id'),
         nullable=True
     )
     invoice_number = db.Column(db.String(20), unique=True, nullable=False)
@@ -747,12 +747,12 @@ class Endorsement(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(
         db.Integer,
-        db.ForeignKey('user.id'),
+        db.ForeignKey('users.id'),
         nullable=False
     )
     instructor_id = db.Column(
         db.Integer,
-        db.ForeignKey('user.id'),
+        db.ForeignKey('users.id'),
         nullable=False
     )
     # solo, BFR, IPC, etc.
@@ -771,7 +771,7 @@ class Document(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(
         db.Integer,
-        db.ForeignKey('user.id'),
+        db.ForeignKey('users.id'),
         nullable=False
     )
     # medical, certificate, insurance, etc.
@@ -794,7 +794,7 @@ class AuditLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(
         db.Integer,
-        db.ForeignKey('user.id'),
+        db.ForeignKey('users.id'),
         nullable=False
     )
     action = db.Column(db.String(50), nullable=False)
@@ -811,12 +811,12 @@ class WaitlistEntry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(
         db.Integer,
-        db.ForeignKey('user.id'),
+        db.ForeignKey('users.id'),
         nullable=False
     )
     instructor_id = db.Column(
         db.Integer,
-        db.ForeignKey('user.id'),
+        db.ForeignKey('users.id'),
         nullable=True
     )
     aircraft_id = db.Column(
@@ -840,12 +840,12 @@ class RecurringBooking(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(
         db.Integer,
-        db.ForeignKey('user.id'),
+        db.ForeignKey('users.id'),
         nullable=False
     )
     instructor_id = db.Column(
         db.Integer,
-        db.ForeignKey('user.id'),
+        db.ForeignKey('users.id'),
         nullable=True
     )
     aircraft_id = db.Column(
