@@ -60,10 +60,12 @@ def dashboard():
     # Get upcoming bookings for the next 14 days only
     upcoming_bookings = Booking.query.filter(
         Booking.student_id == current_user.id,
-        Booking.start_time > now,
-        Booking.start_time <= end_date
+        Booking.status.in_(['confirmed', 'pending']),  # Only show confirmed and pending bookings
     ).order_by(Booking.start_time).all()
-
+    
+    # Filter bookings in Python to handle timezone issues
+    upcoming_bookings = [b for b in upcoming_bookings if b.end_time > now]
+    
     available_aircraft = Aircraft.query.filter_by(status='available').all()
     
     return render_template('booking/dashboard.html',

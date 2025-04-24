@@ -303,6 +303,11 @@
                             <i class="fas fa-times me-2"></i>Cancel Flight
                         </a>
                     {% endif %}
+                    {% if booking.status == 'confirmed' and not booking.check_in %}
+                        <a href="{{ url_for('flight.check_in', booking_id=booking.id) }}" class="btn btn-success">
+                            <i class="fas fa-plane-departure me-2"></i>Start Flight
+                        </a>
+                    {% endif %}
                     {% if booking.status == 'in_progress' and booking.check_in and not booking.check_out %}
                         <a href="{{ url_for('flight.check_out', booking_id=booking.id) }}" class="btn btn-info">
                             <i class="fas fa-plane-arrival me-2"></i>End Flight
