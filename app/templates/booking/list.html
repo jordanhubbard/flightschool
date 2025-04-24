@@ -9,7 +9,7 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">My Bookings</h5>
-                    <a href="{{ url_for('booking.create') }}" class="btn btn-primary">New Booking</a>
+                    <a href="{{ url_for('booking.create_booking') }}" class="btn btn-primary">New Booking</a>
                 </div>
                 <div class="card-body">
                     {% if bookings %}
@@ -56,7 +56,7 @@
                         </div>
                     {% else %}
                         <div class="alert alert-info">
-                            You have no bookings yet. <a href="{{ url_for('booking.create') }}">Create a new booking</a> to get started.
+                            You have no bookings yet. <a href="{{ url_for('booking.create_booking') }}">Create a new booking</a> to get started.
                         </div>
                     {% endif %}
                 </div>
