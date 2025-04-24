@@ -55,7 +55,7 @@ init: env
 	@echo "Creating instance directory..."
 	mkdir -p instance
 	@echo "Initializing database..."
-	. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(PYTHON) init_db.py
+	. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(PYTHON) scripts/init_db.py
 	@echo "Initialization complete."
 
 run: env
