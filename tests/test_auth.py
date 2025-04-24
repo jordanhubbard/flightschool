@@ -8,7 +8,7 @@ def test_login(client, test_user, session):
         'remember_me': False
     }, follow_redirects=True)
     assert response.status_code == 200
-    assert b'Booking Dashboard' in response.data
+    assert b'Upcoming Flights' in response.data
     with client.session_transaction() as sess:
         assert sess.get('_user_id') == str(test_user.id)
 
@@ -54,7 +54,7 @@ def test_student_login_redirect(client, test_user, session):
         'remember_me': False
     }, follow_redirects=True)
     assert response.status_code == 200
-    assert b'Booking Dashboard' in response.data
+    assert b'Upcoming Flights' in response.data
     with client.session_transaction() as sess:
         assert sess.get('_user_id') == str(test_user.id)
 

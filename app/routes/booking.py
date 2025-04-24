@@ -4,6 +4,8 @@ from app.models import Booking, Aircraft, User
 from datetime import datetime, timedelta
 from app import db
 from functools import wraps
+from flask import current_app
+from app.forms import BookingForm
 
 booking_bp = Blueprint('booking', __name__)
 
@@ -23,7 +25,7 @@ def booking_access_required(f):
     """Decorator to check if user has access to the booking."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        booking = Booking.query.get_or_404(kwargs.get('id'))
+        booking = Booking.query.get_or_404(kwargs.get('booking_id'))
         if (booking.student_id != current_user.id and 
             booking.instructor_id != current_user.id and 
             not current_user.is_admin):
@@ -90,60 +92,67 @@ def waitlist():
     return render_template('booking/waitlist.html', entries=waitlist_entries)
 
 
-@booking_bp.route('/booking/create', methods=['POST'])
+@booking_bp.route('/booking/create', methods=['GET', 'POST'])
 @login_required
 def create_booking():
     """Create a new booking."""
-    aircraft_id = request.form.get('aircraft_id')
-    start_time = request.form.get('start_time')
-    duration = request.form.get('duration')
+    form = BookingForm()
+    
+    # Populate aircraft choices
+    form.aircraft_id.choices = [
+        (a.id, f"{a.registration} - {a.make} {a.model}")
+        for a in Aircraft.query.filter_by(status='available').all()
+    ]
+    
+    # Populate instructor choices
+    form.instructor_id.choices = [
+        (0, 'No Instructor (Solo Flight)')
+    ] + [
+        (i.id, f"{i.first_name} {i.last_name}")
+        for i in User.query.filter_by(role='instructor', status='active').all()
+    ]
 
-    if not all([aircraft_id, start_time, duration]):
-        flash('All fields are required.', 'error')
-        return redirect(url_for('booking.dashboard'))
-
-    try:
-        duration = int(duration)
-        if duration <= 0:
-            flash('Duration must be greater than 0.', 'error')
+    if form.validate_on_submit():
+        try:
+            end_time = form.start_time.data + timedelta(minutes=form.duration.data)
+            
+            booking = Booking(
+                student_id=current_user.id,
+                aircraft_id=form.aircraft_id.data,
+                instructor_id=form.instructor_id.data if form.instructor_id.data != 0 else None,
+                start_time=form.start_time.data,
+                end_time=end_time,
+                status='pending',
+                notes=form.notes.data
+            )
+            db.session.add(booking)
+            db.session.commit()
+            flash('Booking created successfully.', 'success')
             return redirect(url_for('booking.dashboard'))
-
-        start_time = datetime.strptime(start_time, '%Y-%m-%dT%H:%M')
-        end_time = start_time + timedelta(minutes=duration)
-
-        booking = Booking(
-            student_id=current_user.id,
-            aircraft_id=aircraft_id,
-            start_time=start_time,
-            end_time=end_time,
-            status='pending'
-        )
-        db.session.add(booking)
-        db.session.commit()
-        flash('Booking created successfully.', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash('Error creating booking.', 'error')
-
-    return redirect(url_for('booking.dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Error creating booking.', 'error')
+            current_app.logger.error(f'Booking creation error: {str(e)}')
+    
+    return render_template('booking/book.html', form=form, current_time=datetime.now().strftime('%Y-%m-%d %H:%M'))
 
 
-@booking_bp.route('/booking/<int:id>/cancel', methods=['POST'])
+@booking_bp.route('/booking/<int:booking_id>/cancel', methods=['POST'])
 @login_required
 @booking_access_required
-def cancel_booking(id):
+def cancel_booking(booking_id):
     """Cancel a booking."""
-    booking = Booking.query.get_or_404(id)
+    booking = Booking.query.get_or_404(booking_id)
     booking.status = 'cancelled'
     db.session.commit()
     flash('Booking cancelled successfully.', 'success')
     return redirect(url_for('booking.dashboard'))
 
 
-@booking_bp.route('/booking/<int:id>')
+@booking_bp.route('/booking/<int:booking_id>')
 @login_required
 @booking_access_required
-def view_booking(id):
+def view_booking(booking_id):
     """View a specific booking."""
-    booking = Booking.query.get_or_404(id)
+    booking = Booking.query.get_or_404(booking_id)
     return render_template('booking/view.html', booking=booking)

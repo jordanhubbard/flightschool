@@ -12,13 +12,29 @@ auth_bp = Blueprint('auth', __name__)
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     """Handle user login."""
+    if current_user.is_authenticated:
+        if current_user.is_admin:
+            return redirect(url_for('admin.dashboard'))
+        return redirect(url_for('booking.dashboard'))
+
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user and user.check_password(form.password.data):
-            login_user(user)
+            if user.status != 'active':
+                flash('Your account is not active. Please contact an administrator.', 'error')
+                return render_template('auth/login.html', form=form)
+            
+            login_user(user, remember=form.remember_me.data)
             next_page = request.args.get('next')
-            return redirect(next_page) if next_page else redirect(url_for('main.index'))
+            
+            if next_page:
+                return redirect(next_page)
+            elif user.is_admin:
+                return redirect(url_for('admin.dashboard'))
+            else:
+                return redirect(url_for('booking.dashboard'))
+                
         flash('Invalid email or password', 'error')
     return render_template('auth/login.html', form=form)
 

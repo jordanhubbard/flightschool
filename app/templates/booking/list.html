@@ -44,7 +44,7 @@
                                                 </span>
                                             </td>
                                             <td>
-                                                <a href="{{ url_for('booking.view', booking_id=booking.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                                                <a href="{{ url_for('booking.view_booking', booking_id=booking.id) }}" class="btn btn-sm btn-outline-primary">View</a>
                                                 {% if booking.status == 'pending' %}
                                                     <a href="{{ url_for('booking.cancel', booking_id=booking.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to cancel this booking?')">Cancel</a>
                                                 {% endif %}

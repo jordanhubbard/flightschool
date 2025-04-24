@@ -37,19 +37,29 @@
     .aircraft-card {
         position: relative;
         overflow: hidden;
-        border-radius: 8px;
+        border-radius: 12px;
         margin-bottom: 1.5rem;
-        background-color: var(--cloud-white);
+        background-color: #ffffff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    
+    .aircraft-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
     
     .aircraft-image {
         width: 100%;
-        height: 160px;
+        height: 180px;
         object-fit: cover;
+        background-color: #f8f9fa;
     }
     
     .aircraft-info {
-        padding: 1rem;
+        padding: 1.25rem;
+        background-color: #ffffff;
     }
     
     .aircraft-status {
@@ -58,20 +68,41 @@
         right: 1rem;
         padding: 0.5rem 1rem;
         border-radius: 20px;
-        font-weight: 500;
+        font-weight: 600;
         text-transform: uppercase;
         font-size: 0.8rem;
         letter-spacing: 0.5px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
     .aircraft-status.available {
-        background-color: var(--success-green);
-        color: var(--cloud-white);
+        background-color: #28a745;
+        color: #ffffff;
     }
     
     .aircraft-status.maintenance {
-        background-color: var(--warning-yellow);
-        color: var(--night-blue);
+        background-color: #ffc107;
+        color: #000000;
+        font-weight: 600;
+    }
+    
+    .aircraft-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #212529;
+        margin-bottom: 0.25rem;
+    }
+    
+    .aircraft-registration {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+    
+    .aircraft-rate {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #0d6efd;
     }
     
     .booking-timeline {
@@ -138,7 +169,7 @@
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Upcoming Flights</h5>
-                    <a href="{{ url_for('booking.list') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                    <a href="{{ url_for('booking.list_bookings') }}" class="btn btn-sm btn-outline-primary">View All</a>
                 </div>
                 <div class="card-body">
                     {% if upcoming_bookings %}
@@ -247,15 +278,15 @@
             {% if available_aircraft %}
                 {% for aircraft in available_aircraft %}
                     <div class="aircraft-card">
-                        <img src="{{ url_for('static', filename='images/' + aircraft.image_filename) if aircraft.image_filename else url_for('static', filename='images/aircraft/default.jpg') }}"
+                        <img src="{{ aircraft.image_url }}"
                              class="aircraft-image"
                              alt="{{ aircraft.make }} {{ aircraft.model }}">
                         <span class="aircraft-status {{ aircraft.status }}">{{ aircraft.status|title }}</span>
                         <div class="aircraft-info">
-                            <h6 class="mb-1">{{ aircraft.make }} {{ aircraft.model }}</h6>
-                            <p class="mb-2 text-muted">{{ aircraft.registration }}</p>
+                            <h6 class="aircraft-title">{{ aircraft.make }} {{ aircraft.model }}</h6>
+                            <p class="aircraft-registration">{{ aircraft.registration }}</p>
                             <div class="d-flex justify-content-between align-items-center">
-                                <span class="text-primary">${{ "%.2f"|format(aircraft.rate_per_hour) }}/hour</span>
+                                <span class="aircraft-rate">${{ "%.2f"|format(aircraft.rate_per_hour) }}/hour</span>
                                 <a href="{{ url_for('booking.create_booking', aircraft_id=aircraft.id) }}" 
                                    class="btn btn-sm btn-outline-primary">Book Now</a>
                             </div>
