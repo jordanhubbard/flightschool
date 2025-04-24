@@ -44,48 +44,74 @@ def login_student(client, app):
 def test_booking_checkin_checkout(client):
     client, app = client
     login_student(client, app)
+    
     with app.app_context():
         ac = Aircraft.query.filter_by(registration="N55555").first()
         assert ac.time_to_next_oil_change == 40.0
         assert ac.time_to_next_100hr == 80.0
         assert ac.date_of_next_annual is None
-    # Create booking with start_time and duration
-    start = (datetime.now(timezone.utc) + timedelta(days=1)).replace(microsecond=0, second=0)
-    resp = client.post("/bookings", data={
-        "aircraft_id": ac.id,
-        "start_time": start.strftime("%Y-%m-%dT%H:%M"),
-        "duration": 60
-    }, follow_redirects=True)
-    assert resp.status_code == 200
-    with app.app_context():
-        booking = Booking.query.filter_by(aircraft_id=ac.id).first()
-        assert booking is not None
-    # Simulate check-in
-    resp = client.post(f"/check-in/{booking.id}", data={
+        
+        # Create a booking
+        booking = Booking(
+            student_id=User.query.filter_by(email="student@example.com").first().id,
+            aircraft_id=ac.id,
+            start_time=datetime.now(timezone.utc),
+            end_time=datetime.now(timezone.utc) + timedelta(hours=2),
+            status="confirmed"
+        )
+        db.session.add(booking)
+        db.session.commit()
+        booking_id = booking.id  # Store the ID to use outside the context
+        aircraft_id = ac.id  # Store the ID to use outside the context
+    
+    # Check in
+    response = client.post(f"/flight/check-in/{booking_id}", data={
         "hobbs_start": 100.0,
-        "tach_start": 200.0
+        "tach_start": 90.0,
+        "weather_conditions_acceptable": "on"
     }, follow_redirects=True)
-    assert resp.status_code == 200
+    assert response.status_code == 200
+    assert b"Flight Status" in response.data
+    
     with app.app_context():
-        checkin = CheckIn.query.filter_by(booking_id=booking.id).first()
-        assert checkin is not None
-        assert checkin.hobbs_start == 100.0
-    # Simulate check-out
-    resp = client.post(f"/check-out/{booking.id}", data={
-        "hobbs_end": 101.0,
-        "tach_end": 201.0,
-        "notes": "All good."
+        # Verify check-in record
+        booking = Booking.query.get(booking_id)
+        assert booking.status == "in_progress"
+        assert booking.check_in is not None
+        assert booking.check_in.hobbs_start == 100.0
+        assert booking.check_in.tach_start == 90.0
+    
+    # Check out
+    response = client.post(f"/flight/check-out/{booking_id}", data={
+        "hobbs_end": 102.0,
+        "tach_end": 91.5
     }, follow_redirects=True)
-    assert resp.status_code == 200
+    assert response.status_code == 200
+    assert b"Flight Summary" in response.data
+    
     with app.app_context():
-        checkout = CheckOut.query.filter_by(booking_id=booking.id).first()
-        assert checkout is not None
-        assert checkout.hobbs_end == 101.0
+        # Verify check-out record
+        booking = Booking.query.get(booking_id)
+        assert booking.status == "completed"
+        assert booking.check_out is not None
+        assert booking.check_out.hobbs_end == 102.0
+        assert booking.check_out.tach_end == 91.5
+        
+        # Verify aircraft times were updated
+        ac = Aircraft.query.get(aircraft_id)
+        assert ac.hobbs_time == 102.0
+        assert ac.tach_time == 91.5
+        
+        # Verify maintenance times were updated
+        expected_oil_change_time = 40.0 - (102.0 - 100.0)
+        expected_100hr_time = 80.0 - (102.0 - 100.0)
+        assert ac.time_to_next_oil_change == expected_oil_change_time
+        assert ac.time_to_next_100hr == expected_100hr_time
 
 def test_checkin_invalid_booking(client):
     client, app = client
     login_student(client, app)
-    resp = client.post("/check-in/9999", data={"hobbs_start": 100, "tach_start": 200}, follow_redirects=True)
+    resp = client.get("/flight/check-in/999999")
     assert resp.status_code == 404
 
 def test_checkin_twice(client):
@@ -93,64 +119,119 @@ def test_checkin_twice(client):
     login_student(client, app)
     with app.app_context():
         ac = Aircraft.query.filter_by(registration="N55555").first()
-        assert ac.time_to_next_oil_change == 40.0
-        assert ac.time_to_next_100hr == 80.0
-        assert ac.date_of_next_annual is None
-    start = (datetime.now(timezone.utc) + timedelta(days=1)).replace(microsecond=0, second=0)
-    client.post("/bookings", data={"aircraft_id": ac.id, "start_time": start.strftime("%Y-%m-%dT%H:%M"), "duration": 60}, follow_redirects=True)
-    with app.app_context():
-        booking = Booking.query.filter_by(aircraft_id=ac.id).first()
-    client.post(f"/check-in/{booking.id}", data={"hobbs_start": 100, "tach_start": 200}, follow_redirects=True)
-    resp = client.post(f"/check-in/{booking.id}", data={"hobbs_start": 101, "tach_start": 201}, follow_redirects=True)
-    assert resp.status_code == 400
-    assert b"Already checked in" in resp.data
+        
+        # Create a booking
+        booking = Booking(
+            student_id=User.query.filter_by(email="student@example.com").first().id,
+            aircraft_id=ac.id,
+            start_time=datetime.now(timezone.utc),
+            end_time=datetime.now(timezone.utc) + timedelta(hours=2),
+            status="confirmed"
+        )
+        db.session.add(booking)
+        db.session.commit()
+        booking_id = booking.id
+    
+    # First check-in
+    resp = client.post(f"/flight/check-in/{booking_id}", data={
+        "hobbs_start": 100.0,
+        "tach_start": 90.0,
+        "weather_conditions_acceptable": "on"
+    }, follow_redirects=True)
+    assert resp.status_code == 200
+    
+    # Try to check in again
+    resp = client.get(f"/flight/check-in/{booking_id}", follow_redirects=True)
+    assert resp.status_code == 200
+    assert b"This flight has already been checked in" in resp.data
 
 def test_checkout_without_checkin(client):
     client, app = client
     login_student(client, app)
     with app.app_context():
         ac = Aircraft.query.filter_by(registration="N55555").first()
-        assert ac.time_to_next_oil_change == 40.0
-        assert ac.time_to_next_100hr == 80.0
-        assert ac.date_of_next_annual is None
-    start = (datetime.now(timezone.utc) + timedelta(days=1)).replace(microsecond=0, second=0)
-    client.post("/bookings", data={"aircraft_id": ac.id, "start_time": start.strftime("%Y-%m-%dT%H:%M"), "duration": 60}, follow_redirects=True)
-    with app.app_context():
-        booking = Booking.query.filter_by(aircraft_id=ac.id).first()
-    resp = client.post(f"/check-out/{booking.id}", data={"hobbs_end": 101, "tach_end": 201}, follow_redirects=True)
-    assert resp.status_code == 400
-    assert b"Must check in before checking out" in resp.data
+        
+        # Create a booking
+        booking = Booking(
+            student_id=User.query.filter_by(email="student@example.com").first().id,
+            aircraft_id=ac.id,
+            start_time=datetime.now(timezone.utc),
+            end_time=datetime.now(timezone.utc) + timedelta(hours=2),
+            status="confirmed"
+        )
+        db.session.add(booking)
+        db.session.commit()
+        booking_id = booking.id
+    
+    # Try to check out without checking in
+    resp = client.get(f"/flight/check-out/{booking_id}", follow_redirects=True)
+    assert resp.status_code == 200
+    assert b"You must check in before checking out" in resp.data
 
 def test_checkout_twice(client):
     client, app = client
     login_student(client, app)
     with app.app_context():
         ac = Aircraft.query.filter_by(registration="N55555").first()
-        assert ac.time_to_next_oil_change == 40.0
-        assert ac.time_to_next_100hr == 80.0
-        assert ac.date_of_next_annual is None
-    start = (datetime.now(timezone.utc) + timedelta(days=1)).replace(microsecond=0, second=0)
-    client.post("/bookings", data={"aircraft_id": ac.id, "start_time": start.strftime("%Y-%m-%dT%H:%M"), "duration": 60}, follow_redirects=True)
-    with app.app_context():
-        booking = Booking.query.filter_by(aircraft_id=ac.id).first()
-    client.post(f"/check-in/{booking.id}", data={"hobbs_start": 100, "tach_start": 200}, follow_redirects=True)
-    client.post(f"/check-out/{booking.id}", data={"hobbs_end": 101, "tach_end": 201}, follow_redirects=True)
-    resp = client.post(f"/check-out/{booking.id}", data={"hobbs_end": 102, "tach_end": 202}, follow_redirects=True)
-    assert resp.status_code == 400
-    assert b"Already checked out" in resp.data
+        
+        # Create a booking
+        booking = Booking(
+            student_id=User.query.filter_by(email="student@example.com").first().id,
+            aircraft_id=ac.id,
+            start_time=datetime.now(timezone.utc),
+            end_time=datetime.now(timezone.utc) + timedelta(hours=2),
+            status="confirmed"
+        )
+        db.session.add(booking)
+        db.session.commit()
+        booking_id = booking.id
+        
+        # Create check-in record
+        check_in = CheckIn(
+            booking_id=booking_id,
+            aircraft_id=ac.id,
+            check_in_time=datetime.now(timezone.utc),
+            hobbs_start=100.0,
+            tach_start=90.0,
+            weather_conditions_acceptable=True
+        )
+        db.session.add(check_in)
+        booking.status = "in_progress"
+        db.session.commit()
+    
+    # First check-out
+    resp = client.post(f"/flight/check-out/{booking_id}", data={
+        "hobbs_end": 102.0,
+        "tach_end": 91.5
+    }, follow_redirects=True)
+    assert resp.status_code == 200
+    
+    # Try to check out again
+    resp = client.get(f"/flight/check-out/{booking_id}", follow_redirects=True)
+    assert resp.status_code == 200
+    assert b"This flight has already been checked out" in resp.data
 
 def test_checkin_missing_fields(client):
     client, app = client
     login_student(client, app)
     with app.app_context():
         ac = Aircraft.query.filter_by(registration="N55555").first()
-        assert ac.time_to_next_oil_change == 40.0
-        assert ac.time_to_next_100hr == 80.0
-        assert ac.date_of_next_annual is None
-    start = (datetime.now(timezone.utc) + timedelta(days=1)).replace(microsecond=0, second=0)
-    client.post("/bookings", data={"aircraft_id": ac.id, "start_time": start.strftime("%Y-%m-%dT%H:%M"), "duration": 60}, follow_redirects=True)
-    with app.app_context():
-        booking = Booking.query.filter_by(aircraft_id=ac.id).first()
-    resp = client.post(f"/check-in/{booking.id}", data={"hobbs_start": ""}, follow_redirects=True)
-    assert resp.status_code == 200
-    assert b"This field is required" in resp.data or b"error" in resp.data or b"Invalid" in resp.data
+        
+        # Create a booking
+        booking = Booking(
+            student_id=User.query.filter_by(email="student@example.com").first().id,
+            aircraft_id=ac.id,
+            start_time=datetime.now(timezone.utc),
+            end_time=datetime.now(timezone.utc) + timedelta(hours=2),
+            status="confirmed"
+        )
+        db.session.add(booking)
+        db.session.commit()
+        booking_id = booking.id
+    
+    # Check in with missing fields
+    resp = client.post(f"/flight/check-in/{booking_id}", data={
+        # Missing hobbs_start
+        "tach_start": 90.0
+    })
+    assert resp.status_code == 400
