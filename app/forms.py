@@ -510,6 +510,10 @@ class SquawkForm(FlaskForm):
             DataRequired()
         ]
     )
+    ground_airplane = BooleanField(
+        'Ground Airplane',
+        description='Check this box if this issue prevents safe operation of the aircraft'
+    )
     resolution_notes = TextAreaField(
         'Resolution Notes',
         validators=[

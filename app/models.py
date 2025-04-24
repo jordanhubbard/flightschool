@@ -330,6 +330,7 @@ class Squawk(db.Model):
     )
     # open, in_progress, resolved
     status = db.Column(db.String(20), default='open')
+    ground_airplane = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(
         db.DateTime,
@@ -449,7 +450,52 @@ class Aircraft(db.Model):
     @property
     def is_available(self):
         """Check if aircraft is available for booking."""
-        return self.status == 'available'
+        # Check if aircraft status is explicitly set to available
+        if self.status != 'available':
+            return False
+            
+        # Check if time to next 100hr inspection is less than 1 hour
+        if self.time_to_next_100hr is not None and self.time_to_next_100hr < 1.0:
+            return False
+            
+        # Check if annual inspection is due or overdue
+        if self.date_of_next_annual is not None and self.date_of_next_annual <= datetime.now().date():
+            return False
+            
+        # Check if there are any open squawks that ground the aircraft
+        grounding_squawks = Squawk.query.filter_by(
+            aircraft_id=self.id, 
+            status='open',
+            ground_airplane=True
+        ).first()
+        
+        if grounding_squawks:
+            return False
+            
+        return True
+        
+    @property
+    def availability_status(self):
+        """Return a detailed availability status for the aircraft."""
+        if self.status != 'available':
+            return f"Unavailable: {self.status.replace('_', ' ').title()}"
+            
+        if self.time_to_next_100hr is not None and self.time_to_next_100hr < 1.0:
+            return "Unavailable: 100hr inspection due"
+            
+        if self.date_of_next_annual is not None and self.date_of_next_annual <= datetime.now().date():
+            return "Unavailable: Annual inspection overdue"
+            
+        grounding_squawks = Squawk.query.filter_by(
+            aircraft_id=self.id, 
+            status='open',
+            ground_airplane=True
+        ).first()
+        
+        if grounding_squawks:
+            return "Grounded: Open squawk requires grounding"
+            
+        return "Available"
 
     def __repr__(self):
         return f'<Aircraft {self.registration}>'

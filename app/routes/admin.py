@@ -563,7 +563,7 @@ def create_booking():
     # GET request - render form
     students = User.query.filter_by(is_instructor=False, is_admin=False).all()
     instructors = User.query.filter_by(is_instructor=True).all()
-    aircraft_list = Aircraft.query.filter_by(status='available').all()
+    aircraft_list = Aircraft.query.all()  # Show all aircraft, including unavailable ones
     
     return render_template('admin/booking_form.html',
                           students=students,
@@ -629,7 +629,7 @@ def edit_booking(id):
     # GET request - render form
     students = User.query.filter_by(is_instructor=False, is_admin=False).all()
     instructors = User.query.filter_by(is_instructor=True).all()
-    aircraft_list = Aircraft.query.all()
+    aircraft_list = Aircraft.query.all()  # Show all aircraft, including unavailable ones
     
     # Calculate duration in minutes
     duration = int((booking.end_time - booking.start_time).total_seconds() / 60)

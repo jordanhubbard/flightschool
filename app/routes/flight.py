@@ -187,16 +187,23 @@ def add_squawk(aircraft_id):
     
     if request.method == 'POST':
         try:
+            ground_airplane = request.form.get('ground_airplane') == 'on'
+            
             squawk = Squawk(
                 aircraft_id=aircraft_id,
                 description=request.form.get('description'),
                 reported_by_id=current_user.id,
-                status='open'
+                status='open',
+                ground_airplane=ground_airplane
             )
             db.session.add(squawk)
             db.session.commit()
             
             flash('Squawk reported successfully.', 'success')
+            
+            # If this squawk grounds the aircraft, update the aircraft status
+            if ground_airplane:
+                flash('Aircraft has been marked as grounded due to this squawk.', 'warning')
         except Exception as e:
             db.session.rollback()
             flash(f'Error reporting squawk: {str(e)}', 'error')

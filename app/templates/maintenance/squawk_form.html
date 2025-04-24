@@ -33,6 +33,16 @@
                         {% endfor %}
                     </div>
 
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="ground_airplane" name="ground_airplane" {% if form.ground_airplane and form.ground_airplane.data %}checked{% endif %}>
+                        <label class="form-check-label" for="ground_airplane">
+                            <strong class="text-danger">Ground Airplane</strong> - This issue prevents safe operation of the aircraft
+                        </label>
+                        <div class="form-text">
+                            Checking this box will mark the aircraft as unavailable for booking until the squawk is resolved.
+                        </div>
+                    </div>
+
                     <div class="mb-3">
                         {{ form.resolution_notes.label(class="form-label") }}
                         {{ form.resolution_notes(class="form-control", rows=3) }}
