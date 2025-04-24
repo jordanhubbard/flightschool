@@ -10,9 +10,25 @@ Rule:
 from datetime import datetime, timezone
 import pytz
 
+# For testing purposes, use Auckland timezone (UTC+12)
+# In production, this would be determined from the user's browser or system
+DEFAULT_LOCAL_TIMEZONE = 'Pacific/Auckland'
+
 def utcnow():
     """Get current UTC datetime with timezone information."""
     return datetime.now(timezone.utc)
+
+def get_local_timezone():
+    """
+    Get the local timezone.
+    First tries to use tzlocal to get the system timezone,
+    falls back to DEFAULT_LOCAL_TIMEZONE if that fails.
+    """
+    try:
+        import tzlocal
+        return pytz.timezone(tzlocal.get_localzone().key)
+    except (ImportError, pytz.exceptions.UnknownTimeZoneError):
+        return pytz.timezone(DEFAULT_LOCAL_TIMEZONE)
 
 def to_utc(dt):
     """
@@ -25,13 +41,7 @@ def to_utc(dt):
         
     # If datetime is naive (no timezone), assume it's local time
     if dt.tzinfo is None:
-        local_tz = pytz.timezone('UTC')  # Default to UTC if we can't determine local timezone
-        try:
-            import tzlocal
-            local_tz = pytz.timezone(tzlocal.get_localzone().key)
-        except (ImportError, pytz.exceptions.UnknownTimeZoneError):
-            pass
-            
+        local_tz = get_local_timezone()
         dt = local_tz.localize(dt)
     
     # Convert to UTC
@@ -50,13 +60,7 @@ def from_utc(dt, as_naive=False):
         dt = dt.replace(tzinfo=timezone.utc)
     
     # Convert to local timezone
-    local_tz = pytz.timezone('UTC')  # Default to UTC if we can't determine local timezone
-    try:
-        import tzlocal
-        local_tz = pytz.timezone(tzlocal.get_localzone().key)
-    except (ImportError, pytz.exceptions.UnknownTimeZoneError):
-        pass
-        
+    local_tz = get_local_timezone()
     local_dt = dt.astimezone(local_tz)
     
     # Strip timezone info if requested
