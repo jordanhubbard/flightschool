@@ -36,7 +36,7 @@ help:
 	@echo "  make check-aircraft-images - Check aircraft images"
 	@echo "  make frontend-test - Run frontend smoke tests against the running demo instance"
 
-demo: clean init run
+demo: clean init test-data run
 
 query: env
 	PYTHONPATH=/Users/jkh/Src/flightschool /Users/jkh/Src/flightschool/venv/bin/python /Users/jkh/Src/flightschool/scripts/db_query_helper.py "${TYPE}.query.all()"
