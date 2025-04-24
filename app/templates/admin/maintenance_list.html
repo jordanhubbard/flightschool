@@ -64,7 +64,7 @@
                                     <th>Date</th>
                                     <th>Aircraft</th>
                                     <th>Type</th>
-                                    <th>Description</th>
+                                    <th>Notes</th>
                                     <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
@@ -72,10 +72,10 @@
                             <tbody>
                                 {% for record in maintenance_records %}
                                 <tr>
-                                    <td>{{ record.date.strftime('%Y-%m-%d') }}</td>
-                                    <td>{{ record.aircraft.tail_number }}</td>
-                                    <td>{{ record.maintenance_type }}</td>
-                                    <td>{{ record.description }}</td>
+                                    <td>{{ record.performed_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ record.aircraft.registration }}</td>
+                                    <td>{{ record.maintenance_type_obj.name if record.maintenance_type_obj else 'Unknown' }}</td>
+                                    <td>{{ record.notes }}</td>
                                     <td>
                                         {% if record.status == 'completed' %}
                                         <span class="badge bg-success">Completed</span>

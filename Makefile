@@ -36,7 +36,7 @@ help:
 	@echo "  make check-aircraft-images - Check aircraft images"
 	@echo "  make frontend-test - Run frontend smoke tests against the running demo instance"
 
-demo: clean init test-data run
+demo: clean init run
 
 query: env
 	PYTHONPATH=/Users/jkh/Src/flightschool /Users/jkh/Src/flightschool/venv/bin/python /Users/jkh/Src/flightschool/scripts/db_query_helper.py "${TYPE}.query.all()"
@@ -115,7 +115,7 @@ db-downgrade:
 	. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(FLASK) db downgrade
 	@echo "Database downgraded."
 
-test-data: init
+test-data:
 	@echo "Loading test data..."
 	. $(VENV)/bin/activate && PYTHONPATH=$(shell pwd) $(PYTHON) scripts/load_test_data.py
 	@echo "Test data loaded successfully."

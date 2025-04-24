@@ -99,8 +99,8 @@ def schedule():
 @admin_required
 def maintenance_records():
     """Display maintenance records."""
-    records = MaintenanceRecord.query.order_by(MaintenanceRecord.date.desc()).all()
-    return render_template('admin/maintenance_records.html', records=records)
+    records = MaintenanceRecord.query.order_by(MaintenanceRecord.performed_at.desc()).all()
+    return render_template('admin/maintenance_list.html', maintenance_records=records)
 
 
 @admin_bp.route('/squawks')
