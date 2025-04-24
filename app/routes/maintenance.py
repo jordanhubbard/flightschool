@@ -1,7 +1,6 @@
-from flask import Blueprint, render_template, flash, redirect, url_for, request
-from flask_login import login_required, current_user
+from flask import Blueprint, render_template
+from flask_login import login_required
 from app.models import MaintenanceType, MaintenanceRecord, Squawk, Aircraft
-from app.forms import MaintenanceTypeForm, MaintenanceRecordForm, SquawkForm
 
 maintenance_bp = Blueprint('maintenance', __name__)
 

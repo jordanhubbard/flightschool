@@ -3,7 +3,6 @@ from flask_login import login_required, current_user
 from app import db
 import google_auth_oauthlib.flow
 import google.oauth2.credentials
-import google.auth.transport.requests
 
 settings_bp = Blueprint('settings', __name__)
 

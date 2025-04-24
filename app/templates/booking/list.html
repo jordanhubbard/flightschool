@@ -46,7 +46,10 @@
                                             <td>
                                                 <a href="{{ url_for('booking.view_booking', booking_id=booking.id) }}" class="btn btn-sm btn-outline-primary">View</a>
                                                 {% if booking.status == 'pending' %}
-                                                    <a href="{{ url_for('booking.cancel_booking', booking_id=booking.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to cancel this booking?')">Cancel</a>
+                                                    <form action="{{ url_for('booking.cancel_booking', booking_id=booking.id) }}" method="POST" style="display: inline;">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to cancel this booking?')">Cancel</button>
+                                                    </form>
                                                 {% endif %}
                                             </td>
                                         </tr>

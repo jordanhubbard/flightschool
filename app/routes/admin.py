@@ -1,6 +1,6 @@
-from flask import Blueprint, render_template, flash, redirect, url_for, request, jsonify
+from flask import Blueprint, render_template, flash, redirect, url_for, request
 from flask_login import login_required, current_user
-from app.models import User, Aircraft, Booking, MaintenanceRecord, MaintenanceType, MaintenanceRecord, Squawk, Document, WeatherMinima
+from app.models import User, Aircraft, Booking, MaintenanceRecord, MaintenanceType
 from datetime import datetime, timedelta
 from app import db
 from functools import wraps

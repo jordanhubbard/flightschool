@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, flash, redirect, url_for, request, jsonify
+from flask import Blueprint, render_template, flash, redirect, url_for
 from flask_login import login_required, current_user
 from app.models import Booking, Aircraft, User
 from datetime import datetime, timedelta
@@ -51,16 +51,25 @@ def list_bookings():
 @login_required
 def dashboard():
     """Display the booking dashboard."""
+    # Get current date and time
+    now = datetime.now()
+    
+    # Calculate the end date (14 days from now)
+    end_date = now + timedelta(days=14)
+    
+    # Get upcoming bookings for the next 14 days only
     upcoming_bookings = Booking.query.filter(
         Booking.student_id == current_user.id,
-        Booking.start_time > datetime.now()
+        Booking.start_time > now,
+        Booking.start_time <= end_date
     ).order_by(Booking.start_time).all()
 
     available_aircraft = Aircraft.query.filter_by(status='available').all()
     
     return render_template('booking/dashboard.html',
                          upcoming_bookings=upcoming_bookings,
-                         available_aircraft=available_aircraft)
+                         available_aircraft=available_aircraft,
+                         date_range=f"{now.strftime('%b %d')} - {end_date.strftime('%b %d, %Y')}")
 
 
 @booking_bp.route('/booking/weather-minima')
@@ -134,7 +143,56 @@ def create_booking():
             flash('Error creating booking.', 'error')
             current_app.logger.error(f'Booking creation error: {str(e)}')
     
-    return render_template('booking/book.html', form=form, current_time=datetime.now().strftime('%Y-%m-%d %H:%M'))
+    # Get existing bookings for the calendar UI
+    now = datetime.now()
+    start_of_week = now - timedelta(days=now.weekday())
+    end_of_week = start_of_week + timedelta(days=14)  # Show 2 weeks
+    
+    # Get aircraft bookings
+    aircraft_bookings = Booking.query.filter(
+        Booking.start_time >= start_of_week,
+        Booking.start_time <= end_of_week,
+        Booking.status != 'cancelled'
+    ).all()
+    
+    # Get instructor bookings
+    instructor_bookings = Booking.query.filter(
+        Booking.instructor_id.isnot(None),
+        Booking.start_time >= start_of_week,
+        Booking.start_time <= end_of_week,
+        Booking.status != 'cancelled'
+    ).all()
+    
+    # Format booking blocks for the calendar
+    booking_blocks = []
+    
+    # Add aircraft bookings
+    for booking in aircraft_bookings:
+        booking_blocks.append({
+            'type': 'aircraft',
+            'id': booking.aircraft_id,
+            'start': booking.start_time.isoformat(),
+            'end': booking.end_time.isoformat(),
+            'title': f"{booking.aircraft.registration} - Booked"
+        })
+    
+    # Add instructor bookings
+    for booking in instructor_bookings:
+        booking_blocks.append({
+            'type': 'instructor',
+            'id': booking.instructor_id,
+            'start': booking.start_time.isoformat(),
+            'end': booking.end_time.isoformat(),
+            'title': f"{booking.instructor.full_name} - Booked"
+        })
+    
+    import json
+    return render_template(
+        'booking/book.html', 
+        form=form, 
+        current_time=datetime.now().strftime('%Y-%m-%d %H:%M'),
+        booking_blocks=json.dumps(booking_blocks)
+    )
 
 
 @booking_bp.route('/booking/<int:booking_id>/cancel', methods=['POST'])
