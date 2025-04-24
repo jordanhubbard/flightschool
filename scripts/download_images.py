@@ -19,11 +19,16 @@ AIRCRAFT_IMAGES = {
     'default.jpg': 'https://upload.wikimedia.org/wikipedia/commons/8/82/Generic_Aircraft_Silhouette.svg'
 }
 
+# Define a user agent string to prevent Wikipedia from blocking requests
+USER_AGENT = 'FlightSchool/1.0 (https://github.com/jordanhubbard/flightschool; contact@flightschool.com)'
+
 def download_and_save_image(url, filename, target_size=(800, 600)):
     """Download an image from URL, resize it, and save it as JPEG."""
     logger.info(f"Downloading {url} to {filename}")
     try:
-        response = requests.get(url)
+        # Add user agent header to the request
+        headers = {'User-Agent': USER_AGENT}
+        response = requests.get(url, headers=headers)
         response.raise_for_status()
         logger.info(f"Downloaded {len(response.content)} bytes")
         
