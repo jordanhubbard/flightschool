@@ -35,7 +35,7 @@ def booking_access_required(f):
     return decorated_function
 
 
-@booking_bp.route('/booking/list')
+@booking_bp.route('/list')
 @login_required
 def list_bookings():
     """List all bookings."""
@@ -47,7 +47,7 @@ def list_bookings():
     return render_template('booking/list.html', bookings=bookings)
 
 
-@booking_bp.route('/booking/dashboard')
+@booking_bp.route('/dashboard')
 @login_required
 def dashboard():
     """Display the booking dashboard."""
@@ -72,14 +72,14 @@ def dashboard():
                          date_range=f"{now.strftime('%b %d')} - {end_date.strftime('%b %d, %Y')}")
 
 
-@booking_bp.route('/booking/weather-minima')
+@booking_bp.route('/weather-minima')
 @login_required
 def weather_minima():
     """Display weather minima requirements."""
     return render_template('booking/weather_minima.html')
 
 
-@booking_bp.route('/booking/recurring')
+@booking_bp.route('/recurring')
 @login_required
 def recurring_bookings():
     """Display and manage recurring bookings."""
@@ -90,7 +90,7 @@ def recurring_bookings():
     return render_template('booking/recurring.html', bookings=recurring)
 
 
-@booking_bp.route('/booking/waitlist')
+@booking_bp.route('/waitlist')
 @login_required
 def waitlist():
     """Display and manage waitlist entries."""
@@ -101,7 +101,7 @@ def waitlist():
     return render_template('booking/waitlist.html', entries=waitlist_entries)
 
 
-@booking_bp.route('/booking/create', methods=['GET', 'POST'])
+@booking_bp.route('/create', methods=['GET', 'POST'])
 @login_required
 def create_booking():
     """Create a new booking."""
@@ -195,7 +195,7 @@ def create_booking():
     )
 
 
-@booking_bp.route('/booking/<int:booking_id>/cancel', methods=['POST'])
+@booking_bp.route('/<int:booking_id>/cancel', methods=['POST'])
 @login_required
 @booking_access_required
 def cancel_booking(booking_id):
@@ -207,7 +207,7 @@ def cancel_booking(booking_id):
     return redirect(url_for('booking.dashboard'))
 
 
-@booking_bp.route('/booking/<int:booking_id>')
+@booking_bp.route('/<int:booking_id>')
 @login_required
 @booking_access_required
 def view_booking(booking_id):

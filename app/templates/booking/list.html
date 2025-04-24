@@ -34,7 +34,7 @@
                                             <td>{{ booking.instructor.full_name if booking.instructor else 'N/A' }}</td>
                                             <td>{{ booking.aircraft.display_name }}</td>
                                             <td>
-                                                <a href="{{ url_for('booking.aircraft_info', aircraft_id=booking.aircraft.id) }}" class="btn btn-sm btn-info">Info</a>
+                                                <a href="{{ url_for('main.aircraft') }}" class="btn btn-sm btn-info">Info</a>
                                             </td>
                                             <td><span class="utc-datetime" data-utc="{{ booking.start_time.isoformat() }}"></span></td>
                                             <td><span class="utc-datetime" data-utc="{{ booking.end_time.isoformat() }}"></span></td>

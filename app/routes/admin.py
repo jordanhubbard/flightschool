@@ -24,6 +24,7 @@ def admin_required(f):
 @admin_required
 def dashboard():
     """Display admin dashboard."""
+    # Get statistics
     stats = {
         'total_users': User.query.count(),
         'active_users': User.query.filter_by(status='active').count(),
@@ -32,7 +33,17 @@ def dashboard():
         'pending_bookings': Booking.query.filter_by(status='pending').count(),
         'maintenance_due': MaintenanceRecord.query.filter_by(status='due').count()
     }
-    return render_template('admin/dashboard.html', stats=stats)
+    
+    # Get lists of instructors, students, and aircraft for the dashboard tabs
+    instructors = User.query.filter_by(is_instructor=True).all()
+    students = User.query.filter_by(is_instructor=False, is_admin=False).all()
+    aircraft_list = Aircraft.query.all()
+    
+    return render_template('admin/dashboard.html', 
+                          stats=stats, 
+                          instructors=instructors, 
+                          students=students, 
+                          aircraft_list=aircraft_list)
 
 
 @admin_bp.route('/users')
@@ -116,142 +127,174 @@ def weather_minima():
     return render_template('admin/weather_minima.html')
 
 
-@admin_bp.route('/user/create', methods=['GET', 'POST'])
-@login_required
-def create_user():
-    """Create a new user."""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'error')
-        return redirect(url_for('main.index'))
-    
-    form = UserForm()
-    if form.validate_on_submit():
-        try:
-            user = User(
-                email=form.email.data,
-                first_name=form.first_name.data,
-                last_name=form.last_name.data,
-                phone=form.phone.data,
-                role=form.role.data,
-                status='active'
-            )
-            user.set_password(form.password.data)
-            db.session.add(user)
-            db.session.commit()
-            flash('User created successfully', 'success')
-            return redirect(url_for('admin.dashboard'))
-        except Exception as e:
-            db.session.rollback()
-            current_app.logger.error(f'Error creating user: {str(e)}')
-            flash('Failed to create user. Please try again.', 'error')
-    
-    return render_template('admin/create_user.html', form=form)
-
-
-@admin_bp.route('/user/<int:id>/edit', methods=['GET', 'POST'])
-@login_required
-@admin_required
-def edit_user(id):
-    """Edit an existing user."""
-    user = User.query.get_or_404(id)
-    
-    if request.method == 'POST':
-        email = request.form.get('email')
-        if email != user.email and User.query.filter_by(email=email).first():
-            flash('Email already registered', 'error')
-            return render_template('admin/user_edit.html', user=user), 400
-
-        status = request.form.get('status')
-        if status not in ['active', 'inactive', 'pending']:
-            flash('Invalid status value', 'error')
-            return render_template('admin/user_edit.html', user=user), 400
-
-        try:
-            user.email = email
-            user.first_name = request.form.get('first_name')
-            user.last_name = request.form.get('last_name')
-            user.phone = request.form.get('phone')
-            user.status = status
-            
-            if user.role == 'instructor':
-                user.certificates = request.form.get('certificates', '')
-                rate = request.form.get('instructor_rate_per_hour')
-                if rate:
-                    try:
-                        user.instructor_rate_per_hour = float(rate)
-                    except ValueError:
-                        flash('Invalid instructor rate', 'error')
-                        return render_template('admin/user_edit.html', user=user), 400
-
-            db.session.commit()
-            flash('User updated successfully', 'success')
-            return redirect(url_for('admin.dashboard'))
-        except Exception as e:
-            db.session.rollback()
-            flash('Failed to update user', 'error')
-            return render_template('admin/user_edit.html', user=user), 400
-
-    return render_template('admin/user_edit.html', user=user)
-
-
 @admin_bp.route('/aircraft/create', methods=['GET', 'POST'])
 @login_required
+@admin_required
 def create_aircraft():
     """Create a new aircraft."""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'error')
-        return redirect(url_for('main.index'))
+    error_message = None
     
-    form = AircraftForm()
-    if form.validate_on_submit():
+    if request.method == 'POST':
         try:
+            # Create new aircraft from form data
             aircraft = Aircraft(
-                registration=form.registration.data,
-                make=form.make.data,
-                model=form.model.data,
-                year=form.year.data,
-                category=form.category.data,
-                rate_per_hour=form.rate_per_hour.data,
-                status='available',
-                time_to_next_oil_change=form.time_to_next_oil_change.data,
-                time_to_next_100hr=form.time_to_next_100hr.data,
-                date_of_next_annual=form.date_of_next_annual.data
+                registration=request.form['registration'],
+                make=request.form['make'],
+                model=request.form['model'],
+                year=int(request.form['year']) if request.form.get('year') else None,
+                description=request.form.get('description', ''),
+                status=request.form.get('status', 'available'),
+                category=request.form.get('category', 'single_engine'),
+                engine_type=request.form.get('engine_type', 'piston'),
+                num_engines=int(request.form.get('num_engines', 1)),
+                ifr_equipped='ifr_equipped' in request.form,
+                gps='gps' in request.form,
+                autopilot='autopilot' in request.form,
+                rate_per_hour=float(request.form['rate_per_hour']) if request.form.get('rate_per_hour') else 0.0
             )
-            if form.image.data:
-                filename = secure_filename(f"{aircraft.registration.upper()}.jpg")
-                image_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-                form.image.data.save(image_path)
+            
+            # Set maintenance details if provided
+            if request.form.get('hobbs_time'):
+                aircraft.hobbs_time = float(request.form['hobbs_time'])
+            if request.form.get('tach_time'):
+                aircraft.tach_time = float(request.form['tach_time'])
+            if request.form.get('time_to_next_oil_change'):
+                aircraft.time_to_next_oil_change = float(request.form['time_to_next_oil_change'])
+            if request.form.get('time_to_next_100hr'):
+                aircraft.time_to_next_100hr = float(request.form['time_to_next_100hr'])
+            if request.form.get('date_of_next_annual'):
+                from datetime import datetime
+                aircraft.date_of_next_annual = datetime.strptime(request.form['date_of_next_annual'], '%Y-%m-%d').date()
+            
+            # Handle image upload if provided
+            if 'image' in request.files and request.files['image'].filename:
+                from werkzeug.utils import secure_filename
+                import os
+                from app.models import STATIC_IMAGE_DIR
+                
+                # Get the uploaded file
+                file = request.files['image']
+                filename = secure_filename(aircraft.registration.lower() + os.path.splitext(file.filename)[1])
+                
+                # Save the file
+                file_path = os.path.join(STATIC_IMAGE_DIR, filename)
+                file.save(file_path)
+                
+                # Update the aircraft record
                 aircraft.image_filename = filename
+            
+            # Add the aircraft to the database
             db.session.add(aircraft)
             db.session.commit()
-            flash('Aircraft created successfully', 'success')
-            return redirect(url_for('admin.dashboard'))
+            
+            flash(f'Aircraft {aircraft.registration} created successfully.', 'success')
+            return redirect(url_for('admin.aircraft'))
         except Exception as e:
             db.session.rollback()
-            current_app.logger.error(f'Error creating aircraft: {str(e)}')
-            flash('Failed to create aircraft. Please try again.', 'error')
+            error_message = f"Error creating aircraft: {str(e)}"
     
-    return render_template('admin/create_aircraft.html', form=form)
+    return render_template('admin/aircraft_form.html', aircraft=None, edit_mode=False, error_message=error_message)
 
 
 @admin_bp.route('/aircraft/<int:id>/delete', methods=['POST'])
 @login_required
+@admin_required
 def delete_aircraft(id):
     """Delete an aircraft."""
-    if not current_user.is_admin:
-        flash('Access denied. Admin privileges required.', 'error')
-        return redirect(url_for('main.index'))
-    
     aircraft = Aircraft.query.get_or_404(id)
-    try:
-        db.session.delete(aircraft)
-        db.session.commit()
-        flash('Aircraft deleted successfully', 'success')
-        return redirect(url_for('admin.dashboard'))
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f'Error deleting aircraft: {str(e)}')
-        flash('Failed to delete aircraft. Please try again.', 'error')
+    
+    # Check if aircraft has any bookings
+    if aircraft.bookings.count() > 0:
+        flash('Cannot delete aircraft with existing bookings.', 'error')
+        return redirect(url_for('admin.aircraft'))
+    
+    # Delete the aircraft
+    db.session.delete(aircraft)
+    db.session.commit()
+    
+    flash(f'Aircraft {aircraft.registration} deleted successfully.', 'success')
+    return redirect(url_for('admin.aircraft'))
+
+
+@admin_bp.route('/aircraft/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_aircraft(id):
+    """Edit an existing aircraft."""
+    aircraft = Aircraft.query.get_or_404(id)
+    error_message = None
+    
+    if request.method == 'POST':
+        try:
+            # Update aircraft details
+            aircraft.registration = request.form['registration']
+            aircraft.make = request.form['make']
+            aircraft.model = request.form['model']
+            aircraft.year = int(request.form['year']) if request.form['year'] else None
+            aircraft.description = request.form['description']
+            aircraft.status = request.form['status']
+            aircraft.category = request.form['category']
+            aircraft.engine_type = request.form['engine_type']
+            aircraft.num_engines = int(request.form['num_engines']) if request.form['num_engines'] else 1
+            aircraft.ifr_equipped = 'ifr_equipped' in request.form
+            aircraft.gps = 'gps' in request.form
+            aircraft.autopilot = 'autopilot' in request.form
+            aircraft.rate_per_hour = float(request.form['rate_per_hour']) if request.form['rate_per_hour'] else 0.0
+            
+            # Update maintenance details if provided
+            if request.form.get('hobbs_time'):
+                aircraft.hobbs_time = float(request.form['hobbs_time'])
+            if request.form.get('tach_time'):
+                aircraft.tach_time = float(request.form['tach_time'])
+            if request.form.get('time_to_next_oil_change'):
+                aircraft.time_to_next_oil_change = float(request.form['time_to_next_oil_change'])
+            if request.form.get('time_to_next_100hr'):
+                aircraft.time_to_next_100hr = float(request.form['time_to_next_100hr'])
+            if request.form.get('date_of_next_annual'):
+                from datetime import datetime
+                aircraft.date_of_next_annual = datetime.strptime(request.form['date_of_next_annual'], '%Y-%m-%d').date()
+            
+            # Handle image upload if provided
+            if 'image' in request.files and request.files['image'].filename:
+                from werkzeug.utils import secure_filename
+                import os
+                from app.models import STATIC_IMAGE_DIR
+                
+                # Get the uploaded file
+                file = request.files['image']
+                filename = secure_filename(aircraft.registration.lower() + os.path.splitext(file.filename)[1])
+                
+                # Save the file
+                file_path = os.path.join(STATIC_IMAGE_DIR, filename)
+                file.save(file_path)
+                
+                # Update the aircraft record
+                aircraft.image_filename = filename
+            
+            # Handle image deletion if requested
+            if 'delete_image' in request.form and request.form['delete_image'] == 'on':
+                import os
+                from app.models import STATIC_IMAGE_DIR
+                
+                # Delete the file if it exists
+                if aircraft.image_filename:
+                    file_path = os.path.join(STATIC_IMAGE_DIR, aircraft.image_filename)
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                
+                # Clear the filename in the database
+                aircraft.image_filename = None
+            
+            # Save the changes
+            db.session.commit()
+            
+            flash(f'Aircraft {aircraft.registration} updated successfully.', 'success')
+            return redirect(url_for('admin.aircraft'))
+        except Exception as e:
+            db.session.rollback()
+            error_message = f"Error updating aircraft: {str(e)}"
+    
+    return render_template('admin/aircraft_form.html', aircraft=aircraft, edit_mode=True, error_message=error_message)
 
 
 @admin_bp.route('/calendar/oauth')

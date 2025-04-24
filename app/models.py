@@ -301,6 +301,8 @@ class MaintenanceRecord(db.Model):
     next_due_date = db.Column(db.DateTime)
     # Hours until this maintenance is due again
     next_due_hours = db.Column(db.Float)
+    # Status of the maintenance record
+    status = db.Column(db.String(20), default='completed')
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Removed property: aircraft (conflicts with SQLAlchemy relationship backref)
