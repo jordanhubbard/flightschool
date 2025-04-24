@@ -20,15 +20,27 @@
                         <h5 class="mb-0">{{ booking.aircraft.display_name }} ({{ booking.aircraft.registration }})</h5>
                         <p class="text-muted mb-0">{{ booking.start_time.strftime('%A, %B %d, %Y') }}</p>
                     </div>
-                    <span class="badge bg-{{ 
-                        'success' if booking.status == 'confirmed' 
-                        else 'warning' if booking.status == 'pending'
-                        else 'danger' if booking.status == 'cancelled'
-                        else 'info' if booking.status == 'completed'
-                        else 'secondary'
-                    }}">
-                        {{ booking.status|title }}
-                    </span>
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-{{ 
+                            'success' if booking.status == 'confirmed' 
+                            else 'warning' if booking.status == 'pending'
+                            else 'danger' if booking.status == 'cancelled'
+                            else 'info' if booking.status == 'completed'
+                            else 'secondary'
+                        }} me-2">
+                            {{ booking.status|title }}
+                        </span>
+                        {% if booking.status == 'confirmed' and not booking.check_in %}
+                            <a href="{{ url_for('flight.check_in', booking_id=booking.id) }}" class="btn btn-sm btn-success ms-2">
+                                <i class="fas fa-plane-departure me-1"></i>Start Flight
+                            </a>
+                        {% endif %}
+                        {% if booking.aircraft %}
+                            <a href="{{ url_for('flight.maintenance_records', aircraft_id=booking.aircraft_id) }}" class="btn btn-sm btn-outline-primary ms-2">
+                                <i class="fas fa-wrench me-1"></i>View Maintenance
+                            </a>
+                        {% endif %}
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="row g-4">
@@ -291,11 +303,6 @@
                             <i class="fas fa-times me-2"></i>Cancel Flight
                         </a>
                     {% endif %}
-                    {% if booking.status == 'confirmed' and not booking.check_in %}
-                        <a href="{{ url_for('flight.check_in', booking_id=booking.id) }}" class="btn btn-success">
-                            <i class="fas fa-plane-departure me-2"></i>Start Flight
-                        </a>
-                    {% endif %}
                     {% if booking.status == 'in_progress' and booking.check_in and not booking.check_out %}
                         <a href="{{ url_for('flight.check_out', booking_id=booking.id) }}" class="btn btn-info">
                             <i class="fas fa-plane-arrival me-2"></i>End Flight
@@ -309,11 +316,6 @@
                     {% if booking.check_in and booking.check_out %}
                         <a href="{{ url_for('flight.flight_summary', booking_id=booking.id) }}" class="btn btn-primary">
                             <i class="fas fa-clipboard-list me-2"></i>View Flight Summary
-                        </a>
-                    {% endif %}
-                    {% if booking.aircraft %}
-                        <a href="{{ url_for('flight.maintenance_records', aircraft_id=booking.aircraft_id) }}" class="btn btn-outline-primary">
-                            <i class="fas fa-wrench me-2"></i>View Maintenance Records
                         </a>
                     {% endif %}
                 </div>

@@ -552,12 +552,13 @@ def create_booking():
             db.session.add(booking)
             db.session.commit()
             
+            # Add a timestamp parameter to force a refresh of the page
             flash('Booking created successfully.', 'success')
-            return redirect(url_for('admin.bookings'))
+            return redirect(url_for('admin.bookings', _fresh=True, t=datetime.now().timestamp()))
             
         except Exception as e:
             flash(f'Error creating booking: {str(e)}', 'error')
-            return redirect(url_for('admin.bookings'))
+            return redirect(url_for('admin.bookings', _fresh=True, t=datetime.now().timestamp()))
     
     # GET request - render form
     students = User.query.filter_by(is_instructor=False, is_admin=False).all()
@@ -604,7 +605,7 @@ def edit_booking(id):
             
             if conflicting_bookings:
                 flash('This aircraft is already booked during the selected time.', 'error')
-                return redirect(url_for('admin.edit_booking', id=id))
+                return redirect(url_for('admin.edit_booking', id=id, _fresh=True, t=datetime.now().timestamp()))
             
             # Update booking
             booking.student_id = student_id
@@ -617,12 +618,13 @@ def edit_booking(id):
             
             db.session.commit()
             
+            # Add a timestamp parameter to force a refresh of the page
             flash('Booking updated successfully.', 'success')
-            return redirect(url_for('admin.bookings'))
+            return redirect(url_for('admin.bookings', _fresh=True, t=datetime.now().timestamp()))
             
         except Exception as e:
             flash(f'Error updating booking: {str(e)}', 'error')
-            return redirect(url_for('admin.edit_booking', id=id))
+            return redirect(url_for('admin.edit_booking', id=id, _fresh=True, t=datetime.now().timestamp()))
     
     # GET request - render form
     students = User.query.filter_by(is_instructor=False, is_admin=False).all()
@@ -651,10 +653,11 @@ def delete_booking(id):
         db.session.delete(booking)
         db.session.commit()
         flash('Booking deleted successfully.', 'success')
+        # Add a timestamp parameter to force a refresh of the page
+        return redirect(url_for('admin.bookings', _fresh=True, t=datetime.now().timestamp()))
     except Exception as e:
         flash(f'Error deleting booking: {str(e)}', 'error')
-    
-    return redirect(url_for('admin.bookings'))
+        return redirect(url_for('admin.bookings'))
 
 
 @admin_bp.route('/maintenance/add', methods=['GET', 'POST'])
