@@ -29,6 +29,11 @@
                             {{ form.instructor_id(class="form-select", id="instructor_id") }}
                         </div>
                         
+                        <div class="d-grid gap-2 mb-4">
+                            <button type="submit" class="btn btn-primary">Book Flight</button>
+                            <a href="{{ url_for('booking.dashboard') }}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                        
                         <div class="mb-3">
                             <label class="form-label">Current Time: {{ current_time }}</label>
                             <div id="calendar-widget"></div>
@@ -51,11 +56,6 @@
                         <div class="mb-3">
                             <label for="notes" class="form-label">Notes (Optional)</label>
                             <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
-                        </div>
-                        
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">Book Flight</button>
-                            <a href="{{ url_for('booking.dashboard') }}" class="btn btn-secondary">Cancel</a>
                         </div>
                     </form>
                 </div>

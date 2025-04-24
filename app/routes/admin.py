@@ -336,7 +336,7 @@ def instructors():
 @admin_required
 def create_instructor():
     """Create a new instructor."""
-    return redirect(url_for('admin.create_user'))
+    return redirect(url_for('admin.create_user', type='instructor'))
 
 
 @admin_bp.route('/endorsements')
@@ -353,6 +353,115 @@ def endorsements():
 def documents():
     """Display document management page."""
     return render_template('admin/documents.html')
+
+
+@admin_bp.route('/user/create', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def create_user():
+    """Create a new user (instructor or student)."""
+    user_type = request.args.get('type', 'student')
+    error_message = None
+    
+    if request.method == 'POST':
+        try:
+            # Create new user from form data
+            user = User(
+                email=request.form['email'],
+                first_name=request.form['first_name'],
+                last_name=request.form['last_name'],
+                phone=request.form.get('phone', ''),
+                role=user_type,
+                is_instructor=(user_type == 'instructor'),
+                is_admin=False,
+                status='active'
+            )
+            
+            # Set password
+            if 'password' in request.form and request.form['password']:
+                user.set_password(request.form['password'])
+            else:
+                user.set_password('changeme')  # Default password
+            
+            # Add instructor-specific fields
+            if user_type == 'instructor':
+                user.certificates = request.form.get('certificates', '')
+                if request.form.get('instructor_rate_per_hour'):
+                    user.instructor_rate_per_hour = float(request.form['instructor_rate_per_hour'])
+            
+            # Add the user to the database
+            db.session.add(user)
+            db.session.commit()
+            
+            flash(f'{user_type.capitalize()} {user.full_name} created successfully.', 'success')
+            return redirect(url_for('admin.dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            error_message = f"Error creating {user_type}: {str(e)}"
+    
+    return render_template('admin/user_form.html', user=None, user_type=user_type, edit_mode=False, error_message=error_message)
+
+
+@admin_bp.route('/user/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_user(id):
+    """Edit an existing user."""
+    user = User.query.get_or_404(id)
+    user_type = 'instructor' if user.is_instructor else 'student'
+    error_message = None
+    
+    if request.method == 'POST':
+        try:
+            # Update user details
+            user.email = request.form['email']
+            user.first_name = request.form['first_name']
+            user.last_name = request.form['last_name']
+            user.phone = request.form.get('phone', '')
+            user.status = request.form.get('status', 'active')
+            
+            # Update password if provided
+            if 'password' in request.form and request.form['password']:
+                user.set_password(request.form['password'])
+            
+            # Update instructor-specific fields
+            if user.is_instructor:
+                user.certificates = request.form.get('certificates', '')
+                if request.form.get('instructor_rate_per_hour'):
+                    user.instructor_rate_per_hour = float(request.form['instructor_rate_per_hour'])
+            
+            # Save the changes
+            db.session.commit()
+            
+            flash(f'{user_type.capitalize()} {user.full_name} updated successfully.', 'success')
+            return redirect(url_for('admin.dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            error_message = f"Error updating {user_type}: {str(e)}"
+    
+    return render_template('admin/user_form.html', user=user, user_type=user_type, edit_mode=True, error_message=error_message)
+
+
+@admin_bp.route('/user/<int:id>', methods=['DELETE'])
+@login_required
+@admin_required
+def delete_user(id):
+    """Delete a user."""
+    user = User.query.get_or_404(id)
+    
+    try:
+        # Check if user has any bookings
+        if hasattr(user, 'bookings') and user.bookings.count() > 0:
+            return jsonify({'error': 'Cannot delete user with existing bookings'}), 400
+        
+        # Delete the user
+        db.session.delete(user)
+        db.session.commit()
+        
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 
 @admin_bp.route('/waitlist')

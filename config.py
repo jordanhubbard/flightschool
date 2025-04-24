@@ -19,7 +19,7 @@ class Config:
     SESSION_COOKIE_SAMESITE = 'Lax'
     PREFERRED_URL_SCHEME = 'http'  # Change to 'https' in production
     SCHOOL_NAME = os.environ.get('SCHOOL_NAME', 'Tailwheel Addicts Aviation')
-    CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'info@nextleveltailwheel.com')
+    CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'info@tailwheeladdicts.com')
     CONTACT_PHONE = os.environ.get('CONTACT_PHONE', '(555) 123-4567')
     
     # Mail settings (placeholder for future implementation)
